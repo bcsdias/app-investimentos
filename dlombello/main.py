@@ -5,6 +5,7 @@ import pandas as pd
 from requests.exceptions import RequestException
 import matplotlib.ticker as mticker
 import matplotlib.pyplot as plt
+import yfinance as yf
 
 # Carrega as variáveis de ambiente do arquivo .env
 load_dotenv()
@@ -15,18 +16,20 @@ token = os.getenv('DLP_TOKEN')
 if not token:
     raise ValueError("A variável de ambiente 'DLP_TOKEN' não foi encontrada ou está vazia. Verifique seu arquivo .env.")
 
-def gerar_grafico_twr(df: pd.DataFrame, ativo: str):
+def gerar_grafico_twr(df: pd.DataFrame, ativo: str) -> pd.DataFrame | None:
     """
     Calcula o Time-Weighted Return (TWR) e gera um gráfico da sua evolução.
 
     Args:
         df (pd.DataFrame): DataFrame com o histórico, contendo 'date', 'vlr_mercado' e 'vlr_investido'.
         ativo (str): Nome do ativo para o título do gráfico.
+    Returns:
+        pd.DataFrame | None: DataFrame com os cálculos do TWR ou None se falhar.
     """
     colunas_necessarias = ['date', 'vlr_mercado', 'vlr_investido', 'proventos']
     if not all(col in df.columns for col in colunas_necessarias):
         print(f"DataFrame não contém as colunas necessárias ({', '.join(colunas_necessarias)}) para calcular o TWR.")
-        return
+        return None
 
     # Garante que a pasta de gráficos exista
     pasta_graficos = "dlombello/graficos"
@@ -101,6 +104,8 @@ def gerar_grafico_twr(df: pd.DataFrame, ativo: str):
 
     plt.savefig(caminho_arquivo)
     print(f"Gráfico de TWR salvo com sucesso em: {caminho_arquivo}")
+    
+    return df_twr
 
 def gerar_grafico_percentual(df: pd.DataFrame, ativo: str):
     """
@@ -255,6 +260,71 @@ def buscar_historico(token: str, ativo: str = None, classe: str = None, corretor
         print("Erro ao processar a resposta da API. Não é um JSON válido.")
         return None
 
+def buscar_dados_benchmark(ticker: str, start_date: str, end_date: str) -> pd.Series | None:
+    """
+    Busca dados históricos de fechamento para um ticker de benchmark.
+
+    Args:
+        ticker (str): O ticker do benchmark (ex: '^BVSP' para IBOV).
+        start_date (str): Data de início no formato 'YYYY-MM-DD'.
+        end_date (str): Data de fim no formato 'YYYY-MM-DD'.
+
+    Returns:
+        pd.Series | None: Uma série com os preços de fechamento ou None em caso de erro.
+    """
+    try:
+        print(f"Buscando dados para o benchmark: {ticker}...")
+        dados = yf.download(ticker, start=start_date, end=end_date, progress=False)
+        if dados.empty:
+            print(f"Nenhum dado encontrado para o benchmark {ticker} no período especificado.")
+            return None
+        return dados['Close']
+    except Exception as e:
+        print(f"Erro ao buscar dados do benchmark {ticker}: {e}")
+        return None
+
+def gerar_grafico_comparativo_twr(df_twr: pd.DataFrame, benchmarks_data: dict, ativo: str):
+    """
+    Gera um gráfico comparando o TWR da carteira com outros benchmarks.
+
+    Args:
+        df_twr (pd.DataFrame): DataFrame com a coluna 'twr_acc' e 'date'.
+        benchmarks_data (dict): Dicionário onde a chave é o nome do benchmark (ex: 'IBOV')
+                                e o valor é uma pd.Series com os dados de preço.
+        ativo (str): Nome do ativo principal para o título do gráfico.
+    """
+    pasta_graficos = "dlombello/graficos"
+    os.makedirs(pasta_graficos, exist_ok=True)
+
+    plt.figure(figsize=(14, 8))
+
+    # 1. Plotar o TWR da carteira (normalizado em base 100)
+    # (twr_acc + 1) transforma o percentual de retorno em um fator de crescimento
+    carteira_normalizada = (df_twr['twr_acc'] + 1) * 100
+    plt.plot(df_twr['date'], carteira_normalizada, label=f'Carteira - {ativo}', color='red', linewidth=2.5)
+
+    # 2. Plotar cada benchmark (normalizado em base 100)
+    for nome, dados_benchmark in benchmarks_data.items():
+        if dados_benchmark is not None and not dados_benchmark.empty:
+            # Normaliza o benchmark para começar em 100
+            benchmark_normalizado = (dados_benchmark / dados_benchmark.iloc[0]) * 100
+            plt.plot(benchmark_normalizado.index, benchmark_normalizado, label=nome, linestyle='--')
+
+    # 3. Customizar o gráfico
+    plt.title(f'Comparativo de Rentabilidade: {ativo} vs. Benchmarks', fontsize=16)
+    plt.ylabel('Performance (Base 100)', fontsize=12)
+    plt.xlabel('Data', fontsize=12)
+    plt.legend(fontsize=10)
+    plt.grid(True, which='both', linestyle='--', linewidth=0.5)
+    plt.tight_layout()
+    plt.gcf().autofmt_xdate()
+
+    # 4. Salvar o gráfico
+    caminho_arquivo = os.path.join(pasta_graficos, f'comparativo_twr_{ativo}.png')
+    plt.savefig(caminho_arquivo)
+    print(f"Gráfico comparativo de TWR salvo com sucesso em: {caminho_arquivo}")
+
+
 def main():
     """
     Função principal que orquestra a execução do script.
@@ -266,8 +336,25 @@ def main():
         print("Dados capturados com sucesso! Exibindo as 5 primeiras linhas:")
         print(df_historico.head())
         gerar_grafico_evolucao(df_historico, ativo="KLBN11")
-        # A função gerar_grafico_percentual() foi removida para focar no TWR
-        gerar_grafico_twr(df_historico, ativo="KLBN11")
+        
+        # Calcula o TWR e obtém o dataframe com os resultados
+        df_twr = gerar_grafico_twr(df_historico, ativo="KLBN11")
+
+        if df_twr is not None:
+            # Define os benchmarks para comparação
+            benchmarks = {
+                'IBOV': '^BVSP',
+                'S&P 500': 'SPY'
+            }
+            
+            # Define o período para a busca dos benchmarks
+            start_date = df_twr['date'].min().strftime('%Y-%m-%d')
+            end_date = df_twr['date'].max().strftime('%Y-%m-%d')
+
+            # Busca os dados dos benchmarks
+            benchmarks_data = {nome: buscar_dados_benchmark(ticker, start_date, end_date) for nome, ticker in benchmarks.items()}
+
+            gerar_grafico_comparativo_twr(df_twr, benchmarks_data, ativo="KLBN11")
 
 # Garante que a função main() só seja executada quando o script for rodado diretamente
 if __name__ == "__main__":
