@@ -344,7 +344,8 @@ def main():
             # Define os benchmarks para comparação
             benchmarks = {
                 'IBOV': '^BVSP',
-                'S&P 500': 'SPY'
+                'S&P 500': 'SPY',
+                'IMID': 'IMID.L'
             }
             
             # Define o período para a busca dos benchmarks
