@@ -23,7 +23,7 @@ def gerar_grafico_twr(df: pd.DataFrame, ativo: str):
         df (pd.DataFrame): DataFrame com o histórico, contendo 'date', 'vlr_mercado' e 'vlr_investido'.
         ativo (str): Nome do ativo para o título do gráfico.
     """
-    colunas_necessarias = ['date', 'vlr_mercado', 'vlr_investido']
+    colunas_necessarias = ['date', 'vlr_mercado', 'vlr_investido', 'proventos']
     if not all(col in df.columns for col in colunas_necessarias):
         print(f"DataFrame não contém as colunas necessárias ({', '.join(colunas_necessarias)}) para calcular o TWR.")
         return
@@ -38,8 +38,9 @@ def gerar_grafico_twr(df: pd.DataFrame, ativo: str):
     df_twr = df_twr.sort_values(by='date').reset_index(drop=True)
 
     # 2. Calcular o fluxo de caixa (aportes/retiradas) em cada período
-    # Renomeando para 'fluxo_mes' para corresponder à plataforma web.
-    df_twr['fluxo_mes'] = df_twr['vlr_investido'].diff().fillna(df_twr['vlr_investido'].iloc[0])
+    # O fluxo de caixa é a variação do capital investido MENOS os proventos recebidos no período.
+    # Proventos são parte do retorno, não do aporte, e são tratados como retirada de caixa.
+    df_twr['fluxo_mes'] = df_twr['vlr_investido'].diff().fillna(df_twr['vlr_investido'].iloc[0]) - df_twr['proventos']
 
     # 3. Calcular valores do período anterior e fluxos acumulados
     # O .shift(1) "puxa" o valor da linha anterior.
