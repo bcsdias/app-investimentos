@@ -15,6 +15,69 @@ token = os.getenv('DLP_TOKEN')
 if not token:
     raise ValueError("A variável de ambiente 'DLP_TOKEN' não foi encontrada ou está vazia. Verifique seu arquivo .env.")
 
+def gerar_grafico_twr(df: pd.DataFrame, ativo: str):
+    """
+    Calcula o Time-Weighted Return (TWR) e gera um gráfico da sua evolução.
+
+    Args:
+        df (pd.DataFrame): DataFrame com o histórico, contendo 'date', 'vlr_mercado' e 'vlr_investido'.
+        ativo (str): Nome do ativo para o título do gráfico.
+    """
+    colunas_necessarias = ['date', 'vlr_mercado', 'vlr_investido']
+    if not all(col in df.columns for col in colunas_necessarias):
+        print(f"DataFrame não contém as colunas necessárias ({', '.join(colunas_necessarias)}) para calcular o TWR.")
+        return
+
+    # Garante que a pasta de gráficos exista
+    pasta_graficos = "dlombello/graficos"
+    os.makedirs(pasta_graficos, exist_ok=True)
+
+    # 1. Preparar os dados
+    df_twr = df.copy()
+    df_twr['date'] = pd.to_datetime(df_twr['date'])
+    df_twr = df_twr.sort_values(by='date').reset_index(drop=True)
+
+    # 2. Calcular o fluxo de caixa (aportes/retiradas) em cada período
+    # O .diff() calcula a diferença entre a linha atual e a anterior.
+    df_twr['cash_flow'] = df_twr['vlr_investido'].diff().fillna(df_twr['vlr_investido'].iloc[0])
+
+    # 3. Calcular o valor inicial de cada período (valor do fim do período anterior)
+    # O .shift(1) move os valores uma linha para baixo.
+    df_twr['valor_inicial_periodo'] = df_twr['vlr_mercado'].shift(1).fillna(0)
+
+    # 4. Calcular o Retorno do Período (Holding Period Return - HPR)
+    # HPR = Valor Final / (Valor Inicial + Fluxo de Caixa)
+    # Usamos (valor_inicial_periodo + cash_flow) como denominador. Se for zero, o retorno é 1 (0%).
+    denominador = df_twr['valor_inicial_periodo'] + df_twr['cash_flow']
+    df_twr['hpr'] = df_twr['vlr_mercado'] / denominador
+    df_twr['hpr'] = df_twr['hpr'].fillna(1.0) # Trata possíveis divisões por zero no início
+
+    # 5. Calcular o TWR acumulado
+    # O .cumprod() multiplica acumuladamente os valores da série.
+    df_twr['twr_acumulado_%'] = (df_twr['hpr'].cumprod() - 1) * 100
+
+    # 6. Gerar o gráfico
+    plt.figure(figsize=(12, 7))
+    plt.plot(df_twr['date'], df_twr['twr_acumulado_%'], marker='o', linestyle='-', color='darkorange')
+    plt.title(f'Rentabilidade (TWR Acumulado) - {ativo}', fontsize=16)
+    plt.ylabel('Rentabilidade Acumulada (%)', fontsize=12)
+    plt.gca().yaxis.set_major_formatter(mticker.PercentFormatter())
+    plt.grid(True, which='both', linestyle='--', linewidth=0.5)
+    plt.axhline(0, color='black', linewidth=1.2, linestyle='--')
+    caminho_arquivo = os.path.join(pasta_graficos, f'evolucao_twr_{ativo}.png')
+
+    # Adiciona os rótulos de valor em cada ponto
+    for index, row in df_twr.iterrows():
+        plt.text(row['date'], row['twr_acumulado_%'], f' {row["twr_acumulado_%"]:.2f}%', va='bottom', ha='left', fontsize=9)
+
+    # Salva os dados em um arquivo CSV (formato para Excel brasileiro)
+    caminho_csv = os.path.join(pasta_graficos, f'evolucao_twr_{ativo}.csv')
+    df_twr[['date', 'twr_acumulado_%']].to_csv(caminho_csv, index=False, decimal=',', sep=';')
+    print(f"Dados do gráfico de TWR salvos em: {caminho_csv}")
+
+    plt.savefig(caminho_arquivo)
+    print(f"Gráfico de TWR salvo com sucesso em: {caminho_arquivo}")
+
 def gerar_grafico_percentual(df: pd.DataFrame, ativo: str):
     """
     Gera e salva um gráfico da evolução percentual (lucro/prejuízo) de um ativo.
@@ -58,6 +121,16 @@ def gerar_grafico_percentual(df: pd.DataFrame, ativo: str):
 
     # Salva o gráfico em um arquivo
     caminho_arquivo = os.path.join(pasta_graficos, f'evolucao_percentual_{ativo}.png')
+
+    # Adiciona os rótulos de valor em cada ponto
+    for index, row in df_grafico.iterrows():
+        plt.text(row['date'], row['evolucao_%'], f' {row["evolucao_%"]:.2f}%', va='bottom', ha='left', fontsize=9)
+
+    # Salva os dados em um arquivo CSV (formato para Excel brasileiro)
+    caminho_csv = os.path.join(pasta_graficos, f'evolucao_percentual_{ativo}.csv')
+    df_grafico[['date', 'evolucao_%']].to_csv(caminho_csv, index=False, decimal=',', sep=';')
+    print(f"Dados do gráfico percentual salvos em: {caminho_csv}")
+
     plt.savefig(caminho_arquivo)
     print(f"Gráfico percentual salvo com sucesso em: {caminho_arquivo}")
 
@@ -96,6 +169,16 @@ def gerar_grafico_evolucao(df: pd.DataFrame, ativo: str):
 
     # Salva o gráfico em um arquivo
     caminho_arquivo = os.path.join(pasta_graficos, f'evolucao_{ativo}.png')
+
+    # Adiciona os rótulos de valor em cada ponto
+    for index, row in df_grafico.iterrows():
+        plt.text(row['date'], row['vlr_mercado'], f' R${row["vlr_mercado"]:.2f}', va='bottom', ha='left', fontsize=9)
+
+    # Salva os dados em um arquivo CSV (formato para Excel brasileiro)
+    caminho_csv = os.path.join(pasta_graficos, f'evolucao_{ativo}.csv')
+    df_grafico[['date', 'vlr_mercado']].to_csv(caminho_csv, index=False, decimal=',', sep=';')
+    print(f"Dados do gráfico de evolução salvos em: {caminho_csv}")
+
     plt.savefig(caminho_arquivo)
     print(f"\nGráfico salvo com sucesso em: {caminho_arquivo}")
 
@@ -148,12 +231,20 @@ def buscar_historico(token: str, ativo: str = None, classe: str = None, corretor
         print("Erro ao processar a resposta da API. Não é um JSON válido.")
         return None
 
-# --- Exemplo de uso da função ---
-# Busca o histórico do ativo 'KLBN11'
-df_historico = buscar_historico(token, ativo="KLBN11")
+def main():
+    """
+    Função principal que orquestra a execução do script.
+    """
+    # Busca o histórico do ativo 'KLBN11'
+    df_historico = buscar_historico(token, ativo="KLBN11")
 
-if df_historico is not None:
-    print("Dados capturados com sucesso! Exibindo as 5 primeiras linhas:")
-    print(df_historico.head())
-    gerar_grafico_evolucao(df_historico, ativo="KLBN11")
-    gerar_grafico_percentual(df_historico, ativo="KLBN11")
+    if df_historico is not None:
+        print("Dados capturados com sucesso! Exibindo as 5 primeiras linhas:")
+        print(df_historico.head())
+        gerar_grafico_evolucao(df_historico, ativo="KLBN11")
+        gerar_grafico_percentual(df_historico, ativo="KLBN11")
+        gerar_grafico_twr(df_historico, ativo="KLBN11")
+
+# Garante que a função main() só seja executada quando o script for rodado diretamente
+if __name__ == "__main__":
+    main()
