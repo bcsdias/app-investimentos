@@ -274,7 +274,7 @@ def buscar_dados_benchmark(ticker: str, start_date: str, end_date: str) -> pd.Se
     """
     try:
         print(f"Buscando dados para o benchmark: {ticker}...")
-        dados = yf.download(ticker, start=start_date, end=end_date, progress=False)
+        dados = yf.download(ticker, start=start_date, end=end_date, progress=False, auto_adjust=True)
         if dados.empty:
             print(f"Nenhum dado encontrado para o benchmark {ticker} no período especificado.")
             return None
@@ -344,8 +344,8 @@ def main():
             # Define os benchmarks para comparação
             benchmarks = {
                 'IBOV': '^BVSP',
-                'S&P 500': 'SPY',
-                'IMID': 'IMID.L'
+                'S&P 500': 'SPY', # ETF que replica o S&P 500
+                'IMID': 'IMID.L' # SPDR MSCI All Country World Investable Market UCITS ETF
             }
             
             # Define o período para a busca dos benchmarks
