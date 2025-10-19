@@ -38,27 +38,37 @@ def gerar_grafico_twr(df: pd.DataFrame, ativo: str):
     df_twr = df_twr.sort_values(by='date').reset_index(drop=True)
 
     # 2. Calcular o fluxo de caixa (aportes/retiradas) em cada período
-    # O .diff() calcula a diferença entre a linha atual e a anterior.
-    df_twr['cash_flow'] = df_twr['vlr_investido'].diff().fillna(df_twr['vlr_investido'].iloc[0])
+    # Renomeando para 'fluxo_mes' para corresponder à plataforma web.
+    df_twr['fluxo_mes'] = df_twr['vlr_investido'].diff().fillna(df_twr['vlr_investido'].iloc[0])
 
-    # 3. Calcular o valor inicial de cada período (valor do fim do período anterior)
-    # O .shift(1) move os valores uma linha para baixo.
+    # 3. Calcular valores do período anterior e fluxos acumulados
+    # O .shift(1) "puxa" o valor da linha anterior.
     df_twr['valor_inicial_periodo'] = df_twr['vlr_mercado'].shift(1).fillna(0)
+    df_twr['fluxo_acc'] = df_twr['fluxo_mes'].cumsum()
 
     # 4. Calcular o Retorno do Período (Holding Period Return - HPR)
-    # HPR = Valor Final / (Valor Inicial + Fluxo de Caixa)
-    # Usamos (valor_inicial_periodo + cash_flow) como denominador. Se for zero, o retorno é 1 (0%).
-    denominador = df_twr['valor_inicial_periodo'] + df_twr['cash_flow']
-    df_twr['hpr'] = df_twr['vlr_mercado'] / denominador
-    df_twr['hpr'] = df_twr['hpr'].fillna(1.0) # Trata possíveis divisões por zero no início
+    # HPR = (Valor Final de Mercado) / (Valor Inicial de Mercado + Fluxo de Caixa do Período)
+    # O denominador é o valor de mercado do mês anterior somado ao dinheiro que entrou/saiu neste mês.
+    denominador = df_twr['valor_inicial_periodo'] + df_twr['fluxo_mes']
+    
+    # Evita divisão por zero. Se o denominador for 0, o retorno do período é 0.
+    # O HPR é o fator de multiplicação (ex: 1.05 para 5% de ganho).
+    df_twr['hpr'] = 1.0 # Inicia com 1 (sem ganho/perda)
+    df_twr.loc[denominador != 0, 'hpr'] = df_twr['vlr_mercado'] / denominador
 
     # 5. Calcular o TWR acumulado
+    # twr_mes é o retorno do período (HPR - 1)
+    df_twr['twr_mes'] = df_twr['hpr'] - 1
     # O .cumprod() multiplica acumuladamente os valores da série.
-    df_twr['twr_acumulado_%'] = (df_twr['hpr'].cumprod() - 1) * 100
+    df_twr['twr_acc'] = (df_twr['hpr'].cumprod() - 1)
+
+    # 5.1 Calcular o lucro do mês
+    df_twr['lucro_mes'] = df_twr['vlr_mercado'] - df_twr['valor_inicial_periodo'] - df_twr['fluxo_mes']
 
     # 6. Gerar o gráfico
     plt.figure(figsize=(12, 7))
-    plt.plot(df_twr['date'], df_twr['twr_acumulado_%'], marker='o', linestyle='-', color='darkorange')
+    # Multiplicamos por 100 apenas para a exibição no gráfico
+    plt.plot(df_twr['date'], df_twr['twr_acc'] * 100, marker='o', linestyle='-', color='darkorange')
     plt.title(f'Rentabilidade (TWR Acumulado) - {ativo}', fontsize=16)
     plt.ylabel('Rentabilidade Acumulada (%)', fontsize=12)
     plt.gca().yaxis.set_major_formatter(mticker.PercentFormatter())
@@ -68,11 +78,24 @@ def gerar_grafico_twr(df: pd.DataFrame, ativo: str):
 
     # Adiciona os rótulos de valor em cada ponto
     for index, row in df_twr.iterrows():
-        plt.text(row['date'], row['twr_acumulado_%'], f' {row["twr_acumulado_%"]:.2f}%', va='bottom', ha='left', fontsize=9)
+        plt.text(row['date'], row['twr_acc'] * 100, f' {row["twr_acc"]*100:.2f}%', va='bottom', ha='left', fontsize=9)
 
     # Salva os dados em um arquivo CSV (formato para Excel brasileiro)
     caminho_csv = os.path.join(pasta_graficos, f'evolucao_twr_{ativo}.csv')
-    df_twr[['date', 'twr_acumulado_%']].to_csv(caminho_csv, index=False, decimal=',', sep=';')
+    
+    # Seleciona e renomeia as colunas para o formato desejado
+    colunas_csv = [
+        'date', 'vlr_investido', 'vlr_mercado', 'fluxo_mes', 
+        'fluxo_acc', 'lucro_mes', 'twr_mes', 'twr_acc'
+    ]
+    df_csv = df_twr[colunas_csv].copy()
+
+    # Formata a data para DD/MM/AAAA
+    df_csv['date'] = df_csv['date'].dt.strftime('%d/%m/%Y')
+
+    # Salva o CSV com separador de ponto e vírgula e decimal com vírgula
+    df_csv.to_csv(caminho_csv, index=False, sep=';', decimal=',')
+
     print(f"Dados do gráfico de TWR salvos em: {caminho_csv}")
 
     plt.savefig(caminho_arquivo)
@@ -242,7 +265,7 @@ def main():
         print("Dados capturados com sucesso! Exibindo as 5 primeiras linhas:")
         print(df_historico.head())
         gerar_grafico_evolucao(df_historico, ativo="KLBN11")
-        gerar_grafico_percentual(df_historico, ativo="KLBN11")
+        # A função gerar_grafico_percentual() foi removida para focar no TWR
         gerar_grafico_twr(df_historico, ativo="KLBN11")
 
 # Garante que a função main() só seja executada quando o script for rodado diretamente
