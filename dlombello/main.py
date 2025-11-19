@@ -730,16 +730,35 @@ def gerar_grafico_comparativo_twr(df_twr: pd.DataFrame, benchmarks_data: dict, n
         # Colorir a célula do rótulo da linha com a cor da linha do gráfico, quando disponível
         try:
             celld = tabela.get_celld()
+
+            def _find_color_for(name):
+                # tentativa exata
+                if name in color_map:
+                    return color_map[name]
+                # normaliza e tenta novamente
+                name_norm = name.strip().lower()
+                for k, v in color_map.items():
+                    if k.strip().lower() == name_norm:
+                        return v
+                # tentativa por prefixo/sufixo
+                for k, v in color_map.items():
+                    kn = k.strip().lower()
+                    if name_norm.startswith(kn) or kn.startswith(name_norm):
+                        return v
+                return None
+
             for (r, c), cell in celld.items():
-                # Em matplotlib o índice de coluna das rowLabels costuma ser -1
-                if c == -1 and 0 <= r < len(row_labels):
-                    nome_linha = row_labels[r]
-                    cor = color_map.get(nome_linha)
-                    if cor:
-                        cell.get_text().set_color(cor)
-                        cell.get_text().set_weight('bold')
-        except Exception:
-            logger.debug('Não foi possível colorir os rótulos das linhas na tabela.')
+                # coluna dos rótulos de linha no objeto table costuma ser -1
+                if c == -1:
+                    # nas células da tabela o header ocupa row 0, dados começam em row 1
+                    if 1 <= r <= len(row_labels):
+                        nome_linha = row_labels[r-1]
+                        cor = _find_color_for(nome_linha)
+                        if cor:
+                            cell.get_text().set_color(cor)
+                            cell.get_text().set_weight('bold')
+        except Exception as e:
+            logger.debug(f'Não foi possível colorir os rótulos das linhas na tabela: {e}')
 
         # Ajusta o layout para dar espaço para a tabela
         fig.subplots_adjust(bottom=0.3)
