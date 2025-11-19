@@ -8,6 +8,7 @@ from requests.exceptions import RequestException
 import matplotlib.ticker as mticker
 import matplotlib.pyplot as plt
 import yfinance as yf
+from bcb import sgs
 
 # Define o diretório raiz do projeto 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -319,6 +320,44 @@ def buscar_dados_benchmark(ticker: str, start_date: str, end_date: str, logger) 
         logger.error(f"Erro ao buscar dados do benchmark {ticker}: {e}")
         return None
 
+def buscar_dados_bcb(codigo_bcb: int, start_date: str, end_date: str, logger) -> pd.Series | None:
+    """
+    Busca uma série temporal do Banco Central do Brasil (BCB) e calcula o retorno acumulado.
+
+    Args:
+        codigo_bcb (int): O código da série no sistema SGS do BCB.
+        start_date (str): Data de início no formato 'YYYY-MM-DD'.
+        end_date (str): Data de fim no formato 'YYYY-MM-DD'.
+
+    Returns:
+        pd.Series | None: Uma série com o índice de retorno acumulado ou None em caso de erro.
+    """
+    try:
+        logger.info(f"Buscando dados da série {codigo_bcb} do BCB...")
+        # O nome da coluna será o próprio código
+        df = sgs.get({str(codigo_bcb): codigo_bcb}, start=start_date, end=end_date)
+        if df.empty:
+            logger.warning(f"Nenhum dado encontrado para a série {codigo_bcb} do BCB no período.")
+            return None
+
+        # A API retorna a taxa em % ao dia ou ao mês.
+        # Precisamos converter para um fator de retorno e calcular o produto acumulado.
+        # Ex: 0.05% -> 1.0005
+        retorno_fator = (df[str(codigo_bcb)] / 100) + 1
+
+        # Calcula o retorno acumulado (índice)
+        retorno_acumulado = retorno_fator.cumprod()
+
+        # A primeira data pode ter um valor NaN se não houver dados anteriores, preenche com 1
+        retorno_acumulado = retorno_acumulado.fillna(1)
+
+        # Renomeia o índice para 'Date' para consistência
+        retorno_acumulado.index.name = 'Date'
+
+        return retorno_acumulado
+    except Exception as e:
+        logger.error(f"Erro ao buscar dados da série {codigo_bcb} do BCB: {e}")
+        return None
 
 def gerar_grafico_comparativo_twr(df_twr: pd.DataFrame, benchmarks_data: dict, nome_grafico: str, logger):
     """
@@ -439,11 +478,17 @@ def main():
 
         if df_twr is not None:
             # Define os benchmarks para comparação
-            benchmarks = {
+            benchmarks_yf = {
                 'IBOV': '^BVSP',
                 'S&P 500': 'SPY', # ETF que replica o S&P 500
-                'IFIX': 'IFIX.SA', # Índice de Fundos Imobiliários
                 'IMID': 'IMID.L' # SPDR MSCI All Country World Investable Market UCITS ETF
+            }
+            # Códigos das séries no SGS do Banco Central
+            # 11: Taxa SELIC diária
+            # 433: IPCA mensal
+            benchmarks_bcb = {
+                'SELIC': 11,
+                'IPCA': 433
             }
             
             # Define o período para a busca dos benchmarks
@@ -451,10 +496,31 @@ def main():
             end_date = df_twr['date'].max().strftime('%Y-%m-%d')
             logger.info(f"Período da análise: {start_date} a {end_date}")
 
-            # Busca os dados dos benchmarks
-            benchmarks_data = {nome: buscar_dados_benchmark(ticker, start_date, end_date, logger) for nome, ticker in benchmarks.items()}
+            benchmarks_data = {}
+
+            # 1. Busca os dados dos benchmarks do Yahoo Finance
+            for nome, ticker in benchmarks_yf.items():
+                benchmarks_data[nome] = buscar_dados_benchmark(ticker, start_date, end_date, logger)
+
+            # 2. Busca os dados dos benchmarks do Banco Central
+            for nome, codigo in benchmarks_bcb.items():
+                benchmarks_data[nome] = buscar_dados_bcb(codigo, start_date, end_date, logger)
+
+            # 3. Calcula o benchmark sintético "IPCA + 6%"
+            if 'IPCA' in benchmarks_data and benchmarks_data['IPCA'] is not None:
+                logger.info("Calculando benchmark sintético 'IPCA + 6%'...")
+                # Converte a taxa anual de 6% para uma taxa mensal equivalente
+                taxa_real_mensal = (1.06 ** (1/12)) - 1
+                
+                # Cria um fator de crescimento mensal constante
+                fator_crescimento_real = pd.Series(taxa_real_mensal + 1, index=benchmarks_data['IPCA'].index).cumprod()
+                
+                # Multiplica o índice IPCA pelo fator de crescimento real para obter o IPCA + 6%
+                ipca_mais_6 = benchmarks_data['IPCA'] * fator_crescimento_real
+                benchmarks_data['IPCA + 6%'] = ipca_mais_6
 
             gerar_grafico_comparativo_twr(df_twr, benchmarks_data, nome_grafico=nome_analise, logger=logger)
+
     else:
         logger.error(f"Não foi possível obter o histórico para a análise '{nome_analise}'. Encerrando o script.")
 
