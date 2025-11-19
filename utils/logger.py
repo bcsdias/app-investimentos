@@ -61,12 +61,12 @@ def setup_logger(hostname=None, level=None, debug=False, tipo=None, vendor=None)
     logger.propagate = False
 
     # Habilita o log de depuração do Paramiko para um arquivo separado apenas se o modo debug estiver ativo
-    if debug:
-        paramiko_log_path = os.path.join(base_log_dir, 'paramiko.log')
-        paramiko_logger = logging.getLogger("paramiko")
-        paramiko_logger.setLevel(logging.DEBUG)
-        paramiko_logger.addHandler(logging.FileHandler(paramiko_log_path))
-        logger.info("Log de depuração do Paramiko está ATIVADO (paramiko.log).")
+    # if debug:
+    #     paramiko_log_path = os.path.join(base_log_dir, 'paramiko.log')
+    #     paramiko_logger = logging.getLogger("paramiko")
+    #     paramiko_logger.setLevel(logging.DEBUG)
+    #     paramiko_logger.addHandler(logging.FileHandler(paramiko_log_path))
+    #     logger.info("Log de depuração do Paramiko está ATIVADO (paramiko.log).")
     # Configura o nível de log (agora dinâmico)
     logger.setLevel(level)
     

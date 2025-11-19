@@ -342,10 +342,29 @@ def gerar_grafico_comparativo_twr(df_twr: pd.DataFrame, benchmarks_data: dict, n
 
     # 2. Plotar cada benchmark (normalizado em base 100)
     for nome, dados_benchmark in benchmarks_data.items():
+        logger.debug(f"Processando benchmark '{nome}' para o gráfico comparativo.")
         if dados_benchmark is not None and not dados_benchmark.empty:
             # Normaliza o benchmark para começar em 100
             benchmark_normalizado = (dados_benchmark / dados_benchmark.iloc[0]) * 100
+            logger.debug(f"Dados para '{nome}' encontrados. Normalizando e plotando.")
             plt.plot(benchmark_normalizado.index, benchmark_normalizado, label=nome, linestyle='--')
+
+            # Adiciona rótulos nos pontos mensais correspondentes ao df_twr
+            # Usamos reindex para alinhar as datas diárias do benchmark com as datas mensais da carteira
+            benchmark_mensal = benchmark_normalizado.reindex(df_twr['date'], method='ffill')
+            for data, valor_ponto in benchmark_mensal.items():
+                # O valor é a performance base 100, não um percentual de ganho/perda
+                # Para exibir o ganho/perda, seria (valor - 100)
+                if pd.notna(valor_ponto):
+                    plt.text(data, valor_ponto, f' {valor_ponto-100:.1f}%', va='top', ha='center', fontsize=8, alpha=0.7)
+        else:
+            logger.debug(f"Nenhum dado válido para o benchmark '{nome}'. Não será plotado.")
+
+    # Adiciona os rótulos para a carteira por último para que fiquem por cima
+    for index, row in df_twr.iterrows():
+        valor_normalizado = (row['twr_acc'] + 1) * 100
+        plt.text(row['date'], valor_normalizado, f' {valor_normalizado-100:.1f}%', va='bottom', ha='center', fontsize=8, color='red', weight='bold')
+
 
     # 3. Customizar o gráfico
     plt.title(f'Comparativo de Rentabilidade: {nome_grafico} vs. Benchmarks', fontsize=16)
@@ -413,6 +432,7 @@ def main():
                 'IBOV': '^BVSP',
                 'S&P 500': 'SPY', # ETF que replica o S&P 500
                 'IFIX': 'IFIX.SA', # Índice de Fundos Imobiliários
+                'IMID': 'IMID.L' # SPDR MSCI All Country World Investable Market UCITS ETF
             }
             
             # Define o período para a busca dos benchmarks
@@ -429,4 +449,9 @@ def main():
 
 # Garante que a função main() só seja executada quando o script for rodado diretamente
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        # Captura qualquer exceção não tratada para garantir que seja logada.
+        setup_logger().exception("Ocorreu um erro fatal não capturado na execução principal.")
+        raise e
