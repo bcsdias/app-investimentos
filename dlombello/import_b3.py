@@ -51,8 +51,30 @@ def download_b3_index_year(driver, index, year, download_folder, folder, logger)
     os.rename(f'{download_folder}/Evolucao_Diaria.csv', destination_file)
     logger.info(f"Arquivo renomeado e movido para: {destination_file}")
 
-if __name__ == '__main__':
-    logger = setup_logger(log_file='import_b3.log')
+def run_b3_downloader(indices_anos: dict, logger):
+    """
+    Orquestra o download de múltiplos arquivos de índices da B3 para diferentes anos.
+
+    Args:
+        indices_anos (dict): Dicionário onde a chave é o índice ('IFIX') e o valor é uma lista de anos ([2023, 2024]).
+        logger: O logger configurado.
+    """
+    logger.info("Iniciando orquestrador de downloads da B3.")
+    
+    # Define os caminhos de forma dinâmica
+    project_folder = os.path.dirname(os.path.abspath(__file__))
+    download_folder = os.path.join(project_folder, 'downloads')
+    destination_folder = os.path.join(project_folder, 'dados')
+
+    # Garante que as pastas existam
+    os.makedirs(download_folder, exist_ok=True)
+    os.makedirs(destination_folder, exist_ok=True)
+
+    # Configura o Chrome para usar a pasta de download personalizada
+    chrome_options = webdriver.ChromeOptions()
+    prefs = {"download.default_directory": download_folder}
+    chrome_options.add_experimental_option("prefs", prefs)
+
     logger.info("--- Iniciando script de download de dados da B3 ---")
 
     # Define os caminhos de forma dinâmica, baseados na localização do script
@@ -77,12 +99,16 @@ if __name__ == '__main__':
     try:
         logger.info("Inicializando driver do Chrome...")
         driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
-        
-        index = 'IFIX'
-        year = 2024
-        
-        download_b3_index_year(driver, index, year, download_folder, destination_folder, logger)
-        logger.info("--- Script finalizado com sucesso! ---")
+
+        for index, years in indices_anos.items():
+            for year in years:
+                try:
+                    download_b3_index_year(driver, index, year, download_folder, destination_folder, logger)
+                except Exception as e:
+                    logger.error(f"Falha ao baixar dados para o índice '{index}' ano {year}. Erro: {e}")
+                    # Continua para o próximo ano/índice
+
+        logger.info("--- Processo de download da B3 finalizado. ---")
 
     except Exception as e:
         logger.exception("Ocorreu um erro durante a execução do script de download.")
@@ -90,3 +116,13 @@ if __name__ == '__main__':
         if driver:
             driver.quit()
             logger.info("Driver do Chrome encerrado.")
+
+if __name__ == '__main__':
+    # Bloco para execução direta do script (para testes)
+    logger = setup_logger(log_file='import_b3.log')
+    
+    # Exemplo de como chamar o orquestrador
+    indices_para_baixar = {
+        'IFIX': [2024, 2023]
+    }
+    run_b3_downloader(indices_para_baixar, logger)
