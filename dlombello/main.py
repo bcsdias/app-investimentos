@@ -351,14 +351,25 @@ def gerar_grafico_comparativo_twr(df_twr: pd.DataFrame, benchmarks_data: dict, n
 
             # Adiciona rótulos nos pontos mensais correspondentes ao df_twr
             # Usamos reindex para alinhar as datas diárias do benchmark com as datas mensais da carteira
+            logger.debug(f"Alinhando benchmark '{nome}' com as datas da carteira: {df_twr['date'].to_list()}")
             benchmark_mensal = benchmark_normalizado.reindex(df_twr['date'], method='ffill')
+            logger.debug(f"Valores mensais para '{nome}' após alinhamento:\n{benchmark_mensal.to_string()}")
+
+            # Se reindex com datas duplicadas criou um DataFrame, converte de volta para Series.
+            # A coluna terá o nome da Series original ou '0' se não tiver nome.
+            if isinstance(benchmark_mensal, pd.DataFrame):
+                # Pega a primeira (e única) coluna do DataFrame resultante.
+                benchmark_mensal = benchmark_mensal.iloc[:, 0]
+
+            # Itera sobre a Series para adicionar os rótulos.
+            # Usamos .items() que é o método moderno para iterar sobre (índice, valor).
             for data, valor_ponto in benchmark_mensal.items():
-                # O valor é a performance base 100, não um percentual de ganho/perda
-                # Para exibir o ganho/perda, seria (valor - 100)
+                # A verificação pd.notna() agora funciona corretamente com um valor escalar.
                 if pd.notna(valor_ponto):
+                    # O valor é a performance base 100. Para exibir o ganho/perda, subtraímos 100.
                     plt.text(data, valor_ponto, f' {valor_ponto-100:.1f}%', va='top', ha='center', fontsize=8, alpha=0.7)
         else:
-            logger.debug(f"Nenhum dado válido para o benchmark '{nome}'. Não será plotado.")
+            logger.warning(f"Nenhum dado válido para o benchmark '{nome}'. Não será plotado.")
 
     # Adiciona os rótulos para a carteira por último para que fiquem por cima
     for index, row in df_twr.iterrows():
