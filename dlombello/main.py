@@ -464,7 +464,8 @@ def calcular_rentabilidades_resumo(df_twr: pd.DataFrame, benchmarks_data: dict, 
     fator_carteira = df_carteira + 1
     
     # Pega o valor no final de cada ano
-    anual_carteira = fator_carteira.resample('A').last()
+    # 'A' está sendo preterido em versões recentes do pandas; usar 'YE' (year end)
+    anual_carteira = fator_carteira.resample('YE').last()
     # Calcula o retorno anual
     retornos_anuais_carteira = anual_carteira.pct_change().fillna(anual_carteira.iloc[0] - 1)
     logger.debug(f"Tipo de dados para 'Carteira': {type(retornos_anuais_carteira)}")
@@ -509,7 +510,8 @@ def calcular_rentabilidades_resumo(df_twr: pd.DataFrame, benchmarks_data: dict, 
 
         # Normaliza o benchmark como fator a partir do primeiro valor (base 1)
         fator_bench = s / s.iloc[0]
-        anual_bench = fator_bench.resample('A').last()
+        # Usar 'YE' (year end) para compatibilidade futura
+        anual_bench = fator_bench.resample('YE').last()
         # Retorno anual = pct_change; para o primeiro ano, usa o fator final do ano menos 1
         if not anual_bench.empty:
             retornos_anuais_bench = anual_bench.pct_change().fillna(anual_bench.iloc[0] - 1)
@@ -558,7 +560,8 @@ def calcular_rentabilidades_resumo(df_twr: pd.DataFrame, benchmarks_data: dict, 
     df_resumo.columns = [col.year if isinstance(col, pd.Timestamp) else str(col) for col in df_resumo.columns]
     
     # Agrupa por nomes de coluna para remover duplicatas, pegando o primeiro valor
-    df_resumo = df_resumo.groupby(level=0, axis=1).first()
+    # groupby with axis=1 is deprecated; transpose, groupby on columns, then transpose back
+    df_resumo = df_resumo.T.groupby(level=0).first().T
 
     # Garante que todas as colunas de dados sejam numéricas antes de formatar
     for col in df_resumo.columns:
