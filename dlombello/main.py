@@ -471,19 +471,54 @@ def calcular_rentabilidades_resumo(df_twr: pd.DataFrame, benchmarks_data: dict, 
     resumo_data[f'Carteira - {nome_carteira}'] = retornos_anuais_carteira
 
     # 2. Processar cada benchmark
+    def _ensure_series(dados):
+        """Garante que `dados` seja uma pd.Series com valores numéricos: seleciona
+        a primeira coluna numérica de um DataFrame ou converte iteráveis para Series."""
+        if dados is None or getattr(dados, 'empty', False):
+            return None
+        if isinstance(dados, pd.DataFrame):
+            if dados.shape[1] == 1:
+                s = dados.iloc[:, 0]
+            else:
+                numeric = dados.select_dtypes(include=[np.number])
+                if not numeric.empty:
+                    s = numeric.iloc[:, 0]
+                else:
+                    s = pd.to_numeric(dados.iloc[:, 0], errors='coerce')
+                    s = pd.Series(s.values, index=dados.index)
+        elif isinstance(dados, pd.Series):
+            s = dados
+        else:
+            try:
+                s = pd.Series(dados)
+            except Exception:
+                return None
+
+        # Converte para float e remove NaNs intermediários
+        s = pd.to_numeric(s, errors='coerce')
+        s = s.dropna()
+        if s.empty:
+            return None
+        return s
+
     for nome, dados in benchmarks_data.items():
-        if dados is not None and not dados.empty:
-            # Pega o valor no final de cada ano
-            anual_bench = dados.resample('A').last()
-            # Calcula o retorno anual
-            retornos_anuais_bench = anual_bench.pct_change().fillna(anual_bench.iloc[0] / dados.iloc[0] - 1)
-            
-            # **CORREÇÃO APLICADA AQUI**
-            # Garante que o resultado seja sempre uma Series, mesmo que a entrada fosse um DataFrame de uma coluna.
-            if isinstance(retornos_anuais_bench, pd.DataFrame):
-                retornos_anuais_bench = retornos_anuais_bench.iloc[:, 0]
-            logger.debug(f"Tipo de dados para o benchmark '{nome}': {type(retornos_anuais_bench)}")
-            resumo_data[nome] = retornos_anuais_bench
+        s = _ensure_series(dados)
+        if s is None:
+            logger.debug(f"Benchmark '{nome}' vazio ou inválido para cálculo anual.")
+            continue
+
+        # Pega o valor no final de cada ano e calcula o retorno anual
+        anual_bench = s.resample('A').last()
+        retornos_anuais_bench = anual_bench.pct_change()
+        if not anual_bench.empty:
+            retornos_anuais_bench.iloc[0] = anual_bench.iloc[0] - 1
+
+        # Se for DataFrame resultante (caso raro), reduz para Series
+        if isinstance(retornos_anuais_bench, pd.DataFrame):
+            retornos_anuais_bench = retornos_anuais_bench.iloc[:, 0]
+
+        logger.debug(f"Tipo de dados para o benchmark '{nome}': {type(retornos_anuais_bench) if 'retornos_anuis_bench' in locals() else type(retornos_anuais_bench)}")
+        resumo_data[nome] = retornos_anuais_bench if 'retornos_anuis_bench' in locals() else retornos_anuais_bench
 
     if not resumo_data:
         return None
@@ -493,12 +528,24 @@ def calcular_rentabilidades_resumo(df_twr: pd.DataFrame, benchmarks_data: dict, 
     
     # 4. Calcular a rentabilidade total acumulada
     rentabilidades_totais = {}
-    # Calcula para a carteira
-    rentabilidades_totais[f'Carteira - {nome_carteira}'] = fator_carteira.iloc[-1] - 1
-    # Calcula para cada benchmark
+    # Calcula para a carteira (garante float)
+    try:
+        rentabilidades_totais[f'Carteira - {nome_carteira}'] = float(fator_carteira.iloc[-1] - 1)
+    except Exception:
+        rentabilidades_totais[f'Carteira - {nome_carteira}'] = np.nan
+
+    # Calcula para cada benchmark usando _ensure_series
     for nome, dados in benchmarks_data.items():
-        if dados is not None and not dados.empty:
-            rentabilidades_totais[nome] = (dados.iloc[-1] / dados.iloc[0]) - 1
+        s = _ensure_series(dados)
+        if s is None:
+            rentabilidades_totais[nome] = np.nan
+        else:
+            try:
+                rentabilidades_totais[nome] = float((s.iloc[-1] / s.iloc[0]) - 1)
+            except Exception:
+                rentabilidades_totais[nome] = np.nan
+
+    logger.debug(f"Rentabilidades totais calculadas: {rentabilidades_totais}")
 
     # Adiciona a coluna 'Total' ao DataFrame mapeando os valores pelo índice
     df_resumo['Total'] = df_resumo.index.map(rentabilidades_totais)
@@ -526,7 +573,7 @@ def calcular_rentabilidades_resumo(df_twr: pd.DataFrame, benchmarks_data: dict, 
 def gerar_grafico_comparativo_twr(df_twr: pd.DataFrame, benchmarks_data: dict, nome_grafico: str, logger):
     """
     Gera um gráfico comparando o TWR da carteira com outros benchmarks.
-
+                logger.debug(f"Tipo de dados para o benchmark '{nome}': {type(retornos_anuais_bench)}")
     Args:
         df_twr (pd.DataFrame): DataFrame com a coluna 'twr_acc' e 'date'.
         benchmarks_data (dict): Dicionário onde a chave é o nome do benchmark (ex: 'IBOV')
