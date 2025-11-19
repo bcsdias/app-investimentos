@@ -4,6 +4,7 @@ import sys
 import argparse
 from dotenv import load_dotenv
 import pandas as pd
+import numpy as np
 from requests.exceptions import RequestException
 import matplotlib.ticker as mticker
 import matplotlib.pyplot as plt
@@ -376,14 +377,26 @@ def buscar_dados_b3(indice: str, start_date: str, end_date: str, logger) -> pd.S
     ano_fim = pd.to_datetime(end_date).year
     anos_necessarios = list(range(ano_inicio, ano_fim + 1))
     logger.debug(f"Anos necessários para a análise de '{indice}': {anos_necessarios}")
-
-    # 2. Chamar o downloader do import_b3.py
-    indices_para_baixar = {indice: anos_necessarios}
-    run_b3_downloader(indices_para_baixar, logger)
     
-    # 3. Ler, processar e consolidar os arquivos CSV baixados
-    dados_completos = pd.DataFrame()
+    # 2. Verificar quais arquivos já existem e quais precisam ser baixados
     pasta_dados = os.path.join(os.path.dirname(__file__), 'dados')
+    anos_para_baixar = []
+    for ano in anos_necessarios:
+        caminho_arquivo = os.path.join(pasta_dados, f'{indice}-{ano}.csv')
+        if not os.path.exists(caminho_arquivo):
+            anos_para_baixar.append(ano)
+    
+    # 3. Chamar o downloader apenas se houver arquivos faltando
+    if anos_para_baixar:
+        logger.info(f"Arquivos não encontrados para os anos: {anos_para_baixar}. Iniciando download...")
+        indices_para_baixar = {indice: anos_para_baixar}
+        run_b3_downloader(indices_para_baixar, logger)
+    else:
+        logger.info(f"Todos os arquivos necessários para o índice '{indice}' já existem localmente. Download pulado.")
+
+    
+    # 4. Ler, processar e consolidar todos os arquivos CSV necessários (existentes + baixados)
+    dados_completos = pd.DataFrame()
 
     mapa_meses = {
         'Jan': 1, 'Fev': 2, 'Mar': 3, 'Abr': 4, 'Mai': 5, 'Jun': 6,
@@ -434,6 +447,100 @@ def buscar_dados_b3(indice: str, start_date: str, end_date: str, logger) -> pd.S
     logger.info(f"Dados do índice '{indice}' da B3 processados com sucesso.")
     return serie_final
 
+def calcular_rentabilidades_resumo(df_twr: pd.DataFrame, benchmarks_data: dict, nome_carteira: str, logger) -> pd.DataFrame | None:
+    """
+    Calcula a rentabilidade anual e total para a carteira e benchmarks.
+
+    Returns:
+        pd.DataFrame: DataFrame formatado com as rentabilidades para a tabela.
+    """
+    logger.debug("Iniciando cálculo de rentabilidades para a tabela de resumo.")
+    resumo_data = {}
+
+    # 1. Processar a carteira
+    df_carteira = df_twr.set_index('date')['twr_acc']
+    
+    # Adiciona 1 para ter o fator de crescimento
+    fator_carteira = df_carteira + 1
+    
+    # Pega o valor no final de cada ano
+    anual_carteira = fator_carteira.resample('A').last()
+    # Calcula o retorno anual
+    retornos_anuais_carteira = anual_carteira.pct_change().fillna(anual_carteira.iloc[0] - 1)
+    logger.debug(f"Tipo de dados para 'Carteira': {type(retornos_anuais_carteira)}")
+    resumo_data[f'Carteira - {nome_carteira}'] = retornos_anuais_carteira
+
+    # 2. Processar cada benchmark
+    for nome, dados in benchmarks_data.items():
+        if dados is not None and not dados.empty:
+            # Pega o valor no final de cada ano
+            anual_bench = dados.resample('A').last()
+            # Calcula o retorno anual
+            retornos_anuais_bench = anual_bench.pct_change().fillna(anual_bench.iloc[0] / dados.iloc[0] - 1)
+            
+            # **CORREÇÃO APLICADA AQUI**
+            # Garante que o resultado seja sempre uma Series, mesmo que a entrada fosse um DataFrame de uma coluna.
+            if isinstance(retornos_anuais_bench, pd.DataFrame):
+                retornos_anuais_bench = retornos_anuais_bench.iloc[:, 0]
+            logger.debug(f"Tipo de dados para o benchmark '{nome}': {type(retornos_anuais_bench)}")
+            resumo_data[nome] = retornos_anuais_bench
+
+    if not resumo_data:
+        return None
+
+    # 3. Montar o DataFrame final
+    df_resumo = pd.DataFrame(resumo_data).T # Transpõe para ter os anos como colunas
+    
+    # 4. Calcular a rentabilidade total acumulada
+    rentabilidades_totais = {}
+    # Calcula para a carteira
+    rentabilidades_totais[f'Carteira - {nome_carteira}'] = fator_carteira.iloc[-1] - 1
+    # Calcula para cada benchmark
+    for nome, dados in benchmarks_data.items():
+        if dados is not None and not dados.empty:
+            rentabilidades_totais[nome] = (dados.iloc[-1] / dados.iloc[0]) - 1
+
+    # Adiciona a coluna 'Total' ao DataFrame mapeando os valores pelo índice
+    df_resumo['Total'] = df_resumo.index.map(rentabilidades_totais)
+    
+    # 5. Formatar o DataFrame para exibição
+    # Renomeia as colunas para apenas o ano
+    df_resumo.columns = [col.year if isinstance(col, pd.Timestamp) else str(col) for col in df_resumo.columns]
+    
+    # Agrupa por nomes de coluna para remover duplicatas, pegando o primeiro valor
+    df_resumo = df_resumo.groupby(level=0, axis=1).first()
+
+    # Usa uma função robusta para formatar cada célula do DataFrame como porcentagem
+    def format_val(x):
+        try:
+            # Caso escalar nulo
+            if pd.isna(x):
+                return '-'
+
+            # Se for DataFrame, tenta reduzir para Series quando possível
+            if isinstance(x, pd.DataFrame):
+                if x.shape[1] == 1:
+                    x = x.iloc[:, 0]
+                else:
+                    return str(x)
+
+            # Se for Series/array-like, formata cada elemento e junta com vírgula
+            if isinstance(x, (pd.Series, list, tuple, np.ndarray)):
+                seq = list(x) if hasattr(x, '__iter__') and not isinstance(x, (str, bytes)) else [x]
+                formatted = ', '.join(f'{float(v):.1%}' if pd.notna(v) else '-' for v in seq)
+                return formatted
+
+            # Valor escalar numérico
+            return f'{float(x):.1%}'
+        except Exception:
+            # Fallback para qualquer valor inesperado
+            return str(x)
+
+    df_resumo = df_resumo.applymap(format_val)
+    
+    return df_resumo
+
+
 def gerar_grafico_comparativo_twr(df_twr: pd.DataFrame, benchmarks_data: dict, nome_grafico: str, logger):
     """
     Gera um gráfico comparando o TWR da carteira com outros benchmarks.
@@ -452,7 +559,7 @@ def gerar_grafico_comparativo_twr(df_twr: pd.DataFrame, benchmarks_data: dict, n
     # Use 1 para exibir todos, 6 para exibir a cada semestre, 12 para anual, etc.
     intervalo_meses_rotulo = 6
 
-    plt.figure(figsize=(14, 8))
+    fig, ax = plt.subplots(figsize=(15, 10))
 
     # Lista para armazenar todos os objetos de texto que serão ajustados
     text_labels = []
@@ -460,7 +567,7 @@ def gerar_grafico_comparativo_twr(df_twr: pd.DataFrame, benchmarks_data: dict, n
     # 1. Plotar o TWR da carteira (normalizado em base 100)
     # (twr_acc + 1) transforma o percentual de retorno em um fator de crescimento
     carteira_normalizada = (df_twr['twr_acc'] + 1) * 100
-    plt.plot(df_twr['date'], carteira_normalizada, label=f'Carteira - {nome_grafico}', color='red', linewidth=2.5)
+    ax.plot(df_twr['date'], carteira_normalizada, label=f'Carteira - {nome_grafico}', color='red', linewidth=2.5)
 
     # 2. Plotar cada benchmark (normalizado em base 100)
     for nome, dados_benchmark in benchmarks_data.items():
@@ -469,7 +576,7 @@ def gerar_grafico_comparativo_twr(df_twr: pd.DataFrame, benchmarks_data: dict, n
             # Normaliza o benchmark para começar em 100
             benchmark_normalizado = (dados_benchmark / dados_benchmark.iloc[0]) * 100
             logger.debug(f"Dados para '{nome}' encontrados. Normalizando e plotando.")
-            plt.plot(benchmark_normalizado.index, benchmark_normalizado, label=nome, linestyle='--')
+            ax.plot(benchmark_normalizado.index, benchmark_normalizado, label=nome, linestyle='--')
 
             # Adiciona rótulos nos pontos mensais correspondentes ao df_twr
             # Usamos reindex para alinhar as datas diárias do benchmark com as datas mensais da carteira
@@ -491,7 +598,7 @@ def gerar_grafico_comparativo_twr(df_twr: pd.DataFrame, benchmarks_data: dict, n
                 # Adiciona o rótulo apenas para o primeiro ponto (i==0) e a cada 6 meses.
                 if pd.notna(valor_ponto) and (i % intervalo_meses_rotulo == 0 or i == 0):
                     # Cria o objeto de texto e o adiciona à lista para ajuste posterior
-                    label = plt.text(data, valor_ponto, f' {valor_ponto-100:.1f}%', va='top', ha='center', fontsize=8, alpha=0.7)
+                    label = ax.text(data, valor_ponto, f' {valor_ponto-100:.1f}%', va='top', ha='center', fontsize=8, alpha=0.7)
                     text_labels.append(label)
         else:
             logger.warning(f"Nenhum dado válido para o benchmark '{nome}'. Não será plotado.")
@@ -503,26 +610,43 @@ def gerar_grafico_comparativo_twr(df_twr: pd.DataFrame, benchmarks_data: dict, n
         if index % intervalo_meses_rotulo == 0 or index == 0:
             valor_normalizado = (row['twr_acc'] + 1) * 100
             # Cria o objeto de texto e o adiciona à lista
-            label = plt.text(row['date'], valor_normalizado, f' {valor_normalizado-100:.1f}%', va='bottom', ha='center', fontsize=8, color='red', weight='bold')
+            label = ax.text(row['date'], valor_normalizado, f' {valor_normalizado-100:.1f}%', va='bottom', ha='center', fontsize=8, color='red', weight='bold')
             text_labels.append(label)
 
 
     # 3. Customizar o gráfico
-    plt.title(f'Comparativo de Rentabilidade: {nome_grafico} vs. Benchmarks', fontsize=16)
-    plt.ylabel('Performance (Base 100)', fontsize=12)
-    plt.xlabel('Data', fontsize=12)
-    plt.legend(fontsize=10)
-    plt.grid(True, which='both', linestyle='--', linewidth=0.5)
-    plt.tight_layout()
-    plt.gcf().autofmt_xdate()
+    ax.set_title(f'Comparativo de Rentabilidade: {nome_grafico} vs. Benchmarks', fontsize=16)
+    ax.set_ylabel('Performance (Base 100)', fontsize=12)
+    ax.set_xlabel('Data', fontsize=12)
+    ax.legend(fontsize=10, loc='upper left')
+    ax.grid(True, which='both', linestyle='--', linewidth=0.5)
+    fig.autofmt_xdate()
 
     # 4. Ajustar a posição dos rótulos para evitar sobreposição
     # A função adjust_text irá reposicionar os textos da lista 'text_labels'
     adjust_text(text_labels, arrowprops=dict(arrowstyle='-', color='gray', lw=0.5))
 
-    # 4. Salvar o gráfico
+    # 5. Adicionar a tabela de resumo de rentabilidade
+    df_resumo = calcular_rentabilidades_resumo(df_twr, benchmarks_data, nome_grafico, logger)
+    if df_resumo is not None:
+        # Prepara os dados para a função table
+        cell_text = df_resumo.values
+        row_labels = df_resumo.index
+        col_labels = df_resumo.columns
+
+        # Adiciona a tabela na parte de baixo do gráfico
+        tabela = ax.table(cellText=cell_text, rowLabels=row_labels, colLabels=col_labels,
+                          loc='bottom', cellLoc='center', bbox=[0, -0.4, 1, 0.3])
+        tabela.auto_set_font_size(False)
+        tabela.set_fontsize(10)
+        tabela.scale(1, 1.5) # Ajusta a altura das células
+
+        # Ajusta o layout para dar espaço para a tabela
+        fig.subplots_adjust(bottom=0.3)
+
+    # 6. Salvar o gráfico
     caminho_arquivo = os.path.join(pasta_graficos, f'comparativo_twr_{nome_grafico}.png')
-    plt.savefig(caminho_arquivo)
+    plt.savefig(caminho_arquivo, bbox_inches='tight')
     logger.info(f"Gráfico comparativo de TWR salvo com sucesso em: {caminho_arquivo}")
 
 

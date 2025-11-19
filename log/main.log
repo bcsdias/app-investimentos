@@ -530,3 +530,742 @@ Symbols not available. Dumping unresolved backtrace:
 2025-11-19 16:53:48,146 - INFO - Buscando dados da série 433 do BCB...
 2025-11-19 16:53:48,739 - INFO - Calculando benchmark sintético 'IPCA + 6%'...
 2025-11-19 16:53:52,903 - INFO - Gráfico comparativo de TWR salvo com sucesso em: dlombello/graficos\comparativo_twr_AÇÃO.png
+2025-11-19 16:59:21,810 - INFO - 
+
+==================== NOVA ANÁLISE ====================
+2025-11-19 16:59:21,810 - INFO - Buscando histórico na API com os parâmetros: {'classe': 'AÇÃO'}
+2025-11-19 16:59:23,645 - INFO - Dados capturados com sucesso!
+2025-11-19 16:59:23,670 - INFO - Histórico completo salvo em: dlombello/graficos\historico_completo_AÇÃO.csv
+2025-11-19 16:59:23,670 - INFO - Gerando gráficos...
+2025-11-19 16:59:24,500 - INFO - Dados do gráfico de evolução salvos em: dlombello/graficos\evolucao_AÇÃO.csv
+2025-11-19 16:59:25,956 - INFO - Gráfico de evolução salvo com sucesso em: dlombello/graficos\evolucao_AÇÃO.png
+2025-11-19 16:59:25,956 - INFO - Iniciando cálculo de TWR...
+2025-11-19 16:59:26,134 - INFO - Dados do gráfico de TWR salvos em: dlombello/graficos\evolucao_twr_AÇÃO.csv
+2025-11-19 16:59:26,286 - INFO - Gráfico de TWR salvo com sucesso em: dlombello/graficos\evolucao_twr_AÇÃO.png
+2025-11-19 16:59:26,302 - INFO - Período da análise: 2019-04-30 a 2025-10-31
+2025-11-19 16:59:26,302 - INFO - Buscando dados para o benchmark: ^BVSP...
+2025-11-19 16:59:27,326 - INFO - Buscando dados para o benchmark: SPY...
+2025-11-19 16:59:27,783 - INFO - Buscando dados para o benchmark: IMID.L...
+2025-11-19 16:59:28,190 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IFIX'.
+2025-11-19 16:59:28,190 - INFO - Iniciando orquestrador de downloads da B3.
+2025-11-19 16:59:28,190 - INFO - --- Iniciando script de download de dados da B3 ---
+2025-11-19 16:59:28,190 - INFO - Pastas de trabalho verificadas/criadas com sucesso.
+2025-11-19 16:59:28,190 - INFO - Inicializando driver do Chrome...
+2025-11-19 16:59:33,397 - INFO - Iniciando download para o índice 'IFIX', ano 2019.
+2025-11-19 16:59:35,092 - INFO - Botão de download clicado. Aguardando o arquivo...
+2025-11-19 16:59:35,905 - INFO - Arquivo 'Evolucao_Diaria.csv' encontrado na pasta de downloads.
+2025-11-19 16:59:35,911 - WARNING - Arquivo de destino existente 'C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IFIX-2019.csv' foi removido para ser substituído.
+2025-11-19 16:59:35,921 - INFO - Arquivo renomeado e movido para: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IFIX-2019.csv
+2025-11-19 16:59:35,924 - INFO - Iniciando download para o índice 'IFIX', ano 2020.
+2025-11-19 16:59:37,073 - INFO - Botão de download clicado. Aguardando o arquivo...
+2025-11-19 16:59:37,579 - INFO - Arquivo 'Evolucao_Diaria.csv' encontrado na pasta de downloads.
+2025-11-19 16:59:37,584 - WARNING - Arquivo de destino existente 'C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IFIX-2020.csv' foi removido para ser substituído.
+2025-11-19 16:59:37,605 - INFO - Arquivo renomeado e movido para: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IFIX-2020.csv
+2025-11-19 16:59:37,607 - INFO - Iniciando download para o índice 'IFIX', ano 2021.
+2025-11-19 16:59:38,696 - INFO - Botão de download clicado. Aguardando o arquivo...
+2025-11-19 16:59:39,203 - INFO - Arquivo 'Evolucao_Diaria.csv' encontrado na pasta de downloads.
+2025-11-19 16:59:39,205 - WARNING - Arquivo de destino existente 'C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IFIX-2021.csv' foi removido para ser substituído.
+2025-11-19 16:59:39,222 - INFO - Arquivo renomeado e movido para: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IFIX-2021.csv
+2025-11-19 16:59:39,223 - INFO - Iniciando download para o índice 'IFIX', ano 2022.
+2025-11-19 16:59:40,353 - INFO - Botão de download clicado. Aguardando o arquivo...
+2025-11-19 16:59:40,858 - INFO - Arquivo 'Evolucao_Diaria.csv' encontrado na pasta de downloads.
+2025-11-19 16:59:40,861 - WARNING - Arquivo de destino existente 'C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IFIX-2022.csv' foi removido para ser substituído.
+2025-11-19 16:59:40,864 - INFO - Arquivo renomeado e movido para: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IFIX-2022.csv
+2025-11-19 16:59:40,865 - INFO - Iniciando download para o índice 'IFIX', ano 2023.
+2025-11-19 16:59:42,057 - INFO - Botão de download clicado. Aguardando o arquivo...
+2025-11-19 16:59:42,566 - INFO - Arquivo 'Evolucao_Diaria.csv' encontrado na pasta de downloads.
+2025-11-19 16:59:42,566 - WARNING - Arquivo de destino existente 'C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IFIX-2023.csv' foi removido para ser substituído.
+2025-11-19 16:59:42,571 - INFO - Arquivo renomeado e movido para: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IFIX-2023.csv
+2025-11-19 16:59:42,572 - INFO - Iniciando download para o índice 'IFIX', ano 2024.
+2025-11-19 16:59:43,689 - INFO - Botão de download clicado. Aguardando o arquivo...
+2025-11-19 16:59:44,196 - INFO - Arquivo 'Evolucao_Diaria.csv' encontrado na pasta de downloads.
+2025-11-19 16:59:44,199 - WARNING - Arquivo de destino existente 'C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IFIX-2024.csv' foi removido para ser substituído.
+2025-11-19 16:59:44,213 - INFO - Arquivo renomeado e movido para: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IFIX-2024.csv
+2025-11-19 16:59:44,214 - INFO - Iniciando download para o índice 'IFIX', ano 2025.
+2025-11-19 16:59:44,798 - INFO - Botão de download clicado. Aguardando o arquivo...
+2025-11-19 16:59:45,304 - INFO - Arquivo 'Evolucao_Diaria.csv' encontrado na pasta de downloads.
+2025-11-19 16:59:45,307 - WARNING - Arquivo de destino existente 'C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IFIX-2025.csv' foi removido para ser substituído.
+2025-11-19 16:59:45,307 - INFO - Arquivo renomeado e movido para: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IFIX-2025.csv
+2025-11-19 16:59:45,307 - INFO - --- Processo de download da B3 finalizado. ---
+2025-11-19 16:59:48,226 - INFO - Driver do Chrome encerrado.
+2025-11-19 16:59:48,345 - INFO - Dados do índice 'IFIX' da B3 processados com sucesso.
+2025-11-19 16:59:48,345 - INFO - Buscando dados da série 11 do BCB...
+2025-11-19 16:59:59,867 - INFO - Buscando dados da série 433 do BCB...
+2025-11-19 17:00:00,936 - INFO - Calculando benchmark sintético 'IPCA + 6%'...
+2025-11-19 17:00:02,848 - ERROR - Ocorreu um erro fatal não capturado na execução principal.
+Traceback (most recent call last):
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\main.py", line 703, in <module>
+    main()
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\main.py", line 695, in main
+    gerar_grafico_comparativo_twr(df_twr, benchmarks_data, nome_grafico=nome_analise, logger=logger)
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\main.py", line 575, in gerar_grafico_comparativo_twr
+    df_resumo = calcular_rentabilidades_resumo(df_twr, benchmarks_data, nome_grafico)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\main.py", line 469, in calcular_rentabilidades_resumo
+    df_resumo = pd.DataFrame(resumo_data).T # Transpõe para ter os anos como colunas
+                ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\.venv\Lib\site-packages\pandas\core\frame.py", line 782, in __init__
+    mgr = dict_to_mgr(data, index, columns, dtype=dtype, copy=copy, typ=manager)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\.venv\Lib\site-packages\pandas\core\internals\construction.py", line 503, in dict_to_mgr
+    return arrays_to_mgr(arrays, columns, index, dtype=dtype, typ=typ, consolidate=copy)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\.venv\Lib\site-packages\pandas\core\internals\construction.py", line 119, in arrays_to_mgr
+    arrays, refs = _homogenize(arrays, index, dtype)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\.venv\Lib\site-packages\pandas\core\internals\construction.py", line 629, in _homogenize
+    val = sanitize_array(val, index, dtype=dtype, copy=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\.venv\Lib\site-packages\pandas\core\construction.py", line 630, in sanitize_array
+    return sanitize_array(
+           ^^^^^^^^^^^^^^^
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\.venv\Lib\site-packages\pandas\core\construction.py", line 656, in sanitize_array
+    subarr = _sanitize_ndim(subarr, data, dtype, index, allow_2d=allow_2d)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\.venv\Lib\site-packages\pandas\core\construction.py", line 715, in _sanitize_ndim
+    raise ValueError(
+ValueError: Data must be 1-dimensional, got ndarray of shape (7, 1) instead
+2025-11-19 17:00:40,215 - INFO - 
+
+==================== NOVA ANÁLISE ====================
+2025-11-19 17:00:40,215 - INFO - Buscando histórico na API com os parâmetros: {'classe': 'AÇÃO'}
+2025-11-19 17:00:42,173 - INFO - Dados capturados com sucesso!
+2025-11-19 17:00:42,221 - INFO - Histórico completo salvo em: dlombello/graficos\historico_completo_AÇÃO.csv
+2025-11-19 17:00:42,221 - INFO - Gerando gráficos...
+2025-11-19 17:00:42,894 - INFO - Dados do gráfico de evolução salvos em: dlombello/graficos\evolucao_AÇÃO.csv
+2025-11-19 17:00:44,555 - INFO - Gráfico de evolução salvo com sucesso em: dlombello/graficos\evolucao_AÇÃO.png
+2025-11-19 17:00:44,555 - INFO - Iniciando cálculo de TWR...
+2025-11-19 17:00:44,745 - INFO - Dados do gráfico de TWR salvos em: dlombello/graficos\evolucao_twr_AÇÃO.csv
+2025-11-19 17:00:44,961 - INFO - Gráfico de TWR salvo com sucesso em: dlombello/graficos\evolucao_twr_AÇÃO.png
+2025-11-19 17:00:44,961 - INFO - Período da análise: 2019-04-30 a 2025-10-31
+2025-11-19 17:00:44,961 - INFO - Buscando dados para o benchmark: ^BVSP...
+2025-11-19 17:00:45,800 - INFO - Buscando dados para o benchmark: SPY...
+2025-11-19 17:00:46,338 - INFO - Buscando dados para o benchmark: IMID.L...
+2025-11-19 17:00:46,789 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IFIX'.
+2025-11-19 17:00:46,800 - INFO - Iniciando orquestrador de downloads da B3.
+2025-11-19 17:00:46,804 - INFO - --- Iniciando script de download de dados da B3 ---
+2025-11-19 17:00:46,806 - INFO - Pastas de trabalho verificadas/criadas com sucesso.
+2025-11-19 17:00:46,807 - INFO - Inicializando driver do Chrome...
+2025-11-19 17:00:52,444 - INFO - Iniciando download para o índice 'IFIX', ano 2019.
+2025-11-19 17:01:04,064 - ERROR - Falha ao baixar dados para o índice 'IFIX' ano 2019. Erro: Message: no such window: target window already closed
+from unknown error: web view not found
+  (Session info: chrome=142.0.7444.162)
+Stacktrace:
+Symbols not available. Dumping unresolved backtrace:
+	0xb54103
+	0xb54144
+	0x95e71d
+	0x93c32d
+	0x9d329e
+	0x9ee749
+	0x9cc706
+	0x99da30
+	0x99ed54
+	0xdc57b4
+	0xdc098a
+	0xb7c392
+	0xb6c4c8
+	0xb7324d
+	0xb5c478
+	0xb5c63c
+	0xb467ca
+	0x75835d49
+	0x7749d6db
+	0x7749d661
+
+2025-11-19 17:01:04,093 - INFO - Iniciando download para o índice 'IFIX', ano 2020.
+2025-11-19 17:01:04,127 - ERROR - Falha ao baixar dados para o índice 'IFIX' ano 2020. Erro: Message: no such window: target window already closed
+from unknown error: web view not found
+  (Session info: chrome=142.0.7444.162)
+Stacktrace:
+Symbols not available. Dumping unresolved backtrace:
+	0xb54103
+	0xb54144
+	0x95e71d
+	0x93c32d
+	0x9d329e
+	0x9ee749
+	0x9cc706
+	0x99da30
+	0x99ed54
+	0xdc57b4
+	0xdc098a
+	0xb7c392
+	0xb6c4c8
+	0xb7324d
+	0xb5c478
+	0xb5c63c
+	0xb467ca
+	0x75835d49
+	0x7749d6db
+	0x7749d661
+
+2025-11-19 17:01:04,132 - INFO - Iniciando download para o índice 'IFIX', ano 2021.
+2025-11-19 17:01:04,178 - ERROR - Falha ao baixar dados para o índice 'IFIX' ano 2021. Erro: Message: no such window: target window already closed
+from unknown error: web view not found
+  (Session info: chrome=142.0.7444.162)
+Stacktrace:
+Symbols not available. Dumping unresolved backtrace:
+	0xb54103
+	0xb54144
+	0x95e71d
+	0x93c32d
+	0x9d329e
+	0x9ee749
+	0x9cc706
+	0x99da30
+	0x99ed54
+	0xdc57b4
+	0xdc098a
+	0xb7c392
+	0xb6c4c8
+	0xb7324d
+	0xb5c478
+	0xb5c63c
+	0xb467ca
+	0x75835d49
+	0x7749d6db
+	0x7749d661
+
+2025-11-19 17:01:04,186 - INFO - Iniciando download para o índice 'IFIX', ano 2022.
+2025-11-19 17:01:04,216 - ERROR - Falha ao baixar dados para o índice 'IFIX' ano 2022. Erro: Message: no such window: target window already closed
+from unknown error: web view not found
+  (Session info: chrome=142.0.7444.162)
+Stacktrace:
+Symbols not available. Dumping unresolved backtrace:
+	0xb54103
+	0xb54144
+	0x95e71d
+	0x93c32d
+	0x9d329e
+	0x9ee749
+	0x9cc706
+	0x99da30
+	0x99ed54
+	0xdc57b4
+	0xdc098a
+	0xb7c392
+	0xb6c4c8
+	0xb7324d
+	0xb5c478
+	0xb5c63c
+	0xb467ca
+	0x75835d49
+	0x7749d6db
+	0x7749d661
+
+2025-11-19 17:01:04,223 - INFO - Iniciando download para o índice 'IFIX', ano 2023.
+2025-11-19 17:01:04,263 - ERROR - Falha ao baixar dados para o índice 'IFIX' ano 2023. Erro: Message: no such window: target window already closed
+from unknown error: web view not found
+  (Session info: chrome=142.0.7444.162)
+Stacktrace:
+Symbols not available. Dumping unresolved backtrace:
+	0xb54103
+	0xb54144
+	0x95e71d
+	0x93c32d
+	0x9d329e
+	0x9ee749
+	0x9cc706
+	0x99da30
+	0x99ed54
+	0xdc57b4
+	0xdc098a
+	0xb7c392
+	0xb6c4c8
+	0xb7324d
+	0xb5c478
+	0xb5c63c
+	0xb467ca
+	0x75835d49
+	0x7749d6db
+	0x7749d661
+
+2025-11-19 17:01:04,264 - INFO - Iniciando download para o índice 'IFIX', ano 2024.
+2025-11-19 17:01:04,280 - ERROR - Falha ao baixar dados para o índice 'IFIX' ano 2024. Erro: Message: no such window: target window already closed
+from unknown error: web view not found
+  (Session info: chrome=142.0.7444.162)
+Stacktrace:
+Symbols not available. Dumping unresolved backtrace:
+	0xb54103
+	0xb54144
+	0x95e71d
+	0x93c32d
+	0x9d329e
+	0x9ee749
+	0x9cc706
+	0x99da30
+	0x99ed54
+	0xdc57b4
+	0xdc098a
+	0xb7c392
+	0xb6c4c8
+	0xb7324d
+	0xb5c478
+	0xb5c63c
+	0xb467ca
+	0x75835d49
+	0x7749d6db
+	0x7749d661
+
+2025-11-19 17:01:04,282 - INFO - Iniciando download para o índice 'IFIX', ano 2025.
+2025-11-19 17:01:04,301 - ERROR - Falha ao baixar dados para o índice 'IFIX' ano 2025. Erro: Message: no such window: target window already closed
+from unknown error: web view not found
+  (Session info: chrome=142.0.7444.162)
+Stacktrace:
+Symbols not available. Dumping unresolved backtrace:
+	0xb54103
+	0xb54144
+	0x95e71d
+	0x93c32d
+	0x9d329e
+	0x9ee749
+	0x9cc706
+	0x99da30
+	0x99ed54
+	0xdc57b4
+	0xdc098a
+	0xb7c392
+	0xb6c4c8
+	0xb7324d
+	0xb5c478
+	0xb5c63c
+	0xb467ca
+	0x75835d49
+	0x7749d6db
+	0x7749d661
+
+2025-11-19 17:01:04,305 - INFO - --- Processo de download da B3 finalizado. ---
+2025-11-19 17:01:06,935 - INFO - Driver do Chrome encerrado.
+2025-11-19 17:01:07,011 - INFO - Dados do índice 'IFIX' da B3 processados com sucesso.
+2025-11-19 17:01:07,012 - INFO - Buscando dados da série 11 do BCB...
+2025-11-19 17:01:07,562 - INFO - Buscando dados da série 433 do BCB...
+2025-11-19 17:01:08,015 - INFO - Calculando benchmark sintético 'IPCA + 6%'...
+2025-11-19 17:01:10,356 - ERROR - Ocorreu um erro fatal não capturado na execução principal.
+Traceback (most recent call last):
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\main.py", line 703, in <module>
+    main()
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\main.py", line 695, in main
+    gerar_grafico_comparativo_twr(df_twr, benchmarks_data, nome_grafico=nome_analise, logger=logger)
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\main.py", line 575, in gerar_grafico_comparativo_twr
+    df_resumo = calcular_rentabilidades_resumo(df_twr, benchmarks_data, nome_grafico)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\main.py", line 469, in calcular_rentabilidades_resumo
+    df_resumo = pd.DataFrame(resumo_data).T # Transpõe para ter os anos como colunas
+                ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\.venv\Lib\site-packages\pandas\core\frame.py", line 782, in __init__
+    mgr = dict_to_mgr(data, index, columns, dtype=dtype, copy=copy, typ=manager)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\.venv\Lib\site-packages\pandas\core\internals\construction.py", line 503, in dict_to_mgr
+    return arrays_to_mgr(arrays, columns, index, dtype=dtype, typ=typ, consolidate=copy)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\.venv\Lib\site-packages\pandas\core\internals\construction.py", line 119, in arrays_to_mgr
+    arrays, refs = _homogenize(arrays, index, dtype)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\.venv\Lib\site-packages\pandas\core\internals\construction.py", line 629, in _homogenize
+    val = sanitize_array(val, index, dtype=dtype, copy=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\.venv\Lib\site-packages\pandas\core\construction.py", line 630, in sanitize_array
+    return sanitize_array(
+           ^^^^^^^^^^^^^^^
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\.venv\Lib\site-packages\pandas\core\construction.py", line 656, in sanitize_array
+    subarr = _sanitize_ndim(subarr, data, dtype, index, allow_2d=allow_2d)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\.venv\Lib\site-packages\pandas\core\construction.py", line 715, in _sanitize_ndim
+    raise ValueError(
+ValueError: Data must be 1-dimensional, got ndarray of shape (7, 1) instead
+2025-11-19 17:04:35,921 - INFO - 
+
+==================== NOVA ANÁLISE ====================
+2025-11-19 17:04:35,921 - INFO - Buscando histórico na API com os parâmetros: {'classe': 'AÇÃO'}
+2025-11-19 17:04:37,669 - INFO - Dados capturados com sucesso!
+2025-11-19 17:04:37,715 - INFO - Histórico completo salvo em: dlombello/graficos\historico_completo_AÇÃO.csv
+2025-11-19 17:04:37,716 - INFO - Gerando gráficos...
+2025-11-19 17:04:38,429 - INFO - Dados do gráfico de evolução salvos em: dlombello/graficos\evolucao_AÇÃO.csv
+2025-11-19 17:04:40,201 - INFO - Gráfico de evolução salvo com sucesso em: dlombello/graficos\evolucao_AÇÃO.png
+2025-11-19 17:04:40,201 - INFO - Iniciando cálculo de TWR...
+2025-11-19 17:04:40,413 - INFO - Dados do gráfico de TWR salvos em: dlombello/graficos\evolucao_twr_AÇÃO.csv
+2025-11-19 17:04:40,597 - INFO - Gráfico de TWR salvo com sucesso em: dlombello/graficos\evolucao_twr_AÇÃO.png
+2025-11-19 17:04:40,597 - INFO - Período da análise: 2019-04-30 a 2025-10-31
+2025-11-19 17:04:40,597 - INFO - Buscando dados para o benchmark: ^BVSP...
+2025-11-19 17:04:41,451 - INFO - Buscando dados para o benchmark: SPY...
+2025-11-19 17:04:41,922 - INFO - Buscando dados para o benchmark: IMID.L...
+2025-11-19 17:04:42,331 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IFIX'.
+2025-11-19 17:04:42,331 - INFO - Todos os arquivos necessários para o índice 'IFIX' já existem localmente. Download pulado.
+2025-11-19 17:04:42,452 - INFO - Dados do índice 'IFIX' da B3 processados com sucesso.
+2025-11-19 17:04:42,452 - INFO - Buscando dados da série 11 do BCB...
+2025-11-19 17:04:43,070 - INFO - Buscando dados da série 433 do BCB...
+2025-11-19 17:04:43,599 - INFO - Calculando benchmark sintético 'IPCA + 6%'...
+2025-11-19 17:04:45,246 - ERROR - Ocorreu um erro fatal não capturado na execução principal.
+Traceback (most recent call last):
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\main.py", line 715, in <module>
+    main()
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\main.py", line 707, in main
+    gerar_grafico_comparativo_twr(df_twr, benchmarks_data, nome_grafico=nome_analise, logger=logger)
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\main.py", line 587, in gerar_grafico_comparativo_twr
+    df_resumo = calcular_rentabilidades_resumo(df_twr, benchmarks_data, nome_grafico)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\main.py", line 481, in calcular_rentabilidades_resumo
+    df_resumo = pd.DataFrame(resumo_data).T # Transpõe para ter os anos como colunas
+                ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\.venv\Lib\site-packages\pandas\core\frame.py", line 782, in __init__
+    mgr = dict_to_mgr(data, index, columns, dtype=dtype, copy=copy, typ=manager)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\.venv\Lib\site-packages\pandas\core\internals\construction.py", line 503, in dict_to_mgr
+    return arrays_to_mgr(arrays, columns, index, dtype=dtype, typ=typ, consolidate=copy)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\.venv\Lib\site-packages\pandas\core\internals\construction.py", line 119, in arrays_to_mgr
+    arrays, refs = _homogenize(arrays, index, dtype)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\.venv\Lib\site-packages\pandas\core\internals\construction.py", line 629, in _homogenize
+    val = sanitize_array(val, index, dtype=dtype, copy=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\.venv\Lib\site-packages\pandas\core\construction.py", line 630, in sanitize_array
+    return sanitize_array(
+           ^^^^^^^^^^^^^^^
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\.venv\Lib\site-packages\pandas\core\construction.py", line 656, in sanitize_array
+    subarr = _sanitize_ndim(subarr, data, dtype, index, allow_2d=allow_2d)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\.venv\Lib\site-packages\pandas\core\construction.py", line 715, in _sanitize_ndim
+    raise ValueError(
+ValueError: Data must be 1-dimensional, got ndarray of shape (7, 1) instead
+2025-11-19 17:07:26,368 - INFO - 
+
+==================== NOVA ANÁLISE ====================
+2025-11-19 17:07:26,369 - INFO - Buscando histórico na API com os parâmetros: {'classe': 'AÇÃO'}
+2025-11-19 17:07:28,218 - INFO - Dados capturados com sucesso!
+2025-11-19 17:07:28,273 - INFO - Histórico completo salvo em: dlombello/graficos\historico_completo_AÇÃO.csv
+2025-11-19 17:07:28,273 - INFO - Gerando gráficos...
+2025-11-19 17:07:29,168 - INFO - Dados do gráfico de evolução salvos em: dlombello/graficos\evolucao_AÇÃO.csv
+2025-11-19 17:07:31,299 - INFO - Gráfico de evolução salvo com sucesso em: dlombello/graficos\evolucao_AÇÃO.png
+2025-11-19 17:07:31,299 - INFO - Iniciando cálculo de TWR...
+2025-11-19 17:07:31,490 - INFO - Dados do gráfico de TWR salvos em: dlombello/graficos\evolucao_twr_AÇÃO.csv
+2025-11-19 17:07:31,692 - INFO - Gráfico de TWR salvo com sucesso em: dlombello/graficos\evolucao_twr_AÇÃO.png
+2025-11-19 17:07:31,704 - INFO - Período da análise: 2019-04-30 a 2025-10-31
+2025-11-19 17:07:31,705 - INFO - Buscando dados para o benchmark: ^BVSP...
+2025-11-19 17:07:32,674 - INFO - Buscando dados para o benchmark: SPY...
+2025-11-19 17:07:33,261 - INFO - Buscando dados para o benchmark: IMID.L...
+2025-11-19 17:07:33,561 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IFIX'.
+2025-11-19 17:07:33,561 - INFO - Todos os arquivos necessários para o índice 'IFIX' já existem localmente. Download pulado.
+2025-11-19 17:07:33,677 - INFO - Dados do índice 'IFIX' da B3 processados com sucesso.
+2025-11-19 17:07:33,677 - INFO - Buscando dados da série 11 do BCB...
+2025-11-19 17:07:34,443 - INFO - Buscando dados da série 433 do BCB...
+2025-11-19 17:07:35,140 - INFO - Calculando benchmark sintético 'IPCA + 6%'...
+2025-11-19 17:07:37,013 - ERROR - Ocorreu um erro fatal não capturado na execução principal.
+Traceback (most recent call last):
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\.venv\Lib\site-packages\pandas\core\indexes\datetimes.py", line 603, in get_loc
+    parsed, reso = self._parse_with_reso(key)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\.venv\Lib\site-packages\pandas\core\indexes\datetimes.py", line 559, in _parse_with_reso
+    parsed, reso = super()._parse_with_reso(label)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\.venv\Lib\site-packages\pandas\core\indexes\datetimelike.py", line 293, in _parse_with_reso
+    parsed, reso_str = parsing.parse_datetime_string_with_reso(label, freqstr)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "pandas/_libs/tslibs/parsing.pyx", line 442, in pandas._libs.tslibs.parsing.parse_datetime_string_with_reso
+  File "pandas/_libs/tslibs/parsing.pyx", line 666, in pandas._libs.tslibs.parsing.dateutil_parse
+pandas._libs.tslibs.parsing.DateParseError: Unknown datetime string format, unable to parse: twr_acc
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\main.py", line 715, in <module>
+    main()
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\main.py", line 707, in main
+    gerar_grafico_comparativo_twr(df_twr, benchmarks_data, nome_grafico=nome_analise, logger=logger)
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\main.py", line 587, in gerar_grafico_comparativo_twr
+    df_resumo = calcular_rentabilidades_resumo(df_twr, benchmarks_data, nome_grafico)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\main.py", line 461, in calcular_rentabilidades_resumo
+    df_carteira['fator'] = df_carteira['twr_acc'] + 1
+                           ~~~~~~~~~~~^^^^^^^^^^^
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\.venv\Lib\site-packages\pandas\core\series.py", line 1133, in __getitem__
+    return self._get_value(key)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\.venv\Lib\site-packages\pandas\core\series.py", line 1249, in _get_value
+    loc = self.index.get_loc(label)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\.venv\Lib\site-packages\pandas\core\indexes\datetimes.py", line 605, in get_loc
+    raise KeyError(key) from err
+KeyError: 'twr_acc'
+2025-11-19 17:09:17,141 - INFO - 
+
+==================== NOVA ANÁLISE ====================
+2025-11-19 17:09:17,157 - INFO - Buscando histórico na API com os parâmetros: {'classe': 'AÇÃO'}
+2025-11-19 17:09:18,845 - INFO - Dados capturados com sucesso!
+2025-11-19 17:09:18,884 - INFO - Histórico completo salvo em: dlombello/graficos\historico_completo_AÇÃO.csv
+2025-11-19 17:09:18,884 - INFO - Gerando gráficos...
+2025-11-19 17:09:19,624 - INFO - Dados do gráfico de evolução salvos em: dlombello/graficos\evolucao_AÇÃO.csv
+2025-11-19 17:09:21,255 - INFO - Gráfico de evolução salvo com sucesso em: dlombello/graficos\evolucao_AÇÃO.png
+2025-11-19 17:09:21,255 - INFO - Iniciando cálculo de TWR...
+2025-11-19 17:09:21,477 - INFO - Dados do gráfico de TWR salvos em: dlombello/graficos\evolucao_twr_AÇÃO.csv
+2025-11-19 17:09:21,644 - INFO - Gráfico de TWR salvo com sucesso em: dlombello/graficos\evolucao_twr_AÇÃO.png
+2025-11-19 17:09:21,644 - INFO - Período da análise: 2019-04-30 a 2025-10-31
+2025-11-19 17:09:21,644 - INFO - Buscando dados para o benchmark: ^BVSP...
+2025-11-19 17:09:22,562 - INFO - Buscando dados para o benchmark: SPY...
+2025-11-19 17:09:23,064 - INFO - Buscando dados para o benchmark: IMID.L...
+2025-11-19 17:09:23,479 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IFIX'.
+2025-11-19 17:09:23,479 - INFO - Todos os arquivos necessários para o índice 'IFIX' já existem localmente. Download pulado.
+2025-11-19 17:09:23,593 - INFO - Dados do índice 'IFIX' da B3 processados com sucesso.
+2025-11-19 17:09:23,599 - INFO - Buscando dados da série 11 do BCB...
+2025-11-19 17:09:24,242 - INFO - Buscando dados da série 433 do BCB...
+2025-11-19 17:09:24,780 - INFO - Calculando benchmark sintético 'IPCA + 6%'...
+2025-11-19 17:09:26,491 - ERROR - Ocorreu um erro fatal não capturado na execução principal.
+Traceback (most recent call last):
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\main.py", line 717, in <module>
+    main()
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\main.py", line 709, in main
+    gerar_grafico_comparativo_twr(df_twr, benchmarks_data, nome_grafico=nome_analise, logger=logger)
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\main.py", line 589, in gerar_grafico_comparativo_twr
+    df_resumo = calcular_rentabilidades_resumo(df_twr, benchmarks_data, nome_grafico)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\main.py", line 483, in calcular_rentabilidades_resumo
+    df_resumo = pd.DataFrame(resumo_data).T # Transpõe para ter os anos como colunas
+                ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\.venv\Lib\site-packages\pandas\core\frame.py", line 782, in __init__
+    mgr = dict_to_mgr(data, index, columns, dtype=dtype, copy=copy, typ=manager)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\.venv\Lib\site-packages\pandas\core\internals\construction.py", line 503, in dict_to_mgr
+    return arrays_to_mgr(arrays, columns, index, dtype=dtype, typ=typ, consolidate=copy)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\.venv\Lib\site-packages\pandas\core\internals\construction.py", line 119, in arrays_to_mgr
+    arrays, refs = _homogenize(arrays, index, dtype)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\.venv\Lib\site-packages\pandas\core\internals\construction.py", line 629, in _homogenize
+    val = sanitize_array(val, index, dtype=dtype, copy=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\.venv\Lib\site-packages\pandas\core\construction.py", line 630, in sanitize_array
+    return sanitize_array(
+           ^^^^^^^^^^^^^^^
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\.venv\Lib\site-packages\pandas\core\construction.py", line 656, in sanitize_array
+    subarr = _sanitize_ndim(subarr, data, dtype, index, allow_2d=allow_2d)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\.venv\Lib\site-packages\pandas\core\construction.py", line 715, in _sanitize_ndim
+    raise ValueError(
+ValueError: Data must be 1-dimensional, got ndarray of shape (7, 1) instead
+2025-11-19 17:10:56,910 - INFO - 
+
+==================== NOVA ANÁLISE ====================
+2025-11-19 17:10:56,910 - INFO - Buscando histórico na API com os parâmetros: {'classe': 'AÇÃO'}
+2025-11-19 17:10:58,646 - INFO - Dados capturados com sucesso!
+2025-11-19 17:10:58,687 - INFO - Histórico completo salvo em: dlombello/graficos\historico_completo_AÇÃO.csv
+2025-11-19 17:10:58,687 - INFO - Gerando gráficos...
+2025-11-19 17:10:59,395 - INFO - Dados do gráfico de evolução salvos em: dlombello/graficos\evolucao_AÇÃO.csv
+2025-11-19 17:11:01,286 - INFO - Gráfico de evolução salvo com sucesso em: dlombello/graficos\evolucao_AÇÃO.png
+2025-11-19 17:11:01,302 - INFO - Iniciando cálculo de TWR...
+2025-11-19 17:11:01,480 - INFO - Dados do gráfico de TWR salvos em: dlombello/graficos\evolucao_twr_AÇÃO.csv
+2025-11-19 17:11:01,708 - INFO - Gráfico de TWR salvo com sucesso em: dlombello/graficos\evolucao_twr_AÇÃO.png
+2025-11-19 17:11:01,708 - INFO - Período da análise: 2019-04-30 a 2025-10-31
+2025-11-19 17:11:01,708 - INFO - Buscando dados para o benchmark: ^BVSP...
+2025-11-19 17:11:02,532 - INFO - Buscando dados para o benchmark: SPY...
+2025-11-19 17:11:02,977 - INFO - Buscando dados para o benchmark: IMID.L...
+2025-11-19 17:11:03,390 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IFIX'.
+2025-11-19 17:11:03,390 - INFO - Todos os arquivos necessários para o índice 'IFIX' já existem localmente. Download pulado.
+2025-11-19 17:11:03,504 - INFO - Dados do índice 'IFIX' da B3 processados com sucesso.
+2025-11-19 17:11:03,504 - INFO - Buscando dados da série 11 do BCB...
+2025-11-19 17:11:04,217 - INFO - Buscando dados da série 433 do BCB...
+2025-11-19 17:11:04,768 - INFO - Calculando benchmark sintético 'IPCA + 6%'...
+2025-11-19 17:11:06,519 - ERROR - Ocorreu um erro fatal não capturado na execução principal.
+Traceback (most recent call last):
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\main.py", line 725, in <module>
+    main()
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\main.py", line 717, in main
+    gerar_grafico_comparativo_twr(df_twr, benchmarks_data, nome_grafico=nome_analise, logger=logger)
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\main.py", line 597, in gerar_grafico_comparativo_twr
+    df_resumo = calcular_rentabilidades_resumo(df_twr, benchmarks_data, nome_grafico)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\main.py", line 456, in calcular_rentabilidades_resumo
+    logger.debug("Iniciando cálculo de rentabilidades para a tabela de resumo.")
+    ^^^^^^
+NameError: name 'logger' is not defined
+2025-11-19 17:13:26,392 - INFO - 
+
+==================== NOVA ANÁLISE ====================
+2025-11-19 17:13:26,392 - INFO - Buscando histórico na API com os parâmetros: {'classe': 'AÇÃO'}
+2025-11-19 17:13:28,133 - INFO - Dados capturados com sucesso!
+2025-11-19 17:13:28,195 - INFO - Histórico completo salvo em: dlombello/graficos\historico_completo_AÇÃO.csv
+2025-11-19 17:13:28,198 - INFO - Gerando gráficos...
+2025-11-19 17:13:29,066 - INFO - Dados do gráfico de evolução salvos em: dlombello/graficos\evolucao_AÇÃO.csv
+2025-11-19 17:13:31,165 - INFO - Gráfico de evolução salvo com sucesso em: dlombello/graficos\evolucao_AÇÃO.png
+2025-11-19 17:13:31,167 - INFO - Iniciando cálculo de TWR...
+2025-11-19 17:13:31,394 - INFO - Dados do gráfico de TWR salvos em: dlombello/graficos\evolucao_twr_AÇÃO.csv
+2025-11-19 17:13:31,592 - INFO - Gráfico de TWR salvo com sucesso em: dlombello/graficos\evolucao_twr_AÇÃO.png
+2025-11-19 17:13:31,596 - INFO - Período da análise: 2019-04-30 a 2025-10-31
+2025-11-19 17:13:31,597 - INFO - Buscando dados para o benchmark: ^BVSP...
+2025-11-19 17:13:32,451 - INFO - Buscando dados para o benchmark: SPY...
+2025-11-19 17:13:33,307 - INFO - Buscando dados para o benchmark: IMID.L...
+2025-11-19 17:13:33,706 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IFIX'.
+2025-11-19 17:13:33,706 - INFO - Todos os arquivos necessários para o índice 'IFIX' já existem localmente. Download pulado.
+2025-11-19 17:13:33,800 - INFO - Dados do índice 'IFIX' da B3 processados com sucesso.
+2025-11-19 17:13:33,803 - INFO - Buscando dados da série 11 do BCB...
+2025-11-19 17:13:34,433 - INFO - Buscando dados da série 433 do BCB...
+2025-11-19 17:13:35,033 - INFO - Calculando benchmark sintético 'IPCA + 6%'...
+2025-11-19 17:13:36,988 - ERROR - Ocorreu um erro fatal não capturado na execução principal.
+Traceback (most recent call last):
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\main.py", line 725, in <module>
+    main()
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\main.py", line 717, in main
+    gerar_grafico_comparativo_twr(df_twr, benchmarks_data, nome_grafico=nome_analise, logger=logger)
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\main.py", line 597, in gerar_grafico_comparativo_twr
+    df_resumo = calcular_rentabilidades_resumo(df_twr, benchmarks_data, nome_grafico, logger)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\main.py", line 499, in calcular_rentabilidades_resumo
+    df_resumo.loc[nome, 'Total'] = total_bench
+    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\.venv\Lib\site-packages\pandas\core\indexing.py", line 912, in __setitem__
+    iloc._setitem_with_indexer(indexer, value, self.name)
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\.venv\Lib\site-packages\pandas\core\indexing.py", line 1943, in _setitem_with_indexer
+    self._setitem_with_indexer_split_path(indexer, value, name)
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\.venv\Lib\site-packages\pandas\core\indexing.py", line 1964, in _setitem_with_indexer_split_path
+    value = self._align_series(indexer, Series(value))
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\.venv\Lib\site-packages\pandas\core\indexing.py", line 2456, in _align_series
+    raise ValueError("Incompatible indexer with Series")
+ValueError: Incompatible indexer with Series
+2025-11-19 17:14:49,107 - INFO - 
+
+==================== NOVA ANÁLISE ====================
+2025-11-19 17:14:49,123 - INFO - Buscando histórico na API com os parâmetros: {'classe': 'AÇÃO'}
+2025-11-19 17:14:50,810 - INFO - Dados capturados com sucesso!
+2025-11-19 17:14:50,850 - INFO - Histórico completo salvo em: dlombello/graficos\historico_completo_AÇÃO.csv
+2025-11-19 17:14:50,852 - INFO - Gerando gráficos...
+2025-11-19 17:14:51,672 - INFO - Dados do gráfico de evolução salvos em: dlombello/graficos\evolucao_AÇÃO.csv
+2025-11-19 17:14:53,725 - INFO - Gráfico de evolução salvo com sucesso em: dlombello/graficos\evolucao_AÇÃO.png
+2025-11-19 17:14:53,725 - INFO - Iniciando cálculo de TWR...
+2025-11-19 17:14:53,971 - INFO - Dados do gráfico de TWR salvos em: dlombello/graficos\evolucao_twr_AÇÃO.csv
+2025-11-19 17:14:54,189 - INFO - Gráfico de TWR salvo com sucesso em: dlombello/graficos\evolucao_twr_AÇÃO.png
+2025-11-19 17:14:54,189 - INFO - Período da análise: 2019-04-30 a 2025-10-31
+2025-11-19 17:14:54,189 - INFO - Buscando dados para o benchmark: ^BVSP...
+2025-11-19 17:14:55,019 - INFO - Buscando dados para o benchmark: SPY...
+2025-11-19 17:14:55,643 - INFO - Buscando dados para o benchmark: IMID.L...
+2025-11-19 17:14:56,058 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IFIX'.
+2025-11-19 17:14:56,058 - INFO - Todos os arquivos necessários para o índice 'IFIX' já existem localmente. Download pulado.
+2025-11-19 17:14:56,180 - INFO - Dados do índice 'IFIX' da B3 processados com sucesso.
+2025-11-19 17:14:56,180 - INFO - Buscando dados da série 11 do BCB...
+2025-11-19 17:14:57,076 - INFO - Buscando dados da série 433 do BCB...
+2025-11-19 17:14:57,683 - INFO - Calculando benchmark sintético 'IPCA + 6%'...
+2025-11-19 17:14:59,430 - ERROR - Ocorreu um erro fatal não capturado na execução principal.
+Traceback (most recent call last):
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\main.py", line 729, in <module>
+    main()
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\main.py", line 721, in main
+    gerar_grafico_comparativo_twr(df_twr, benchmarks_data, nome_grafico=nome_analise, logger=logger)
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\main.py", line 601, in gerar_grafico_comparativo_twr
+    df_resumo = calcular_rentabilidades_resumo(df_twr, benchmarks_data, nome_grafico, logger)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\main.py", line 510, in calcular_rentabilidades_resumo
+    df_resumo[col] = df_resumo[col].apply(lambda x: f'{x:.1%}' if pd.notna(x) else '-')
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\.venv\Lib\site-packages\pandas\core\series.py", line 4943, in apply
+    ).apply()
+      ^^^^^^^
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\.venv\Lib\site-packages\pandas\core\apply.py", line 1422, in apply
+    return self.apply_standard()
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\.venv\Lib\site-packages\pandas\core\apply.py", line 1502, in apply_standard
+    mapped = obj._map_values(
+             ^^^^^^^^^^^^^^^^
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\.venv\Lib\site-packages\pandas\core\base.py", line 925, in _map_values
+    return algorithms.map_array(arr, mapper, na_action=na_action, convert=convert)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\.venv\Lib\site-packages\pandas\core\algorithms.py", line 1743, in map_array
+    return lib.map_infer(values, mapper, convert=convert)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "pandas/_libs/lib.pyx", line 2999, in pandas._libs.lib.map_infer
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\main.py", line 510, in <lambda>
+    df_resumo[col] = df_resumo[col].apply(lambda x: f'{x:.1%}' if pd.notna(x) else '-')
+                                                                  ^^^^^^^^^^^
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\.venv\Lib\site-packages\pandas\core\generic.py", line 1580, in __nonzero__
+    raise ValueError(
+ValueError: The truth value of a Series is ambiguous. Use a.empty, a.bool(), a.item(), a.any() or a.all().
+2025-11-19 17:17:35,291 - INFO - 
+
+==================== NOVA ANÁLISE ====================
+2025-11-19 17:17:35,291 - INFO - Buscando histórico na API com os parâmetros: {'classe': 'AÇÃO'}
+2025-11-19 17:17:37,129 - INFO - Dados capturados com sucesso!
+2025-11-19 17:17:37,191 - INFO - Histórico completo salvo em: dlombello/graficos\historico_completo_AÇÃO.csv
+2025-11-19 17:17:37,193 - INFO - Gerando gráficos...
+2025-11-19 17:17:37,950 - INFO - Dados do gráfico de evolução salvos em: dlombello/graficos\evolucao_AÇÃO.csv
+2025-11-19 17:17:39,776 - INFO - Gráfico de evolução salvo com sucesso em: dlombello/graficos\evolucao_AÇÃO.png
+2025-11-19 17:17:39,776 - INFO - Iniciando cálculo de TWR...
+2025-11-19 17:17:39,941 - INFO - Dados do gráfico de TWR salvos em: dlombello/graficos\evolucao_twr_AÇÃO.csv
+2025-11-19 17:17:40,202 - INFO - Gráfico de TWR salvo com sucesso em: dlombello/graficos\evolucao_twr_AÇÃO.png
+2025-11-19 17:17:40,202 - INFO - Período da análise: 2019-04-30 a 2025-10-31
+2025-11-19 17:17:40,202 - INFO - Buscando dados para o benchmark: ^BVSP...
+2025-11-19 17:17:41,919 - INFO - Buscando dados para o benchmark: SPY...
+2025-11-19 17:17:42,500 - INFO - Buscando dados para o benchmark: IMID.L...
+2025-11-19 17:17:43,127 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IFIX'.
+2025-11-19 17:17:43,127 - INFO - Todos os arquivos necessários para o índice 'IFIX' já existem localmente. Download pulado.
+2025-11-19 17:17:43,224 - INFO - Dados do índice 'IFIX' da B3 processados com sucesso.
+2025-11-19 17:17:43,225 - INFO - Buscando dados da série 11 do BCB...
+2025-11-19 17:17:55,944 - INFO - Buscando dados da série 433 do BCB...
+2025-11-19 17:17:57,329 - INFO - Calculando benchmark sintético 'IPCA + 6%'...
+2025-11-19 17:17:58,979 - ERROR - Ocorreu um erro fatal não capturado na execução principal.
+Traceback (most recent call last):
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\main.py", line 732, in <module>
+    main()
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\main.py", line 724, in main
+    gerar_grafico_comparativo_twr(df_twr, benchmarks_data, nome_grafico=nome_analise, logger=logger)
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\main.py", line 604, in gerar_grafico_comparativo_twr
+    df_resumo = calcular_rentabilidades_resumo(df_twr, benchmarks_data, nome_grafico, logger)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\main.py", line 513, in calcular_rentabilidades_resumo
+    df_resumo = df_resumo.applymap(lambda x: f'{x:.1%}' if pd.notna(x) else '-')
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\.venv\Lib\site-packages\pandas\core\frame.py", line 10549, in applymap
+    return self.map(func, na_action=na_action, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\.venv\Lib\site-packages\pandas\core\frame.py", line 10495, in map
+    return self.apply(infer).__finalize__(self, "map")
+           ^^^^^^^^^^^^^^^^^
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\.venv\Lib\site-packages\pandas\core\frame.py", line 10401, in apply
+    return op.apply().__finalize__(self, method="apply")
+           ^^^^^^^^^^
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\.venv\Lib\site-packages\pandas\core\apply.py", line 916, in apply
+    return self.apply_standard()
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\.venv\Lib\site-packages\pandas\core\apply.py", line 1063, in apply_standard
+    results, res_index = self.apply_series_generator()
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\.venv\Lib\site-packages\pandas\core\apply.py", line 1081, in apply_series_generator
+    results[i] = self.func(v, *self.args, **self.kwargs)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\.venv\Lib\site-packages\pandas\core\frame.py", line 10493, in infer
+    return x._map_values(func, na_action=na_action)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\.venv\Lib\site-packages\pandas\core\base.py", line 925, in _map_values
+    return algorithms.map_array(arr, mapper, na_action=na_action, convert=convert)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\.venv\Lib\site-packages\pandas\core\algorithms.py", line 1743, in map_array
+    return lib.map_infer(values, mapper, convert=convert)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "pandas/_libs/lib.pyx", line 2999, in pandas._libs.lib.map_infer
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\main.py", line 513, in <lambda>
+    df_resumo = df_resumo.applymap(lambda x: f'{x:.1%}' if pd.notna(x) else '-')
+                                                           ^^^^^^^^^^^
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\.venv\Lib\site-packages\pandas\core\generic.py", line 1580, in __nonzero__
+    raise ValueError(
+ValueError: The truth value of a Series is ambiguous. Use a.empty, a.bool(), a.item(), a.any() or a.all().
+2025-11-19 17:23:05,722 - INFO - 
+
+==================== NOVA ANÁLISE ====================
+2025-11-19 17:23:05,737 - INFO - Buscando histórico na API com os parâmetros: {'classe': 'AÇÃO'}
+2025-11-19 17:23:07,498 - INFO - Dados capturados com sucesso!
+2025-11-19 17:23:07,537 - INFO - Histórico completo salvo em: dlombello/graficos\historico_completo_AÇÃO.csv
+2025-11-19 17:23:07,537 - INFO - Gerando gráficos...
+2025-11-19 17:23:08,276 - INFO - Dados do gráfico de evolução salvos em: dlombello/graficos\evolucao_AÇÃO.csv
+2025-11-19 17:23:11,251 - INFO - Gráfico de evolução salvo com sucesso em: dlombello/graficos\evolucao_AÇÃO.png
+2025-11-19 17:23:11,288 - INFO - Iniciando cálculo de TWR...
+2025-11-19 17:23:11,942 - INFO - Dados do gráfico de TWR salvos em: dlombello/graficos\evolucao_twr_AÇÃO.csv
+2025-11-19 17:23:12,472 - INFO - Gráfico de TWR salvo com sucesso em: dlombello/graficos\evolucao_twr_AÇÃO.png
+2025-11-19 17:23:12,477 - INFO - Período da análise: 2019-04-30 a 2025-10-31
+2025-11-19 17:23:12,478 - INFO - Buscando dados para o benchmark: ^BVSP...
+2025-11-19 17:23:14,093 - INFO - Buscando dados para o benchmark: SPY...
+2025-11-19 17:23:14,691 - INFO - Buscando dados para o benchmark: IMID.L...
+2025-11-19 17:23:15,139 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IFIX'.
+2025-11-19 17:23:15,142 - INFO - Todos os arquivos necessários para o índice 'IFIX' já existem localmente. Download pulado.
+2025-11-19 17:23:15,266 - INFO - Dados do índice 'IFIX' da B3 processados com sucesso.
+2025-11-19 17:23:15,266 - INFO - Buscando dados da série 11 do BCB...
+2025-11-19 17:23:16,045 - INFO - Buscando dados da série 433 do BCB...
+2025-11-19 17:23:16,596 - INFO - Calculando benchmark sintético 'IPCA + 6%'...
+2025-11-19 17:23:19,816 - INFO - Gráfico comparativo de TWR salvo com sucesso em: dlombello/graficos\comparativo_twr_AÇÃO.png
