@@ -510,33 +510,15 @@ def calcular_rentabilidades_resumo(df_twr: pd.DataFrame, benchmarks_data: dict, 
     # Agrupa por nomes de coluna para remover duplicatas, pegando o primeiro valor
     df_resumo = df_resumo.groupby(level=0, axis=1).first()
 
-    # Usa uma função robusta para formatar cada célula do DataFrame como porcentagem
-    def format_val(x):
-        try:
-            # Caso escalar nulo
-            if pd.isna(x):
-                return '-'
+    # Garante que todas as colunas de dados sejam numéricas antes de formatar
+    for col in df_resumo.columns:
+        df_resumo[col] = pd.to_numeric(df_resumo[col], errors='coerce')
 
-            # Se for DataFrame, tenta reduzir para Series quando possível
-            if isinstance(x, pd.DataFrame):
-                if x.shape[1] == 1:
-                    x = x.iloc[:, 0]
-                else:
-                    return str(x)
-
-            # Se for Series/array-like, formata cada elemento e junta com vírgula
-            if isinstance(x, (pd.Series, list, tuple, np.ndarray)):
-                seq = list(x) if hasattr(x, '__iter__') and not isinstance(x, (str, bytes)) else [x]
-                formatted = ', '.join(f'{float(v):.1%}' if pd.notna(v) else '-' for v in seq)
-                return formatted
-
-            # Valor escalar numérico
-            return f'{float(x):.1%}'
-        except Exception:
-            # Fallback para qualquer valor inesperado
-            return str(x)
-
-    df_resumo = df_resumo.applymap(format_val)
+    # Usa applymap com uma lambda simples para formatar cada célula como porcentagem
+    # Isso é mais seguro agora que garantimos que os dados são numéricos.
+    df_resumo = df_resumo.applymap(
+        lambda x: f'{x:.1%}' if pd.notna(x) else '-'
+    )
     
     return df_resumo
 
