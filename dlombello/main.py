@@ -563,12 +563,58 @@ def calcular_rentabilidades_resumo(df_twr: pd.DataFrame, benchmarks_data: dict, 
     # Garante que todas as colunas de dados sejam numéricas antes de formatar
     for col in df_resumo.columns:
         df_resumo[col] = pd.to_numeric(df_resumo[col], errors='coerce')
+    # Calcula rentabilidade acumulada por linha (apenas para colunas de anos)
+    # Identifica colunas de ano (exclui 'Total' se presente)
+    cols = [c for c in df_resumo.columns if str(c).lower() != 'total']
 
-    # Usa applymap com uma lambda simples para formatar cada célula como porcentagem
-    # Isso é mais seguro agora que garantimos que os dados são numéricos.
-    df_resumo = df_resumo.applymap(
-        lambda x: f'{x:.1%}' if pd.notna(x) else '-'
-    )
+    # Tenta ordenar as colunas por ano (converte para int quando possível)
+    def _col_key(c):
+        try:
+            return int(c)
+        except Exception:
+            # Mantém a ordem original se não for conversível
+            return float('inf')
+
+    cols_sorted = sorted(cols, key=_col_key)
+
+    # Reordena o DataFrame (anos em ordem crescente, depois 'Total' se existir)
+    ordered_cols = cols_sorted + (['Total'] if 'Total' in df_resumo.columns else [])
+    df_resumo = df_resumo.reindex(columns=ordered_cols)
+
+    # Calcula acumulado: (1 + r).cumprod() - 1 ao longo das colunas de anos
+    if cols_sorted:
+        acumulado_df = (1 + df_resumo[cols_sorted]).cumprod(axis=1) - 1
+    else:
+        acumulado_df = pd.DataFrame(index=df_resumo.index)
+
+    # Função de formatação: 'anual (acumulado)'
+    def _format_cell(annual, acc):
+        if pd.isna(annual):
+            return '-'
+        try:
+            if pd.isna(acc):
+                return f'{float(annual):.1%}'
+            return f'{float(annual):.1%} ({float(acc):.1%})'
+        except Exception:
+            return str(annual)
+
+    # Monta um DataFrame de strings com a mesma estrutura
+    df_formatted = pd.DataFrame(index=df_resumo.index, columns=df_resumo.columns, dtype=object)
+
+    # Preenche colunas de ano com 'anual (acumulado)'
+    for c in cols_sorted:
+        for idx in df_resumo.index:
+            annual = df_resumo.at[idx, c]
+            acc = acumulado_df.at[idx, c] if (idx in acumulado_df.index and c in acumulado_df.columns) else np.nan
+            df_formatted.at[idx, c] = _format_cell(annual, acc)
+
+    # Formata a coluna 'Total' como porcentagem simples
+    if 'Total' in df_resumo.columns:
+        for idx in df_resumo.index:
+            total_val = df_resumo.at[idx, 'Total']
+            df_formatted.at[idx, 'Total'] = f'{float(total_val):.1%}' if pd.notna(total_val) else '-'
+
+    df_resumo = df_formatted
     
     return df_resumo
 
