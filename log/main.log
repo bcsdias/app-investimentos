@@ -1,27 +1,17 @@
-2025-11-19 14:39:15,172 - INFO - Buscando histórico na API com os parâmetros: {'classe': 'AÇÃO'}
-2025-11-19 14:39:17,137 - INFO - Dados capturados com sucesso!
-2025-11-19 14:39:17,170 - INFO - Histórico completo salvo em: dlombello/graficos\historico_completo_AÇÃO.csv
-2025-11-19 14:39:17,171 - INFO - Gerando gráficos...
-2025-11-19 14:39:17,737 - INFO - Dados do gráfico de evolução salvos em: dlombello/graficos\evolucao_AÇÃO.csv
-2025-11-19 14:39:19,389 - INFO - Gráfico de evolução salvo com sucesso em: dlombello/graficos\evolucao_AÇÃO.png
-2025-11-19 14:39:19,389 - INFO - Iniciando cálculo de TWR...
-2025-11-19 14:39:19,555 - INFO - Dados do gráfico de TWR salvos em: dlombello/graficos\evolucao_twr_AÇÃO.csv
-2025-11-19 14:39:19,700 - INFO - Gráfico de TWR salvo com sucesso em: dlombello/graficos\evolucao_twr_AÇÃO.png
-2025-11-19 14:39:19,700 - INFO - Período da análise: 2019-04-30 a 2025-10-31
-2025-11-19 14:39:19,700 - INFO - Buscando dados para o benchmark: ^BVSP...
-2025-11-19 14:39:20,704 - INFO - Buscando dados para o benchmark: SPY...
-2025-11-19 14:39:21,273 - INFO - Buscando dados para o benchmark: IFIX.SA...
-2025-11-19 14:39:21,528 - WARNING - Nenhum dado encontrado para o benchmark IFIX.SA no período especificado.
-2025-11-19 14:39:21,528 - INFO - Buscando dados para o benchmark: IMID.L...
-2025-11-19 14:39:22,053 - ERROR - Ocorreu um erro fatal não capturado na execução principal.
-Traceback (most recent call last):
-  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\main.py", line 453, in <module>
-    main()
-  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\main.py", line 446, in main
-    gerar_grafico_comparativo_twr(df_twr, benchmarks_data, nome_grafico=nome_analise, logger=logger)
-  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\main.py", line 358, in gerar_grafico_comparativo_twr
-    if pd.notna(valor_ponto):
-       ^^^^^^^^^^^^^^^^^^^^^
-  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\.venv\Lib\site-packages\pandas\core\generic.py", line 1580, in __nonzero__
-    raise ValueError(
-ValueError: The truth value of a Series is ambiguous. Use a.empty, a.bool(), a.item(), a.any() or a.all().
+2025-11-19 14:43:35,874 - INFO - Buscando histórico na API com os parâmetros: {'classe': 'AÇÃO'}
+2025-11-19 14:43:37,496 - INFO - Dados capturados com sucesso!
+2025-11-19 14:43:37,536 - INFO - Histórico completo salvo em: dlombello/graficos\historico_completo_AÇÃO.csv
+2025-11-19 14:43:37,536 - INFO - Gerando gráficos...
+2025-11-19 14:43:38,138 - INFO - Dados do gráfico de evolução salvos em: dlombello/graficos\evolucao_AÇÃO.csv
+2025-11-19 14:43:40,666 - INFO - Gráfico de evolução salvo com sucesso em: dlombello/graficos\evolucao_AÇÃO.png
+2025-11-19 14:43:40,666 - INFO - Iniciando cálculo de TWR...
+2025-11-19 14:43:40,881 - INFO - Dados do gráfico de TWR salvos em: dlombello/graficos\evolucao_twr_AÇÃO.csv
+2025-11-19 14:43:41,145 - INFO - Gráfico de TWR salvo com sucesso em: dlombello/graficos\evolucao_twr_AÇÃO.png
+2025-11-19 14:43:41,145 - INFO - Período da análise: 2019-04-30 a 2025-10-31
+2025-11-19 14:43:41,145 - INFO - Buscando dados para o benchmark: ^BVSP...
+2025-11-19 14:43:42,571 - INFO - Buscando dados para o benchmark: SPY...
+2025-11-19 14:43:43,051 - INFO - Buscando dados para o benchmark: IFIX.SA...
+2025-11-19 14:43:43,289 - WARNING - Nenhum dado encontrado para o benchmark IFIX.SA no período especificado.
+2025-11-19 14:43:43,289 - INFO - Buscando dados para o benchmark: IMID.L...
+2025-11-19 14:43:53,165 - WARNING - Nenhum dado válido para o benchmark 'IFIX'. Não será plotado.
+2025-11-19 14:43:54,159 - INFO - Gráfico comparativo de TWR salvo com sucesso em: dlombello/graficos\comparativo_twr_AÇÃO.png
