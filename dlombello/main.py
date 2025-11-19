@@ -15,6 +15,9 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # Adiciona a raiz ao PYTHONPATH para permitir imports como "from utils.logger"
 sys.path.append(BASE_DIR)
 from utils.logger import setup_logger
+# Importa a função que acabamos de refatorar em import_b3.py
+from dlombello.import_b3 import run_b3_downloader
+
 
 # Carrega as variáveis de ambiente do arquivo .env
 load_dotenv()
@@ -274,6 +277,8 @@ def buscar_historico(token: str, logger, ativo: str = None, classe: str = None, 
     # Filtra para não enviar parâmetros vazios
     params = {k: v for k, v in params.items() if v is not None}
 
+    # Adiciona uma linha separadora com quebras de linha para melhor visualização no log
+    logger.info(f"\n\n==================== NOVA ANÁLISE ====================")
     logger.info(f"Buscando histórico na API com os parâmetros: {params}")
     try:
         response = requests.get(url, headers=headers, params=params)
@@ -358,6 +363,75 @@ def buscar_dados_bcb(codigo_bcb: int, start_date: str, end_date: str, logger) ->
     except Exception as e:
         logger.error(f"Erro ao buscar dados da série {codigo_bcb} do BCB: {e}")
         return None
+
+def buscar_dados_b3(indice: str, start_date: str, end_date: str, logger) -> pd.Series | None:
+    """
+    Orquestra o download e o processamento de dados de índices da B3.
+    """
+    logger.info(f"Iniciando processo de obtenção de dados da B3 para o índice '{indice}'.")
+    
+    # 1. Determinar os anos necessários para o download
+    ano_inicio = pd.to_datetime(start_date).year
+    ano_fim = pd.to_datetime(end_date).year
+    anos_necessarios = list(range(ano_inicio, ano_fim + 1))
+    logger.debug(f"Anos necessários para a análise de '{indice}': {anos_necessarios}")
+
+    # 2. Chamar o downloader do import_b3.py
+    indices_para_baixar = {indice: anos_necessarios}
+    run_b3_downloader(indices_para_baixar, logger)
+    
+    # 3. Ler, processar e consolidar os arquivos CSV baixados
+    dados_completos = pd.DataFrame()
+    pasta_dados = os.path.join(os.path.dirname(__file__), 'dados')
+
+    mapa_meses = {
+        'Jan': 1, 'Fev': 2, 'Mar': 3, 'Abr': 4, 'Mai': 5, 'Jun': 6,
+        'Jul': 7, 'Ago': 8, 'Set': 9, 'Out': 10, 'Nov': 11, 'Dez': 12
+    }
+
+    for ano in anos_necessarios:
+        caminho_arquivo = os.path.join(pasta_dados, f'{indice}-{ano}.csv')
+        if not os.path.exists(caminho_arquivo):
+            logger.warning(f"Arquivo '{caminho_arquivo}' não encontrado após tentativa de download. Pulando ano {ano}.")
+            continue
+        
+        logger.debug(f"Processando arquivo: {caminho_arquivo}")
+        # Lê o CSV, pulando a primeira linha de título e tratando o formato brasileiro
+        df_ano = pd.read_csv(caminho_arquivo, sep=';', decimal=',', skiprows=1, encoding='latin-1')
+        
+        # Remove linhas de rodapé como 'MÍNIMO'
+        df_ano = df_ano[pd.to_numeric(df_ano['Dia'], errors='coerce').notna()]
+        df_ano['Dia'] = df_ano['Dia'].astype(int)
+
+        # Unpivot: Transforma a tabela de meses em colunas para linhas de data e valor
+        df_unpivoted = df_ano.melt(id_vars=['Dia'], var_name='Mes', value_name='Close')
+        df_unpivoted.dropna(subset=['Close'], inplace=True)
+
+        # **CORREÇÃO APLICADA AQUI**
+        # A coluna 'Close' é lida como string (ex: '3.320,47').
+        # 1. Removemos o separador de milhar ('.').
+        # 2. Substituímos o separador decimal (',') por um ponto ('.').
+        # 3. Convertemos para float.
+        df_unpivoted['Close'] = df_unpivoted['Close'].str.replace('.', '', regex=False).str.replace(',', '.', regex=False).astype(float)
+
+        # Monta a data completa
+        df_unpivoted['Mes_Num'] = df_unpivoted['Mes'].map(mapa_meses)
+        df_unpivoted['Ano'] = ano
+        df_unpivoted['Date'] = pd.to_datetime(df_unpivoted[['Ano', 'Mes_Num', 'Dia']].rename(columns={'Ano': 'year', 'Mes_Num': 'month', 'Dia': 'day'}))
+        
+        dados_completos = pd.concat([dados_completos, df_unpivoted[['Date', 'Close']]])
+
+    if dados_completos.empty:
+        logger.error(f"Nenhum dado pôde ser processado para o índice '{indice}' da B3.")
+        return None
+
+    # Finaliza o processamento
+    dados_completos = dados_completos.sort_values('Date').set_index('Date')
+    
+    # Filtra novamente pelo período exato e retorna a série
+    serie_final = dados_completos.loc[start_date:end_date, 'Close']
+    logger.info(f"Dados do índice '{indice}' da B3 processados com sucesso.")
+    return serie_final
 
 def gerar_grafico_comparativo_twr(df_twr: pd.DataFrame, benchmarks_data: dict, nome_grafico: str, logger):
     """
@@ -479,9 +553,14 @@ def main():
         if df_twr is not None:
             # Define os benchmarks para comparação
             benchmarks_yf = {
-                'IBOV': '^BVSP',
+                'IBOV (YFinance)': '^BVSP',
                 'S&P 500': 'SPY', # ETF que replica o S&P 500
                 'IMID': 'IMID.L' # SPDR MSCI All Country World Investable Market UCITS ETF
+            }
+            # Benchmarks que serão baixados e processados da B3
+            benchmarks_b3 = {
+                'IFIX': 'IFIX'
+                #'IBOV (B3)': 'IBOV'
             }
             # Códigos das séries no SGS do Banco Central
             # 11: Taxa SELIC diária
@@ -501,12 +580,16 @@ def main():
             # 1. Busca os dados dos benchmarks do Yahoo Finance
             for nome, ticker in benchmarks_yf.items():
                 benchmarks_data[nome] = buscar_dados_benchmark(ticker, start_date, end_date, logger)
+            
+            # 2. Busca e processa os dados dos benchmarks da B3
+            for nome, indice in benchmarks_b3.items():
+                benchmarks_data[nome] = buscar_dados_b3(indice, start_date, end_date, logger)
 
-            # 2. Busca os dados dos benchmarks do Banco Central
+            # 3. Busca os dados dos benchmarks do Banco Central
             for nome, codigo in benchmarks_bcb.items():
                 benchmarks_data[nome] = buscar_dados_bcb(codigo, start_date, end_date, logger)
 
-            # 3. Calcula o benchmark sintético "IPCA + 6%"
+            # 4. Calcula o benchmark sintético "IPCA + 6%"
             if 'IPCA' in benchmarks_data and benchmarks_data['IPCA'] is not None:
                 logger.info("Calculando benchmark sintético 'IPCA + 6%'...")
                 # Converte a taxa anual de 6% para uma taxa mensal equivalente
