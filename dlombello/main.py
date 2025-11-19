@@ -9,6 +9,7 @@ import matplotlib.ticker as mticker
 import matplotlib.pyplot as plt
 import yfinance as yf
 from bcb import sgs
+from adjustText import adjust_text
 
 # Define o diretório raiz do projeto 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -446,7 +447,15 @@ def gerar_grafico_comparativo_twr(df_twr: pd.DataFrame, benchmarks_data: dict, n
     pasta_graficos = "dlombello/graficos"
     os.makedirs(pasta_graficos, exist_ok=True)
 
+    # --- VARIÁVEL DE CONTROLE ---
+    # Define a cada quantos meses um rótulo de performance será exibido no gráfico.
+    # Use 1 para exibir todos, 6 para exibir a cada semestre, 12 para anual, etc.
+    intervalo_meses_rotulo = 6
+
     plt.figure(figsize=(14, 8))
+
+    # Lista para armazenar todos os objetos de texto que serão ajustados
+    text_labels = []
 
     # 1. Plotar o TWR da carteira (normalizado em base 100)
     # (twr_acc + 1) transforma o percentual de retorno em um fator de crescimento
@@ -476,18 +485,26 @@ def gerar_grafico_comparativo_twr(df_twr: pd.DataFrame, benchmarks_data: dict, n
 
             # Itera sobre a Series para adicionar os rótulos.
             # Usamos .items() que é o método moderno para iterar sobre (índice, valor).
-            for data, valor_ponto in benchmark_mensal.items():
+            # Adicionamos enumerate para ter um contador e plotar a cada 6 meses.
+            for i, (data, valor_ponto) in enumerate(benchmark_mensal.items()):
                 # A verificação pd.notna() agora funciona corretamente com um valor escalar.
-                if pd.notna(valor_ponto):
-                    # O valor é a performance base 100. Para exibir o ganho/perda, subtraímos 100.
-                    plt.text(data, valor_ponto, f' {valor_ponto-100:.1f}%', va='top', ha='center', fontsize=8, alpha=0.7)
+                # Adiciona o rótulo apenas para o primeiro ponto (i==0) e a cada 6 meses.
+                if pd.notna(valor_ponto) and (i % intervalo_meses_rotulo == 0 or i == 0):
+                    # Cria o objeto de texto e o adiciona à lista para ajuste posterior
+                    label = plt.text(data, valor_ponto, f' {valor_ponto-100:.1f}%', va='top', ha='center', fontsize=8, alpha=0.7)
+                    text_labels.append(label)
         else:
             logger.warning(f"Nenhum dado válido para o benchmark '{nome}'. Não será plotado.")
 
-    # Adiciona os rótulos para a carteira por último para que fiquem por cima
+    # Adiciona os rótulos para a carteira a cada 6 meses
     for index, row in df_twr.iterrows():
-        valor_normalizado = (row['twr_acc'] + 1) * 100
-        plt.text(row['date'], valor_normalizado, f' {valor_normalizado-100:.1f}%', va='bottom', ha='center', fontsize=8, color='red', weight='bold')
+        # O índice do DataFrame (0, 1, 2...) nos serve como contador.
+        # Adiciona o rótulo apenas para o primeiro ponto (index==0) e a cada 6 meses.
+        if index % intervalo_meses_rotulo == 0 or index == 0:
+            valor_normalizado = (row['twr_acc'] + 1) * 100
+            # Cria o objeto de texto e o adiciona à lista
+            label = plt.text(row['date'], valor_normalizado, f' {valor_normalizado-100:.1f}%', va='bottom', ha='center', fontsize=8, color='red', weight='bold')
+            text_labels.append(label)
 
 
     # 3. Customizar o gráfico
@@ -498,6 +515,10 @@ def gerar_grafico_comparativo_twr(df_twr: pd.DataFrame, benchmarks_data: dict, n
     plt.grid(True, which='both', linestyle='--', linewidth=0.5)
     plt.tight_layout()
     plt.gcf().autofmt_xdate()
+
+    # 4. Ajustar a posição dos rótulos para evitar sobreposição
+    # A função adjust_text irá reposicionar os textos da lista 'text_labels'
+    adjust_text(text_labels, arrowprops=dict(arrowstyle='-', color='gray', lw=0.5))
 
     # 4. Salvar o gráfico
     caminho_arquivo = os.path.join(pasta_graficos, f'comparativo_twr_{nome_grafico}.png')
