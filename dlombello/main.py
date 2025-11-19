@@ -445,7 +445,7 @@ def main():
 
     args = parser.parse_args()
 
-    logger = setup_logger(debug=args.debug)
+    logger = setup_logger(debug=args.debug, log_file='main.log')
     if args.debug:
         logger.info("Modo de depuração ativado.")
 
