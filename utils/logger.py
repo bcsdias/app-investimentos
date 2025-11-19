@@ -2,7 +2,7 @@ import logging
 import os
 from datetime import datetime
 
-def setup_logger(hostname=None, level=None, debug=False, tipo=None, vendor=None):
+def setup_logger(hostname=None, level=None, debug=False, tipo=None, vendor=None, log_file=None):
     """
     Configura e retorna um logger configurado.
     O nível de log é determinado pelo parâmetro 'debug', a menos que 'level' seja especificado manualmente.
@@ -13,6 +13,7 @@ def setup_logger(hostname=None, level=None, debug=False, tipo=None, vendor=None)
         vendor (str): Vendor do equipamento (ex: 'cisco', 'huawei') para criar subdiretório.
         debug (bool): Se True, define o nível de log para DEBUG.
         level (int): Nível de log para override manual (ex: logging.DEBUG).
+        log_file (str): Nome específico para o arquivo de log, sobrescreve a lógica padrão.
     """
     logger_name = hostname if hostname else 'main'
     logger = logging.getLogger(logger_name)
@@ -38,7 +39,11 @@ def setup_logger(hostname=None, level=None, debug=False, tipo=None, vendor=None)
     # Define o diretório base para os logs
     base_log_dir = os.path.join(root_dir, 'log')
 
-    if hostname:
+    if log_file:
+        # Se um nome de arquivo de log específico for fornecido, use-o
+        log_dir = base_log_dir
+        log_filename = log_file
+    elif hostname:
         # Se tipo e vendor forem fornecidos, cria a estrutura de subpastas
         if tipo and vendor:
             # Garante que tipo e vendor estejam em minúsculas para os nomes das pastas

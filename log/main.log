@@ -15,3 +15,17 @@
 2025-11-19 15:00:55,378 - INFO - Buscando dados da série 433 do BCB...
 2025-11-19 15:00:56,393 - INFO - Calculando benchmark sintético 'IPCA + 6%'...
 2025-11-19 15:00:58,692 - INFO - Gráfico comparativo de TWR salvo com sucesso em: dlombello/graficos\comparativo_twr_AÇÃO.png
+2025-11-19 15:55:55,044 - INFO - --- Iniciando script de download de dados da B3 ---
+2025-11-19 15:55:55,044 - INFO - Pastas de trabalho verificadas/criadas com sucesso.
+2025-11-19 15:55:55,044 - INFO - Inicializando driver do Chrome...
+2025-11-19 15:56:00,795 - INFO - Iniciando download para o índice 'IFIX', ano 2024.
+2025-11-19 15:56:02,623 - INFO - Botão de download clicado. Aguardando o arquivo...
+2025-11-19 15:56:03,431 - INFO - Arquivo 'Evolucao_Diaria.csv' encontrado na pasta de downloads.
+2025-11-19 15:56:03,437 - ERROR - Ocorreu um erro durante a execução do script de download.
+Traceback (most recent call last):
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\import_b3.py", line 78, in <module>
+    download_b3_index_year(driver, index, year, download_folder, destination_folder, logger)
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\import_b3.py", line 45, in download_b3_index_year
+    os.rename(f'{download_folder}/Evolucao_Diaria.csv', destination_file)
+FileExistsError: [WinError 183] Cannot create a file when that file already exists: 'C:\\onedrive-bcsdias\\OneDrive\\dev\\app_investimentos\\dlombello\\downloads/Evolucao_Diaria.csv' -> 'C:\\onedrive-bcsdias\\OneDrive\\dev\\app_investimentos\\dlombello\\dados/IFIX-2024.csv'
+2025-11-19 15:56:05,929 - INFO - Driver do Chrome encerrado.
