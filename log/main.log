@@ -319,3 +319,214 @@ ValueError: could not convert string to float: '2367,76'
 2025-11-19 16:25:27,625 - INFO - Buscando dados da série 433 do BCB...
 2025-11-19 16:25:28,259 - INFO - Calculando benchmark sintético 'IPCA + 6%'...
 2025-11-19 16:25:31,024 - INFO - Gráfico comparativo de TWR salvo com sucesso em: dlombello/graficos\comparativo_twr_AÇÃO.png
+2025-11-19 16:41:10,150 - INFO - 
+
+==================== NOVA ANÁLISE ====================
+2025-11-19 16:41:10,153 - INFO - Buscando histórico na API com os parâmetros: {'classe': 'AÇÃO'}
+2025-11-19 16:41:11,863 - INFO - Dados capturados com sucesso!
+2025-11-19 16:41:11,914 - INFO - Histórico completo salvo em: dlombello/graficos\historico_completo_AÇÃO.csv
+2025-11-19 16:41:11,915 - INFO - Gerando gráficos...
+2025-11-19 16:41:12,792 - INFO - Dados do gráfico de evolução salvos em: dlombello/graficos\evolucao_AÇÃO.csv
+2025-11-19 16:41:14,571 - INFO - Gráfico de evolução salvo com sucesso em: dlombello/graficos\evolucao_AÇÃO.png
+2025-11-19 16:41:14,574 - INFO - Iniciando cálculo de TWR...
+2025-11-19 16:41:14,758 - INFO - Dados do gráfico de TWR salvos em: dlombello/graficos\evolucao_twr_AÇÃO.csv
+2025-11-19 16:41:14,949 - INFO - Gráfico de TWR salvo com sucesso em: dlombello/graficos\evolucao_twr_AÇÃO.png
+2025-11-19 16:41:14,958 - INFO - Período da análise: 2019-04-30 a 2025-10-31
+2025-11-19 16:41:14,958 - INFO - Buscando dados para o benchmark: ^BVSP...
+2025-11-19 16:41:16,155 - INFO - Buscando dados para o benchmark: SPY...
+2025-11-19 16:41:16,717 - INFO - Buscando dados para o benchmark: IMID.L...
+2025-11-19 16:41:17,114 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IFIX'.
+2025-11-19 16:41:17,114 - INFO - Iniciando orquestrador de downloads da B3.
+2025-11-19 16:41:17,114 - INFO - --- Iniciando script de download de dados da B3 ---
+2025-11-19 16:41:17,114 - INFO - Pastas de trabalho verificadas/criadas com sucesso.
+2025-11-19 16:41:17,114 - INFO - Inicializando driver do Chrome...
+2025-11-19 16:41:23,317 - INFO - Iniciando download para o índice 'IFIX', ano 2019.
+2025-11-19 16:41:57,846 - ERROR - Falha ao baixar dados para o índice 'IFIX' ano 2019. Erro: Message: 
+Stacktrace:
+Symbols not available. Dumping unresolved backtrace:
+	0xeb4103
+	0xeb4144
+	0xcbe71d
+	0xd0a03d
+	0xd0a41b
+	0xd517f2
+	0xd2c954
+	0xd4ee17
+	0xd2c706
+	0xcfda30
+	0xcfed54
+	0x11257b4
+	0x112098a
+	0xedc392
+	0xecc4c8
+	0xed324d
+	0xebc478
+	0xebc63c
+	0xea67ca
+	0x75835d49
+	0x7749d6db
+	0x7749d661
+
+2025-11-19 16:41:57,851 - INFO - Iniciando download para o índice 'IFIX', ano 2020.
+2025-11-19 16:41:59,690 - INFO - Botão de download clicado. Aguardando o arquivo...
+2025-11-19 16:42:00,400 - INFO - Arquivo 'Evolucao_Diaria.csv' encontrado na pasta de downloads.
+2025-11-19 16:42:00,410 - WARNING - Arquivo de destino existente 'C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IFIX-2020.csv' foi removido para ser substituído.
+2025-11-19 16:42:00,416 - INFO - Arquivo renomeado e movido para: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IFIX-2020.csv
+2025-11-19 16:42:00,418 - INFO - Iniciando download para o índice 'IFIX', ano 2021.
+2025-11-19 16:42:01,623 - INFO - Botão de download clicado. Aguardando o arquivo...
+2025-11-19 16:42:02,128 - INFO - Arquivo 'Evolucao_Diaria.csv' encontrado na pasta de downloads.
+2025-11-19 16:42:02,132 - WARNING - Arquivo de destino existente 'C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IFIX-2021.csv' foi removido para ser substituído.
+2025-11-19 16:42:02,134 - INFO - Arquivo renomeado e movido para: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IFIX-2021.csv
+2025-11-19 16:42:02,137 - INFO - Iniciando download para o índice 'IFIX', ano 2022.
+2025-11-19 16:42:03,311 - INFO - Botão de download clicado. Aguardando o arquivo...
+2025-11-19 16:42:03,922 - INFO - Arquivo 'Evolucao_Diaria.csv' encontrado na pasta de downloads.
+2025-11-19 16:42:03,925 - WARNING - Arquivo de destino existente 'C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IFIX-2022.csv' foi removido para ser substituído.
+2025-11-19 16:42:03,927 - INFO - Arquivo renomeado e movido para: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IFIX-2022.csv
+2025-11-19 16:42:03,927 - INFO - Iniciando download para o índice 'IFIX', ano 2023.
+2025-11-19 16:42:05,106 - INFO - Botão de download clicado. Aguardando o arquivo...
+2025-11-19 16:42:05,813 - INFO - Arquivo 'Evolucao_Diaria.csv' encontrado na pasta de downloads.
+2025-11-19 16:42:05,813 - WARNING - Arquivo de destino existente 'C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IFIX-2023.csv' foi removido para ser substituído.
+2025-11-19 16:42:05,819 - INFO - Arquivo renomeado e movido para: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IFIX-2023.csv
+2025-11-19 16:42:05,819 - INFO - Iniciando download para o índice 'IFIX', ano 2024.
+2025-11-19 16:42:06,884 - INFO - Botão de download clicado. Aguardando o arquivo...
+2025-11-19 16:42:07,491 - INFO - Arquivo 'Evolucao_Diaria.csv' encontrado na pasta de downloads.
+2025-11-19 16:42:07,494 - WARNING - Arquivo de destino existente 'C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IFIX-2024.csv' foi removido para ser substituído.
+2025-11-19 16:42:07,496 - INFO - Arquivo renomeado e movido para: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IFIX-2024.csv
+2025-11-19 16:42:07,496 - INFO - Iniciando download para o índice 'IFIX', ano 2025.
+2025-11-19 16:42:08,010 - INFO - Botão de download clicado. Aguardando o arquivo...
+2025-11-19 16:42:08,817 - INFO - Arquivo 'Evolucao_Diaria.csv' encontrado na pasta de downloads.
+2025-11-19 16:42:08,817 - WARNING - Arquivo de destino existente 'C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IFIX-2025.csv' foi removido para ser substituído.
+2025-11-19 16:42:08,823 - INFO - Arquivo renomeado e movido para: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IFIX-2025.csv
+2025-11-19 16:42:08,824 - INFO - --- Processo de download da B3 finalizado. ---
+2025-11-19 16:42:11,828 - INFO - Driver do Chrome encerrado.
+2025-11-19 16:42:11,925 - INFO - Dados do índice 'IFIX' da B3 processados com sucesso.
+2025-11-19 16:42:11,925 - INFO - Buscando dados da série 11 do BCB...
+2025-11-19 16:42:21,416 - INFO - Buscando dados da série 433 do BCB...
+2025-11-19 16:42:22,311 - INFO - Calculando benchmark sintético 'IPCA + 6%'...
+2025-11-19 16:43:24,199 - INFO - Gráfico comparativo de TWR salvo com sucesso em: dlombello/graficos\comparativo_twr_AÇÃO.png
+2025-11-19 16:50:49,691 - INFO - 
+
+==================== NOVA ANÁLISE ====================
+2025-11-19 16:50:49,691 - INFO - Buscando histórico na API com os parâmetros: {'classe': 'AÇÃO'}
+2025-11-19 16:50:51,381 - INFO - Dados capturados com sucesso!
+2025-11-19 16:50:51,437 - INFO - Histórico completo salvo em: dlombello/graficos\historico_completo_AÇÃO.csv
+2025-11-19 16:50:51,439 - INFO - Gerando gráficos...
+2025-11-19 16:50:52,163 - INFO - Dados do gráfico de evolução salvos em: dlombello/graficos\evolucao_AÇÃO.csv
+2025-11-19 16:50:53,597 - INFO - Gráfico de evolução salvo com sucesso em: dlombello/graficos\evolucao_AÇÃO.png
+2025-11-19 16:50:53,597 - INFO - Iniciando cálculo de TWR...
+2025-11-19 16:50:53,796 - INFO - Dados do gráfico de TWR salvos em: dlombello/graficos\evolucao_twr_AÇÃO.csv
+2025-11-19 16:50:53,974 - INFO - Gráfico de TWR salvo com sucesso em: dlombello/graficos\evolucao_twr_AÇÃO.png
+2025-11-19 16:50:53,974 - INFO - Período da análise: 2019-04-30 a 2025-10-31
+2025-11-19 16:50:53,974 - INFO - Buscando dados para o benchmark: ^BVSP...
+2025-11-19 16:50:55,236 - INFO - Buscando dados para o benchmark: SPY...
+2025-11-19 16:50:55,652 - INFO - Buscando dados para o benchmark: IMID.L...
+2025-11-19 16:50:56,056 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IFIX'.
+2025-11-19 16:50:56,056 - INFO - Iniciando orquestrador de downloads da B3.
+2025-11-19 16:50:56,062 - INFO - --- Iniciando script de download de dados da B3 ---
+2025-11-19 16:50:56,062 - INFO - Pastas de trabalho verificadas/criadas com sucesso.
+2025-11-19 16:50:56,062 - INFO - Inicializando driver do Chrome...
+2025-11-19 16:51:01,721 - INFO - Iniciando download para o índice 'IFIX', ano 2019.
+2025-11-19 16:51:03,575 - INFO - Botão de download clicado. Aguardando o arquivo...
+2025-11-19 16:51:04,385 - INFO - Arquivo 'Evolucao_Diaria.csv' encontrado na pasta de downloads.
+2025-11-19 16:51:04,397 - WARNING - Arquivo de destino existente 'C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IFIX-2019.csv' foi removido para ser substituído.
+2025-11-19 16:51:04,407 - INFO - Arquivo renomeado e movido para: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IFIX-2019.csv
+2025-11-19 16:51:04,408 - INFO - Iniciando download para o índice 'IFIX', ano 2020.
+2025-11-19 16:51:05,537 - INFO - Botão de download clicado. Aguardando o arquivo...
+2025-11-19 16:51:06,145 - INFO - Arquivo 'Evolucao_Diaria.csv' encontrado na pasta de downloads.
+2025-11-19 16:51:06,149 - WARNING - Arquivo de destino existente 'C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IFIX-2020.csv' foi removido para ser substituído.
+2025-11-19 16:51:06,152 - INFO - Arquivo renomeado e movido para: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IFIX-2020.csv
+2025-11-19 16:51:06,152 - INFO - Iniciando download para o índice 'IFIX', ano 2021.
+2025-11-19 16:51:07,256 - INFO - Botão de download clicado. Aguardando o arquivo...
+2025-11-19 16:51:07,761 - INFO - Arquivo 'Evolucao_Diaria.csv' encontrado na pasta de downloads.
+2025-11-19 16:51:07,766 - WARNING - Arquivo de destino existente 'C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IFIX-2021.csv' foi removido para ser substituído.
+2025-11-19 16:51:07,772 - INFO - Arquivo renomeado e movido para: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IFIX-2021.csv
+2025-11-19 16:51:07,774 - INFO - Iniciando download para o índice 'IFIX', ano 2022.
+2025-11-19 16:51:08,950 - INFO - Botão de download clicado. Aguardando o arquivo...
+2025-11-19 16:51:09,455 - INFO - Arquivo 'Evolucao_Diaria.csv' encontrado na pasta de downloads.
+2025-11-19 16:51:09,456 - WARNING - Arquivo de destino existente 'C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IFIX-2022.csv' foi removido para ser substituído.
+2025-11-19 16:51:09,460 - INFO - Arquivo renomeado e movido para: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IFIX-2022.csv
+2025-11-19 16:51:09,460 - INFO - Iniciando download para o índice 'IFIX', ano 2023.
+2025-11-19 16:51:10,575 - INFO - Botão de download clicado. Aguardando o arquivo...
+2025-11-19 16:51:11,081 - INFO - Arquivo 'Evolucao_Diaria.csv' encontrado na pasta de downloads.
+2025-11-19 16:51:11,081 - WARNING - Arquivo de destino existente 'C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IFIX-2023.csv' foi removido para ser substituído.
+2025-11-19 16:51:11,102 - INFO - Arquivo renomeado e movido para: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IFIX-2023.csv
+2025-11-19 16:51:11,102 - INFO - Iniciando download para o índice 'IFIX', ano 2024.
+2025-11-19 16:51:12,172 - INFO - Botão de download clicado. Aguardando o arquivo...
+2025-11-19 16:51:12,678 - INFO - Arquivo 'Evolucao_Diaria.csv' encontrado na pasta de downloads.
+2025-11-19 16:51:12,680 - WARNING - Arquivo de destino existente 'C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IFIX-2024.csv' foi removido para ser substituído.
+2025-11-19 16:51:12,683 - INFO - Arquivo renomeado e movido para: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IFIX-2024.csv
+2025-11-19 16:51:12,683 - INFO - Iniciando download para o índice 'IFIX', ano 2025.
+2025-11-19 16:51:13,202 - INFO - Botão de download clicado. Aguardando o arquivo...
+2025-11-19 16:51:13,809 - INFO - Arquivo 'Evolucao_Diaria.csv' encontrado na pasta de downloads.
+2025-11-19 16:51:13,811 - WARNING - Arquivo de destino existente 'C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IFIX-2025.csv' foi removido para ser substituído.
+2025-11-19 16:51:13,818 - INFO - Arquivo renomeado e movido para: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IFIX-2025.csv
+2025-11-19 16:51:13,822 - INFO - --- Processo de download da B3 finalizado. ---
+2025-11-19 16:51:16,902 - INFO - Driver do Chrome encerrado.
+2025-11-19 16:51:16,980 - INFO - Dados do índice 'IFIX' da B3 processados com sucesso.
+2025-11-19 16:51:16,980 - INFO - Buscando dados da série 11 do BCB...
+2025-11-19 16:51:17,652 - INFO - Buscando dados da série 433 do BCB...
+2025-11-19 16:51:18,250 - INFO - Calculando benchmark sintético 'IPCA + 6%'...
+2025-11-19 16:51:22,649 - INFO - Gráfico comparativo de TWR salvo com sucesso em: dlombello/graficos\comparativo_twr_AÇÃO.png
+2025-11-19 16:53:18,951 - INFO - 
+
+==================== NOVA ANÁLISE ====================
+2025-11-19 16:53:18,951 - INFO - Buscando histórico na API com os parâmetros: {'classe': 'AÇÃO'}
+2025-11-19 16:53:20,917 - INFO - Dados capturados com sucesso!
+2025-11-19 16:53:20,960 - INFO - Histórico completo salvo em: dlombello/graficos\historico_completo_AÇÃO.csv
+2025-11-19 16:53:20,974 - INFO - Gerando gráficos...
+2025-11-19 16:53:21,758 - INFO - Dados do gráfico de evolução salvos em: dlombello/graficos\evolucao_AÇÃO.csv
+2025-11-19 16:53:23,559 - INFO - Gráfico de evolução salvo com sucesso em: dlombello/graficos\evolucao_AÇÃO.png
+2025-11-19 16:53:23,559 - INFO - Iniciando cálculo de TWR...
+2025-11-19 16:53:23,804 - INFO - Dados do gráfico de TWR salvos em: dlombello/graficos\evolucao_twr_AÇÃO.csv
+2025-11-19 16:53:24,094 - INFO - Gráfico de TWR salvo com sucesso em: dlombello/graficos\evolucao_twr_AÇÃO.png
+2025-11-19 16:53:24,094 - INFO - Período da análise: 2019-04-30 a 2025-10-31
+2025-11-19 16:53:24,094 - INFO - Buscando dados para o benchmark: ^BVSP...
+2025-11-19 16:53:24,966 - INFO - Buscando dados para o benchmark: SPY...
+2025-11-19 16:53:25,547 - INFO - Buscando dados para o benchmark: IMID.L...
+2025-11-19 16:53:25,961 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IFIX'.
+2025-11-19 16:53:25,961 - INFO - Iniciando orquestrador de downloads da B3.
+2025-11-19 16:53:25,961 - INFO - --- Iniciando script de download de dados da B3 ---
+2025-11-19 16:53:25,961 - INFO - Pastas de trabalho verificadas/criadas com sucesso.
+2025-11-19 16:53:25,969 - INFO - Inicializando driver do Chrome...
+2025-11-19 16:53:32,066 - INFO - Iniciando download para o índice 'IFIX', ano 2019.
+2025-11-19 16:53:34,197 - INFO - Botão de download clicado. Aguardando o arquivo...
+2025-11-19 16:53:34,907 - INFO - Arquivo 'Evolucao_Diaria.csv' encontrado na pasta de downloads.
+2025-11-19 16:53:34,915 - WARNING - Arquivo de destino existente 'C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IFIX-2019.csv' foi removido para ser substituído.
+2025-11-19 16:53:34,921 - INFO - Arquivo renomeado e movido para: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IFIX-2019.csv
+2025-11-19 16:53:34,923 - INFO - Iniciando download para o índice 'IFIX', ano 2020.
+2025-11-19 16:53:36,187 - INFO - Botão de download clicado. Aguardando o arquivo...
+2025-11-19 16:53:36,693 - INFO - Arquivo 'Evolucao_Diaria.csv' encontrado na pasta de downloads.
+2025-11-19 16:53:36,693 - WARNING - Arquivo de destino existente 'C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IFIX-2020.csv' foi removido para ser substituído.
+2025-11-19 16:53:36,693 - INFO - Arquivo renomeado e movido para: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IFIX-2020.csv
+2025-11-19 16:53:36,693 - INFO - Iniciando download para o índice 'IFIX', ano 2021.
+2025-11-19 16:53:37,846 - INFO - Botão de download clicado. Aguardando o arquivo...
+2025-11-19 16:53:38,353 - INFO - Arquivo 'Evolucao_Diaria.csv' encontrado na pasta de downloads.
+2025-11-19 16:53:38,353 - WARNING - Arquivo de destino existente 'C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IFIX-2021.csv' foi removido para ser substituído.
+2025-11-19 16:53:38,369 - INFO - Arquivo renomeado e movido para: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IFIX-2021.csv
+2025-11-19 16:53:38,369 - INFO - Iniciando download para o índice 'IFIX', ano 2022.
+2025-11-19 16:53:39,476 - INFO - Botão de download clicado. Aguardando o arquivo...
+2025-11-19 16:53:40,083 - INFO - Arquivo 'Evolucao_Diaria.csv' encontrado na pasta de downloads.
+2025-11-19 16:53:40,083 - WARNING - Arquivo de destino existente 'C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IFIX-2022.csv' foi removido para ser substituído.
+2025-11-19 16:53:40,102 - INFO - Arquivo renomeado e movido para: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IFIX-2022.csv
+2025-11-19 16:53:40,102 - INFO - Iniciando download para o índice 'IFIX', ano 2023.
+2025-11-19 16:53:41,191 - INFO - Botão de download clicado. Aguardando o arquivo...
+2025-11-19 16:53:41,696 - INFO - Arquivo 'Evolucao_Diaria.csv' encontrado na pasta de downloads.
+2025-11-19 16:53:41,700 - WARNING - Arquivo de destino existente 'C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IFIX-2023.csv' foi removido para ser substituído.
+2025-11-19 16:53:41,733 - INFO - Arquivo renomeado e movido para: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IFIX-2023.csv
+2025-11-19 16:53:41,735 - INFO - Iniciando download para o índice 'IFIX', ano 2024.
+2025-11-19 16:53:42,853 - INFO - Botão de download clicado. Aguardando o arquivo...
+2025-11-19 16:53:43,358 - INFO - Arquivo 'Evolucao_Diaria.csv' encontrado na pasta de downloads.
+2025-11-19 16:53:43,360 - WARNING - Arquivo de destino existente 'C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IFIX-2024.csv' foi removido para ser substituído.
+2025-11-19 16:53:43,365 - INFO - Arquivo renomeado e movido para: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IFIX-2024.csv
+2025-11-19 16:53:43,365 - INFO - Iniciando download para o índice 'IFIX', ano 2025.
+2025-11-19 16:53:43,895 - INFO - Botão de download clicado. Aguardando o arquivo...
+2025-11-19 16:53:44,401 - INFO - Arquivo 'Evolucao_Diaria.csv' encontrado na pasta de downloads.
+2025-11-19 16:53:44,401 - WARNING - Arquivo de destino existente 'C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IFIX-2025.csv' foi removido para ser substituído.
+2025-11-19 16:53:44,424 - INFO - Arquivo renomeado e movido para: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IFIX-2025.csv
+2025-11-19 16:53:44,426 - INFO - --- Processo de download da B3 finalizado. ---
+2025-11-19 16:53:47,419 - INFO - Driver do Chrome encerrado.
+2025-11-19 16:53:47,501 - INFO - Dados do índice 'IFIX' da B3 processados com sucesso.
+2025-11-19 16:53:47,501 - INFO - Buscando dados da série 11 do BCB...
+2025-11-19 16:53:48,146 - INFO - Buscando dados da série 433 do BCB...
+2025-11-19 16:53:48,739 - INFO - Calculando benchmark sintético 'IPCA + 6%'...
+2025-11-19 16:53:52,903 - INFO - Gráfico comparativo de TWR salvo com sucesso em: dlombello/graficos\comparativo_twr_AÇÃO.png
