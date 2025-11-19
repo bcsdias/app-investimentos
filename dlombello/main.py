@@ -642,10 +642,14 @@ def gerar_grafico_comparativo_twr(df_twr: pd.DataFrame, benchmarks_data: dict, n
     # Lista para armazenar todos os objetos de texto que serão ajustados
     text_labels = []
 
+    # Mapa para guardar a cor utilizada em cada linha (benchmark)
+    color_map = {}
+
     # 1. Plotar o TWR da carteira (normalizado em base 100)
     # (twr_acc + 1) transforma o percentual de retorno em um fator de crescimento
     carteira_normalizada = (df_twr['twr_acc'] + 1) * 100
-    ax.plot(df_twr['date'], carteira_normalizada, label=f'Carteira - {nome_grafico}', color='red', linewidth=2.5)
+    linha_carteira, = ax.plot(df_twr['date'], carteira_normalizada, label=f'Carteira - {nome_grafico}', color='red', linewidth=2.5)
+    color_map[f'Carteira - {nome_grafico}'] = linha_carteira.get_color()
 
     # 2. Plotar cada benchmark (normalizado em base 100)
     for nome, dados_benchmark in benchmarks_data.items():
@@ -654,7 +658,8 @@ def gerar_grafico_comparativo_twr(df_twr: pd.DataFrame, benchmarks_data: dict, n
             # Normaliza o benchmark para começar em 100
             benchmark_normalizado = (dados_benchmark / dados_benchmark.iloc[0]) * 100
             logger.debug(f"Dados para '{nome}' encontrados. Normalizando e plotando.")
-            ax.plot(benchmark_normalizado.index, benchmark_normalizado, label=nome, linestyle='--')
+            linha_bench, = ax.plot(benchmark_normalizado.index, benchmark_normalizado, label=nome, linestyle='--')
+            color_map[nome] = linha_bench.get_color()
 
             # Adiciona rótulos nos pontos mensais correspondentes ao df_twr
             # Usamos reindex para alinhar as datas diárias do benchmark com as datas mensais da carteira
@@ -709,15 +714,32 @@ def gerar_grafico_comparativo_twr(df_twr: pd.DataFrame, benchmarks_data: dict, n
     if df_resumo is not None:
         # Prepara os dados para a função table
         cell_text = df_resumo.values
-        row_labels = df_resumo.index
-        col_labels = df_resumo.columns
+        row_labels = list(df_resumo.index)
+        col_labels = list(df_resumo.columns)
+
+        # Ajusta os rótulos das colunas para indicar que entre parênteses está o acumulado
+        col_labels_display = [f"{c} (acc)" if str(c).lower() != 'total' else 'Total' for c in col_labels]
 
         # Adiciona a tabela na parte de baixo do gráfico
-        tabela = ax.table(cellText=cell_text, rowLabels=row_labels, colLabels=col_labels,
-                          loc='bottom', cellLoc='center', bbox=[0, -0.4, 1, 0.3])
+        tabela = ax.table(cellText=cell_text, rowLabels=row_labels, colLabels=col_labels_display,
+                  loc='bottom', cellLoc='center', bbox=[0, -0.4, 1, 0.3])
         tabela.auto_set_font_size(False)
         tabela.set_fontsize(10)
         tabela.scale(1, 1.5) # Ajusta a altura das células
+
+        # Colorir a célula do rótulo da linha com a cor da linha do gráfico, quando disponível
+        try:
+            celld = tabela.get_celld()
+            for (r, c), cell in celld.items():
+                # Em matplotlib o índice de coluna das rowLabels costuma ser -1
+                if c == -1 and 0 <= r < len(row_labels):
+                    nome_linha = row_labels[r]
+                    cor = color_map.get(nome_linha)
+                    if cor:
+                        cell.get_text().set_color(cor)
+                        cell.get_text().set_weight('bold')
+        except Exception:
+            logger.debug('Não foi possível colorir os rótulos das linhas na tabela.')
 
         # Ajusta o layout para dar espaço para a tabela
         fig.subplots_adjust(bottom=0.3)
