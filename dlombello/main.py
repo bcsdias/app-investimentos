@@ -507,11 +507,14 @@ def calcular_rentabilidades_resumo(df_twr: pd.DataFrame, benchmarks_data: dict, 
             logger.debug(f"Benchmark '{nome}' vazio ou inválido para cálculo anual.")
             continue
 
-        # Pega o valor no final de cada ano e calcula o retorno anual
-        anual_bench = s.resample('A').last()
-        retornos_anuais_bench = anual_bench.pct_change()
+        # Normaliza o benchmark como fator a partir do primeiro valor (base 1)
+        fator_bench = s / s.iloc[0]
+        anual_bench = fator_bench.resample('A').last()
+        # Retorno anual = pct_change; para o primeiro ano, usa o fator final do ano menos 1
         if not anual_bench.empty:
-            retornos_anuais_bench.iloc[0] = anual_bench.iloc[0] - 1
+            retornos_anuais_bench = anual_bench.pct_change().fillna(anual_bench.iloc[0] - 1)
+        else:
+            retornos_anuais_bench = anual_bench.pct_change()
 
         # Se for DataFrame resultante (caso raro), reduz para Series
         if isinstance(retornos_anuais_bench, pd.DataFrame):
