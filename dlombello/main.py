@@ -826,7 +826,9 @@ def main():
             }
             # Benchmarks que serão baixados e processados da B3
             benchmarks_b3 = {
-                'IFIX': 'IFIX'
+                'IFIX': 'IFIX',
+                'IBSD': 'IBSD',
+                'IDIV': 'IDIV'
                 #'IBOV (B3)': 'IBOV'
             }
             # Códigos das séries no SGS do Banco Central
