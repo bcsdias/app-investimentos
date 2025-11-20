@@ -5394,3 +5394,101 @@ date
 2025-11-19 18:02:39,898 - DEBUG - Tipo de dados para o benchmark 'IPCA + 6%': <class 'pandas.core.series.Series'>
 2025-11-19 18:02:39,912 - DEBUG - Rentabilidades totais calculadas: {'Carteira - AÇÃO': 1.164890223387872, 'IBOV (YFinance)': 0.5441138314323373, 'S&P 500': 1.5521864382798123, 'IMID': 1.0769579955706625, 'IFIX': 0.4325898463194404, 'SELIC': 0.7543313516892791, 'IPCA': 0.41457140016429594, 'IPCA + 6%': 1.0659176093780194}
 2025-11-19 18:02:42,960 - INFO - Gráfico comparativo de TWR salvo com sucesso em: dlombello/graficos\comparativo_twr_AÇÃO.png
+2025-11-20 11:45:32,775 - INFO - 
+
+==================== NOVA ANÁLISE ====================
+2025-11-20 11:45:32,775 - INFO - Buscando histórico na API com os parâmetros: {'classe': 'AÇÃO'}
+2025-11-20 11:45:34,611 - INFO - Dados capturados com sucesso!
+2025-11-20 11:45:34,654 - INFO - Histórico completo salvo em: dlombello/graficos\historico_completo_AÇÃO.csv
+2025-11-20 11:45:34,654 - INFO - Gerando gráficos...
+2025-11-20 11:45:35,731 - INFO - Dados do gráfico de evolução salvos em: dlombello/graficos\evolucao_AÇÃO.csv
+2025-11-20 11:45:37,934 - INFO - Gráfico de evolução salvo com sucesso em: dlombello/graficos\evolucao_AÇÃO.png
+2025-11-20 11:45:37,938 - INFO - Iniciando cálculo de TWR...
+2025-11-20 11:45:38,120 - INFO - Dados do gráfico de TWR salvos em: dlombello/graficos\evolucao_twr_AÇÃO.csv
+2025-11-20 11:45:38,280 - INFO - Gráfico de TWR salvo com sucesso em: dlombello/graficos\evolucao_twr_AÇÃO.png
+2025-11-20 11:45:38,280 - INFO - Período da análise: 2019-04-30 a 2025-10-31
+2025-11-20 11:45:38,280 - INFO - Buscando dados para o benchmark: ^BVSP...
+2025-11-20 11:45:39,705 - INFO - Buscando dados para o benchmark: SPY...
+2025-11-20 11:45:40,159 - INFO - Buscando dados para o benchmark: IMID.L...
+2025-11-20 11:45:40,477 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IFIX'.
+2025-11-20 11:45:40,477 - INFO - Todos os arquivos necessários para o índice 'IFIX' já existem localmente. Download pulado.
+2025-11-20 11:45:40,566 - INFO - Dados do índice 'IFIX' da B3 processados com sucesso.
+2025-11-20 11:45:40,567 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IBSD'.
+2025-11-20 11:45:40,569 - INFO - Arquivos não encontrados para os anos: [2019, 2020, 2021, 2022, 2023, 2024, 2025]. Iniciando download...
+2025-11-20 11:45:40,570 - INFO - Iniciando orquestrador de downloads da B3.
+2025-11-20 11:45:40,572 - INFO - --- Iniciando script de download de dados da B3 ---
+2025-11-20 11:45:40,573 - INFO - Pastas de trabalho verificadas/criadas com sucesso.
+2025-11-20 11:45:40,573 - INFO - Inicializando driver do Chrome...
+2025-11-20 11:45:52,550 - INFO - Iniciando download para o índice 'IBSD', ano 2019.
+2025-11-20 11:45:54,379 - INFO - Botão de download clicado. Aguardando o arquivo...
+2025-11-20 11:45:55,089 - INFO - Arquivo 'Evolucao_Diaria.csv' encontrado na pasta de downloads.
+2025-11-20 11:45:55,096 - INFO - Arquivo renomeado e movido para: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IBSD-2019.csv
+2025-11-20 11:45:55,099 - INFO - Iniciando download para o índice 'IBSD', ano 2020.
+2025-11-20 11:45:56,303 - INFO - Botão de download clicado. Aguardando o arquivo...
+2025-11-20 11:45:56,911 - INFO - Arquivo 'Evolucao_Diaria.csv' encontrado na pasta de downloads.
+2025-11-20 11:45:56,914 - INFO - Arquivo renomeado e movido para: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IBSD-2020.csv
+2025-11-20 11:45:56,914 - INFO - Iniciando download para o índice 'IBSD', ano 2021.
+2025-11-20 11:45:58,118 - INFO - Botão de download clicado. Aguardando o arquivo...
+2025-11-20 11:46:28,159 - ERROR - Tempo de espera excedido (30s). O arquivo 'Evolucao_Diaria.csv' não foi encontrado em 'C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\downloads'.
+2025-11-20 11:46:28,159 - ERROR - Falha ao baixar dados para o índice 'IBSD' ano 2021. Erro: Download do arquivo demorou demais.
+2025-11-20 11:46:28,159 - INFO - Iniciando download para o índice 'IBSD', ano 2022.
+2025-11-20 11:46:29,198 - INFO - Botão de download clicado. Aguardando o arquivo...
+2025-11-20 11:46:29,714 - INFO - Arquivo 'Evolucao_Diaria.csv' encontrado na pasta de downloads.
+2025-11-20 11:46:29,714 - INFO - Arquivo renomeado e movido para: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IBSD-2022.csv
+2025-11-20 11:46:29,720 - INFO - Iniciando download para o índice 'IBSD', ano 2023.
+2025-11-20 11:46:30,846 - INFO - Botão de download clicado. Aguardando o arquivo...
+2025-11-20 11:46:31,357 - INFO - Arquivo 'Evolucao_Diaria.csv' encontrado na pasta de downloads.
+2025-11-20 11:46:31,362 - INFO - Arquivo renomeado e movido para: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IBSD-2023.csv
+2025-11-20 11:46:31,363 - INFO - Iniciando download para o índice 'IBSD', ano 2024.
+2025-11-20 11:46:32,582 - INFO - Botão de download clicado. Aguardando o arquivo...
+2025-11-20 11:46:33,090 - INFO - Arquivo 'Evolucao_Diaria.csv' encontrado na pasta de downloads.
+2025-11-20 11:46:33,090 - INFO - Arquivo renomeado e movido para: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IBSD-2024.csv
+2025-11-20 11:46:33,094 - INFO - Iniciando download para o índice 'IBSD', ano 2025.
+2025-11-20 11:46:33,699 - INFO - Botão de download clicado. Aguardando o arquivo...
+2025-11-20 11:46:34,307 - INFO - Arquivo 'Evolucao_Diaria.csv' encontrado na pasta de downloads.
+2025-11-20 11:46:34,308 - INFO - Arquivo renomeado e movido para: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IBSD-2025.csv
+2025-11-20 11:46:34,308 - INFO - --- Processo de download da B3 finalizado. ---
+2025-11-20 11:46:37,409 - INFO - Driver do Chrome encerrado.
+2025-11-20 11:46:37,448 - WARNING - Arquivo 'C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados\IBSD-2021.csv' não encontrado após tentativa de download. Pulando ano 2021.
+2025-11-20 11:46:37,512 - INFO - Dados do índice 'IBSD' da B3 processados com sucesso.
+2025-11-20 11:46:37,512 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IDIV'.
+2025-11-20 11:46:37,514 - INFO - Arquivos não encontrados para os anos: [2019, 2020, 2021, 2022, 2023, 2024, 2025]. Iniciando download...
+2025-11-20 11:46:37,514 - INFO - Iniciando orquestrador de downloads da B3.
+2025-11-20 11:46:37,515 - INFO - --- Iniciando script de download de dados da B3 ---
+2025-11-20 11:46:37,516 - INFO - Pastas de trabalho verificadas/criadas com sucesso.
+2025-11-20 11:46:37,516 - INFO - Inicializando driver do Chrome...
+2025-11-20 11:46:43,583 - INFO - Iniciando download para o índice 'IDIV', ano 2019.
+2025-11-20 11:46:45,657 - INFO - Botão de download clicado. Aguardando o arquivo...
+2025-11-20 11:46:46,365 - INFO - Arquivo 'Evolucao_Diaria.csv' encontrado na pasta de downloads.
+2025-11-20 11:46:46,370 - INFO - Arquivo renomeado e movido para: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IDIV-2019.csv
+2025-11-20 11:46:46,371 - INFO - Iniciando download para o índice 'IDIV', ano 2020.
+2025-11-20 11:46:47,595 - INFO - Botão de download clicado. Aguardando o arquivo...
+2025-11-20 11:46:48,101 - INFO - Arquivo 'Evolucao_Diaria.csv' encontrado na pasta de downloads.
+2025-11-20 11:46:48,104 - INFO - Arquivo renomeado e movido para: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IDIV-2020.csv
+2025-11-20 11:46:48,105 - INFO - Iniciando download para o índice 'IDIV', ano 2021.
+2025-11-20 11:46:49,211 - INFO - Botão de download clicado. Aguardando o arquivo...
+2025-11-20 11:46:49,826 - INFO - Arquivo 'Evolucao_Diaria.csv' encontrado na pasta de downloads.
+2025-11-20 11:46:49,827 - INFO - Arquivo renomeado e movido para: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IDIV-2021.csv
+2025-11-20 11:46:49,827 - INFO - Iniciando download para o índice 'IDIV', ano 2022.
+2025-11-20 11:46:50,995 - INFO - Botão de download clicado. Aguardando o arquivo...
+2025-11-20 11:46:51,500 - INFO - Arquivo 'Evolucao_Diaria.csv' encontrado na pasta de downloads.
+2025-11-20 11:46:51,500 - INFO - Arquivo renomeado e movido para: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IDIV-2022.csv
+2025-11-20 11:46:51,500 - INFO - Iniciando download para o índice 'IDIV', ano 2023.
+2025-11-20 11:46:52,632 - INFO - Botão de download clicado. Aguardando o arquivo...
+2025-11-20 11:46:53,137 - INFO - Arquivo 'Evolucao_Diaria.csv' encontrado na pasta de downloads.
+2025-11-20 11:46:53,137 - INFO - Arquivo renomeado e movido para: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IDIV-2023.csv
+2025-11-20 11:46:53,137 - INFO - Iniciando download para o índice 'IDIV', ano 2024.
+2025-11-20 11:46:54,231 - INFO - Botão de download clicado. Aguardando o arquivo...
+2025-11-20 11:46:54,736 - INFO - Arquivo 'Evolucao_Diaria.csv' encontrado na pasta de downloads.
+2025-11-20 11:46:54,736 - INFO - Arquivo renomeado e movido para: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IDIV-2024.csv
+2025-11-20 11:46:54,736 - INFO - Iniciando download para o índice 'IDIV', ano 2025.
+2025-11-20 11:46:55,385 - INFO - Botão de download clicado. Aguardando o arquivo...
+2025-11-20 11:46:55,993 - INFO - Arquivo 'Evolucao_Diaria.csv' encontrado na pasta de downloads.
+2025-11-20 11:46:55,997 - INFO - Arquivo renomeado e movido para: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IDIV-2025.csv
+2025-11-20 11:46:55,998 - INFO - --- Processo de download da B3 finalizado. ---
+2025-11-20 11:46:58,846 - INFO - Driver do Chrome encerrado.
+2025-11-20 11:46:58,916 - INFO - Dados do índice 'IDIV' da B3 processados com sucesso.
+2025-11-20 11:46:58,916 - INFO - Buscando dados da série 11 do BCB...
+2025-11-20 11:47:08,418 - INFO - Buscando dados da série 433 do BCB...
+2025-11-20 11:47:09,367 - INFO - Calculando benchmark sintético 'IPCA + 6%'...
+2025-11-20 11:47:13,001 - INFO - Gráfico comparativo de TWR salvo com sucesso em: dlombello/graficos\comparativo_twr_AÇÃO.png
