@@ -648,54 +648,82 @@ def gerar_grafico_comparativo_twr(df_twr: pd.DataFrame, benchmarks_data: dict, n
     # Mapa para guardar a cor utilizada em cada linha (benchmark)
     color_map = {}
 
+    # --- ORDENAR BENCHMARKS POR RENTABILIDADE TOTAL ---
+    # Calcula o ranking dos benchmarks pela rentabilidade total (do maior para o menor)
+    # Isso será usado para ordenar a tabela e a legenda
+    def _parse_percent(val):
+        # Aceita string tipo '23.4%' ou '23.4% (23.4%)' ou float
+        if isinstance(val, str):
+            v = val.split('%')[0].replace('(', '').replace(')', '').split()[0]
+            try:
+                return float(v.replace(',', '.')) / 100
+            except Exception:
+                return float('-inf')
+        try:
+            return float(val)
+        except Exception:
+            return float('-inf')
+
+    # Garante que a função de resumo já foi chamada para obter a tabela
+    df_resumo = calcular_rentabilidades_resumo(df_twr, benchmarks_data, nome_grafico, logger)
+    if df_resumo is not None and 'Total' in df_resumo.columns:
+        # Cria lista de (nome, total) e ordena
+        total_ranking = sorted(
+            [(idx, _parse_percent(df_resumo.at[idx, 'Total'])) for idx in df_resumo.index],
+            key=lambda x: x[1], reverse=True)
+        ordered_labels = [x[0] for x in total_ranking]
+    else:
+        ordered_labels = None
+
     # 1. Plotar o TWR da carteira (normalizado em base 100)
     # (twr_acc + 1) transforma o percentual de retorno em um fator de crescimento
     carteira_normalizada = (df_twr['twr_acc'] + 1) * 100
-    linha_carteira, = ax.plot(df_twr['date'], carteira_normalizada, label=f'Carteira - {nome_grafico}', color='red', linewidth=2.5)
-    color_map[f'Carteira - {nome_grafico}'] = linha_carteira.get_color()
+    # --- ORDEM DE PLOTAGEM ---
+    # Monta lista de nomes para plotar, na ordem do ranking
+    all_labels = [f'Carteira - {nome_grafico}'] + list(benchmarks_data.keys())
+    if ordered_labels:
+        # Garante que todos os labels estejam presentes
+        plot_labels = [lbl for lbl in ordered_labels if lbl in all_labels]
+        # Adiciona os que não estão no ranking (ex: benchmarks sem total)
+        plot_labels += [lbl for lbl in all_labels if lbl not in plot_labels]
+    else:
+        plot_labels = all_labels
+
+    # Plotagem na ordem do ranking
+    for nome in plot_labels:
+        if nome == f'Carteira - {nome_grafico}':
+            linha_carteira, = ax.plot(df_twr['date'], carteira_normalizada, label=nome, color='red', linewidth=2.5)
+            color_map[nome] = linha_carteira.get_color()
+        elif nome in benchmarks_data:
+            dados_benchmark = benchmarks_data[nome]
+            if dados_benchmark is not None and not getattr(dados_benchmark, 'empty', False):
+                benchmark_normalizado = (dados_benchmark / dados_benchmark.iloc[0]) * 100
+                linha_bench, = ax.plot(benchmark_normalizado.index, benchmark_normalizado, label=nome, linestyle='--')
+                color_map[nome] = linha_bench.get_color()
 
     # 2. Plotar cada benchmark (normalizado em base 100)
-    for nome, dados_benchmark in benchmarks_data.items():
-        logger.debug(f"Processando benchmark '{nome}' para o gráfico comparativo.")
-        if dados_benchmark is not None and not dados_benchmark.empty:
-            # Normaliza o benchmark para começar em 100
-            benchmark_normalizado = (dados_benchmark / dados_benchmark.iloc[0]) * 100
-            logger.debug(f"Dados para '{nome}' encontrados. Normalizando e plotando.")
-            linha_bench, = ax.plot(benchmark_normalizado.index, benchmark_normalizado, label=nome, linestyle='--')
-            color_map[nome] = linha_bench.get_color()
-
-            # Adiciona rótulos nos pontos mensais correspondentes ao df_twr
-            # Usamos reindex para alinhar as datas diárias do benchmark com as datas mensais da carteira
-            logger.debug(f"Alinhando benchmark '{nome}' com as datas da carteira: {df_twr['date'].to_list()}")
-            benchmark_mensal = benchmark_normalizado.reindex(df_twr['date'], method='ffill')
-            logger.debug(f"Valores mensais para '{nome}' após alinhamento:\n{benchmark_mensal.to_string()}")
-
-            # Se reindex com datas duplicadas criou um DataFrame, converte de volta para Series.
-            # A coluna terá o nome da Series original ou '0' se não tiver nome.
-            if isinstance(benchmark_mensal, pd.DataFrame):
-                # Pega a primeira (e única) coluna do DataFrame resultante.
-                benchmark_mensal = benchmark_mensal.iloc[:, 0]
-
-            # Itera sobre a Series para adicionar os rótulos.
-            # Usamos .items() que é o método moderno para iterar sobre (índice, valor).
-            # Adicionamos enumerate para ter um contador e plotar a cada 6 meses.
-            for i, (data, valor_ponto) in enumerate(benchmark_mensal.items()):
-                # A verificação pd.notna() agora funciona corretamente com um valor escalar.
-                # Adiciona o rótulo apenas para o primeiro ponto (i==0) e a cada 6 meses.
-                if pd.notna(valor_ponto) and (i % intervalo_meses_rotulo == 0 or i == 0):
-                    # Cria o objeto de texto e o adiciona à lista para ajuste posterior
-                    label = ax.text(data, valor_ponto, f' {valor_ponto-100:.1f}%', va='top', ha='center', fontsize=8, alpha=0.7)
-                    text_labels.append(label)
-        else:
-            logger.warning(f"Nenhum dado válido para o benchmark '{nome}'. Não será plotado.")
+    # Adiciona rótulos nos pontos mensais correspondentes ao df_twr para cada benchmark (na ordem de plotagem)
+    for nome in plot_labels:
+        if nome == f'Carteira - {nome_grafico}':
+            continue  # já rotulado abaixo
+        if nome in benchmarks_data:
+            dados_benchmark = benchmarks_data[nome]
+            if dados_benchmark is not None and not getattr(dados_benchmark, 'empty', False):
+                benchmark_normalizado = (dados_benchmark / dados_benchmark.iloc[0]) * 100
+                benchmark_mensal = benchmark_normalizado.reindex(df_twr['date'], method='ffill')
+                if isinstance(benchmark_mensal, pd.DataFrame):
+                    benchmark_mensal = benchmark_mensal.iloc[:, 0]
+                for i, (data, valor_ponto) in enumerate(benchmark_mensal.items()):
+                    if pd.notna(valor_ponto) and (i % intervalo_meses_rotulo == 0 or i == 0):
+                        label = ax.text(data, valor_ponto, f' {valor_ponto-100:.1f}%', va='top', ha='center', fontsize=8, alpha=0.7)
+                        text_labels.append(label)
+            else:
+                logger.warning(f"Nenhum dado válido para o benchmark '{nome}'. Não será plotado.")
 
     # Adiciona os rótulos para a carteira a cada 6 meses
     for index, row in df_twr.iterrows():
-        # O índice do DataFrame (0, 1, 2...) nos serve como contador.
-        # Adiciona o rótulo apenas para o primeiro ponto (index==0) e a cada 6 meses.
         if index % intervalo_meses_rotulo == 0 or index == 0:
             valor_normalizado = (row['twr_acc'] + 1) * 100
-            # Cria o objeto de texto e o adiciona à lista
             label = ax.text(row['date'], valor_normalizado, f' {valor_normalizado-100:.1f}%', va='bottom', ha='center', fontsize=8, color='red', weight='bold')
             text_labels.append(label)
 
@@ -704,7 +732,15 @@ def gerar_grafico_comparativo_twr(df_twr: pd.DataFrame, benchmarks_data: dict, n
     ax.set_title(f'Comparativo de Rentabilidade: {nome_grafico} vs. Benchmarks', fontsize=16)
     ax.set_ylabel('Performance (Base 100)', fontsize=12)
     ax.set_xlabel('Data', fontsize=12)
-    ax.legend(fontsize=10, loc='upper left')
+    # Ordena a legenda pela ordem de plotagem
+    handles, labels = ax.get_legend_handles_labels()
+    if ordered_labels:
+        # Garante que todos os labels estejam presentes
+        legend_labels = [lbl for lbl in plot_labels if lbl in labels]
+        legend_handles = [handles[labels.index(lbl)] for lbl in legend_labels]
+        ax.legend(legend_handles, legend_labels, fontsize=10, loc='upper left')
+    else:
+        ax.legend(fontsize=10, loc='upper left')
     ax.grid(True, which='both', linestyle='--', linewidth=0.5)
     fig.autofmt_xdate()
 
@@ -715,7 +751,9 @@ def gerar_grafico_comparativo_twr(df_twr: pd.DataFrame, benchmarks_data: dict, n
     # 5. Adicionar a tabela de resumo de rentabilidade
     df_resumo = calcular_rentabilidades_resumo(df_twr, benchmarks_data, nome_grafico, logger)
     if df_resumo is not None:
-        # Prepara os dados para a função table
+        # Reordena a tabela pela ordem do ranking
+        if ordered_labels:
+            df_resumo = df_resumo.reindex(ordered_labels)
         cell_text = df_resumo.values
         row_labels = list(df_resumo.index)
         col_labels = list(df_resumo.columns)

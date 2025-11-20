@@ -5492,3 +5492,66 @@ date
 2025-11-20 11:47:08,418 - INFO - Buscando dados da série 433 do BCB...
 2025-11-20 11:47:09,367 - INFO - Calculando benchmark sintético 'IPCA + 6%'...
 2025-11-20 11:47:13,001 - INFO - Gráfico comparativo de TWR salvo com sucesso em: dlombello/graficos\comparativo_twr_AÇÃO.png
+2025-11-20 11:57:41,703 - INFO - 
+
+==================== NOVA ANÁLISE ====================
+2025-11-20 11:57:41,703 - INFO - Buscando histórico na API com os parâmetros: {'classe': 'AÇÃO'}
+2025-11-20 11:57:43,400 - INFO - Dados capturados com sucesso!
+2025-11-20 11:57:43,436 - INFO - Histórico completo salvo em: dlombello/graficos\historico_completo_AÇÃO.csv
+2025-11-20 11:57:43,437 - INFO - Gerando gráficos...
+2025-11-20 11:57:44,071 - INFO - Dados do gráfico de evolução salvos em: dlombello/graficos\evolucao_AÇÃO.csv
+2025-11-20 11:57:45,539 - INFO - Gráfico de evolução salvo com sucesso em: dlombello/graficos\evolucao_AÇÃO.png
+2025-11-20 11:57:45,539 - INFO - Iniciando cálculo de TWR...
+2025-11-20 11:57:45,701 - INFO - Dados do gráfico de TWR salvos em: dlombello/graficos\evolucao_twr_AÇÃO.csv
+2025-11-20 11:57:45,857 - INFO - Gráfico de TWR salvo com sucesso em: dlombello/graficos\evolucao_twr_AÇÃO.png
+2025-11-20 11:57:45,857 - INFO - Período da análise: 2019-04-30 a 2025-10-31
+2025-11-20 11:57:45,857 - INFO - Buscando dados para o benchmark: ^BVSP...
+2025-11-20 11:57:46,956 - INFO - Buscando dados para o benchmark: SPY...
+2025-11-20 11:57:47,511 - INFO - Buscando dados para o benchmark: IMID.L...
+2025-11-20 11:57:47,941 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IFIX'.
+2025-11-20 11:57:47,941 - INFO - Todos os arquivos necessários para o índice 'IFIX' já existem localmente. Download pulado.
+2025-11-20 11:57:48,069 - INFO - Dados do índice 'IFIX' da B3 processados com sucesso.
+2025-11-20 11:57:48,069 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IBSD'.
+2025-11-20 11:57:48,069 - INFO - Arquivos não encontrados para os anos: [2021]. Iniciando download...
+2025-11-20 11:57:48,073 - INFO - Iniciando orquestrador de downloads da B3.
+2025-11-20 11:57:48,075 - INFO - --- Iniciando script de download de dados da B3 ---
+2025-11-20 11:57:48,077 - INFO - Pastas de trabalho verificadas/criadas com sucesso.
+2025-11-20 11:57:48,079 - INFO - Inicializando driver do Chrome...
+2025-11-20 11:57:53,455 - INFO - Iniciando download para o índice 'IBSD', ano 2021.
+2025-11-20 11:58:28,136 - ERROR - Falha ao baixar dados para o índice 'IBSD' ano 2021. Erro: Message: 
+Stacktrace:
+Symbols not available. Dumping unresolved backtrace:
+	0xee4103
+	0xee4144
+	0xcee71d
+	0xd3a03d
+	0xd3a41b
+	0xd817f2
+	0xd5c954
+	0xd7ee17
+	0xd5c706
+	0xd2da30
+	0xd2ed54
+	0x11557b4
+	0x115098a
+	0xf0c392
+	0xefc4c8
+	0xf0324d
+	0xeec478
+	0xeec63c
+	0xed67ca
+	0x75835d49
+	0x7749d6db
+	0x7749d661
+
+2025-11-20 11:58:28,136 - INFO - --- Processo de download da B3 finalizado. ---
+2025-11-20 11:58:31,921 - INFO - Driver do Chrome encerrado.
+2025-11-20 11:58:31,940 - WARNING - Arquivo 'C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados\IBSD-2021.csv' não encontrado após tentativa de download. Pulando ano 2021.
+2025-11-20 11:58:31,975 - INFO - Dados do índice 'IBSD' da B3 processados com sucesso.
+2025-11-20 11:58:31,975 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IDIV'.
+2025-11-20 11:58:31,989 - INFO - Todos os arquivos necessários para o índice 'IDIV' já existem localmente. Download pulado.
+2025-11-20 11:58:32,056 - INFO - Dados do índice 'IDIV' da B3 processados com sucesso.
+2025-11-20 11:58:32,056 - INFO - Buscando dados da série 11 do BCB...
+2025-11-20 11:58:32,720 - INFO - Buscando dados da série 433 do BCB...
+2025-11-20 11:58:33,511 - INFO - Calculando benchmark sintético 'IPCA + 6%'...
+2025-11-20 11:58:36,725 - INFO - Gráfico comparativo de TWR salvo com sucesso em: dlombello/graficos\comparativo_twr_AÇÃO.png
