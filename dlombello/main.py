@@ -930,7 +930,7 @@ def main():
 
                 # Cria o índice acumulado a partir dos retornos da carteira
                 benchmarks_data['IDIV + (IPCA+6%)'] = (1 + portfolio_returns).cumprod()
-
+            '''
             # 6. Calcula o benchmark sintético "IMID + (IPCA+6%)" (Carteira 50/50)
             if 'IMID' in benchmarks_data and benchmarks_data['IMID'] is not None and \
                'IPCA + 6%' in benchmarks_data and benchmarks_data['IPCA + 6%'] is not None:
@@ -952,7 +952,7 @@ def main():
 
                 # Cria o índice acumulado a partir dos retornos da carteira
                 benchmarks_data['IMID + (IPCA+6%)'] = (1 + portfolio_returns).cumprod()
-
+            '''
             gerar_grafico_comparativo_twr(df_twr, benchmarks_data, nome_grafico=nome_analise, logger=logger)
 
     else:
