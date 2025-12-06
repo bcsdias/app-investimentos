@@ -339,3 +339,34 @@ ValueError: Data must be 1-dimensional, got ndarray of shape (1640, 1) instead
 2025-12-06 10:19:36,201 - DEBUG - Tipo de dados para o benchmark 'IMID + (IPCA+6%)': <class 'pandas.core.series.Series'>
 2025-12-06 10:19:36,206 - DEBUG - Rentabilidades totais calculadas: {'Carteira - AÇÃO': 1.164890223387872, 'IBOV (YFinance)': 0.5441138314323373, 'S&P 500': 1.5521867306779291, 'IMID': 1.0769579955706625, 'IFIX': 0.4325898463194404, 'IBSD': 0.7572002774636777, 'IDIV': 1.040225794389685, 'SELIC': 0.7543313516892791, 'IPCA': 0.41457140016429594, 'IPCA + 6%': 1.0659176093780194, 'IDIV + (IPCA+6%)': 1.1278059124615503, 'IMID + (IPCA+6%)': 1.1202480274816171}
 2025-12-06 10:19:37,858 - INFO - Gráfico comparativo de TWR salvo com sucesso em: dlombello/graficos\comparativo_twr_AÇÃO.png
+2025-12-06 10:29:15,525 - INFO - 
+
+==================== NOVA ANÁLISE ====================
+2025-12-06 10:29:15,525 - INFO - Buscando histórico na API com os parâmetros: {'classe': 'AÇÃO'}
+2025-12-06 10:29:18,388 - INFO - Dados capturados com sucesso!
+2025-12-06 10:29:18,447 - INFO - Histórico completo salvo em: dlombello/graficos\historico_completo_AÇÃO.csv
+2025-12-06 10:29:18,449 - INFO - Gerando gráficos...
+2025-12-06 10:29:19,443 - INFO - Dados do gráfico de evolução salvos em: dlombello/graficos\evolucao_AÇÃO.csv
+2025-12-06 10:29:22,042 - INFO - Gráfico de evolução salvo com sucesso em: dlombello/graficos\evolucao_AÇÃO.png
+2025-12-06 10:29:22,046 - INFO - Iniciando cálculo de TWR...
+2025-12-06 10:29:22,280 - INFO - Dados do gráfico de TWR salvos em: dlombello/graficos\evolucao_twr_AÇÃO.csv
+2025-12-06 10:29:22,531 - INFO - Gráfico de TWR salvo com sucesso em: dlombello/graficos\evolucao_twr_AÇÃO.png
+2025-12-06 10:29:22,533 - INFO - Período da análise: 2019-04-30 a 2025-10-31
+2025-12-06 10:29:22,533 - INFO - Buscando dados para o benchmark: ^BVSP...
+2025-12-06 10:29:24,460 - INFO - Buscando dados para o benchmark: SPY...
+2025-12-06 10:29:25,368 - INFO - Buscando dados para o benchmark: IMID.L...
+2025-12-06 10:29:25,781 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IFIX'.
+2025-12-06 10:29:25,786 - INFO - Todos os arquivos necessários para o índice 'IFIX' já existem localmente. Download pulado.
+2025-12-06 10:29:25,877 - INFO - Dados do índice 'IFIX' da B3 processados com sucesso.
+2025-12-06 10:29:25,877 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IBSD'.
+2025-12-06 10:29:25,877 - INFO - Todos os arquivos necessários para o índice 'IBSD' já existem localmente. Download pulado.
+2025-12-06 10:29:25,977 - INFO - Dados do índice 'IBSD' da B3 processados com sucesso.
+2025-12-06 10:29:25,979 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IDIV'.
+2025-12-06 10:29:25,981 - INFO - Todos os arquivos necessários para o índice 'IDIV' já existem localmente. Download pulado.
+2025-12-06 10:29:26,064 - INFO - Dados do índice 'IDIV' da B3 processados com sucesso.
+2025-12-06 10:29:26,065 - INFO - Buscando dados da série 11 do BCB...
+2025-12-06 10:29:37,005 - INFO - Buscando dados da série 433 do BCB...
+2025-12-06 10:29:37,963 - INFO - Calculando benchmark sintético 'IPCA + 6%'...
+2025-12-06 10:29:37,978 - INFO - Calculando benchmark sintético 'IDIV + (IPCA+6%)'...
+2025-12-06 10:29:37,982 - INFO - Calculando benchmark sintético 'IMID + (IPCA+6%)'...
+2025-12-06 10:29:42,996 - INFO - Gráfico comparativo de TWR salvo com sucesso em: dlombello/graficos\comparativo_twr_AÇÃO.png
