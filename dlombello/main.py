@@ -991,6 +991,28 @@ def main():
                 portfolio_returns = 0.50 * combined_returns['imid'] + 0.25 * combined_returns['idiv'] + 0.25 * combined_returns['ipca6']
                 benchmarks_data['IDIV/IMID/(IPCA+6%)'] = (1 + portfolio_returns).cumprod()
 
+            # 8. Calcula o benchmark sintético "Carteira B3" (IBSD/IDIV/IBLV com pesos iguais)
+            componentes_b3 = ['IBSD', 'IDIV', 'IBLV']
+            if all(k in benchmarks_data and benchmarks_data[k] is not None for k in componentes_b3):
+                logger.info("Calculando benchmark sintético 'Carteira B3'...")
+                
+                # Pega as séries de dados dos benchmarks (garante Series)
+                ibsd_series = _ensure_series_local(benchmarks_data['IBSD'])
+                idiv_series = _ensure_series_local(benchmarks_data['IDIV'])
+                iblv_series = _ensure_series_local(benchmarks_data['IBLV'])
+
+                # Calcula os retornos diários e alinha em um único DataFrame
+                combined_returns = pd.concat([
+                    ibsd_series.pct_change().rename('ibsd'),
+                    idiv_series.pct_change().rename('idiv'),
+                    iblv_series.pct_change().rename('iblv')
+                ], axis=1).fillna(0)
+
+                # Calcula o retorno da carteira com pesos iguais (1/3 para cada)
+                peso = 1 / len(componentes_b3)
+                portfolio_returns = combined_returns.sum(axis=1) * peso
+                benchmarks_data['IBSD/IDIV/IBLV'] = (1 + portfolio_returns).cumprod()
+
             gerar_grafico_comparativo_twr(df_twr, benchmarks_data, nome_grafico=nome_analise, logger=logger)
 
     else:
