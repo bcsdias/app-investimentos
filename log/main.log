@@ -1,842 +1,178 @@
-2025-12-06 10:14:05,129 - INFO - 
+2025-12-06 11:35:07,688 - INFO - 
 
 ==================== NOVA ANÁLISE ====================
-2025-12-06 10:14:05,129 - INFO - Buscando histórico na API com os parâmetros: {'classe': 'AÇÃO'}
-2025-12-06 10:14:07,198 - INFO - Dados capturados com sucesso!
-2025-12-06 10:14:07,268 - INFO - Histórico completo salvo em: dlombello/graficos\historico_completo_AÇÃO.csv
-2025-12-06 10:14:07,270 - INFO - Gerando gráficos...
-2025-12-06 10:14:08,808 - INFO - Dados do gráfico de evolução salvos em: dlombello/graficos\evolucao_AÇÃO.csv
-2025-12-06 10:14:12,029 - INFO - Gráfico de evolução salvo com sucesso em: dlombello/graficos\evolucao_AÇÃO.png
-2025-12-06 10:14:12,039 - INFO - Iniciando cálculo de TWR...
-2025-12-06 10:14:12,576 - INFO - Dados do gráfico de TWR salvos em: dlombello/graficos\evolucao_twr_AÇÃO.csv
-2025-12-06 10:14:12,854 - INFO - Gráfico de TWR salvo com sucesso em: dlombello/graficos\evolucao_twr_AÇÃO.png
-2025-12-06 10:14:12,854 - INFO - Período da análise: 2019-04-30 a 2025-10-31
-2025-12-06 10:14:12,854 - INFO - Buscando dados para o benchmark: ^BVSP...
-2025-12-06 10:14:14,019 - INFO - Buscando dados para o benchmark: SPY...
-2025-12-06 10:14:14,856 - INFO - Buscando dados para o benchmark: IMID.L...
-2025-12-06 10:14:15,270 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IFIX'.
-2025-12-06 10:14:15,270 - INFO - Todos os arquivos necessários para o índice 'IFIX' já existem localmente. Download pulado.
-2025-12-06 10:14:15,354 - INFO - Dados do índice 'IFIX' da B3 processados com sucesso.
-2025-12-06 10:14:15,355 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IBSD'.
-2025-12-06 10:14:15,357 - INFO - Todos os arquivos necessários para o índice 'IBSD' já existem localmente. Download pulado.
-2025-12-06 10:14:15,434 - INFO - Dados do índice 'IBSD' da B3 processados com sucesso.
-2025-12-06 10:14:15,434 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IDIV'.
-2025-12-06 10:14:15,436 - INFO - Todos os arquivos necessários para o índice 'IDIV' já existem localmente. Download pulado.
-2025-12-06 10:14:15,505 - INFO - Dados do índice 'IDIV' da B3 processados com sucesso.
-2025-12-06 10:14:15,505 - INFO - Buscando dados da série 11 do BCB...
-2025-12-06 10:14:16,272 - INFO - Buscando dados da série 433 do BCB...
-2025-12-06 10:14:16,866 - INFO - Calculando benchmark sintético 'IPCA + 6%'...
-2025-12-06 10:14:16,866 - INFO - Calculando benchmark sintético 'IDIV + (IPCA+6%)'...
-2025-12-06 10:14:20,814 - INFO - Gráfico comparativo de TWR salvo com sucesso em: dlombello/graficos\comparativo_twr_AÇÃO.png
-2025-12-06 10:15:31,065 - INFO - 
-
-==================== NOVA ANÁLISE ====================
-2025-12-06 10:15:31,065 - INFO - Buscando histórico na API com os parâmetros: {'classe': 'AÇÃO'}
-2025-12-06 10:15:33,162 - INFO - Dados capturados com sucesso!
-2025-12-06 10:15:33,225 - INFO - Histórico completo salvo em: dlombello/graficos\historico_completo_AÇÃO.csv
-2025-12-06 10:15:33,225 - INFO - Gerando gráficos...
-2025-12-06 10:15:34,248 - INFO - Dados do gráfico de evolução salvos em: dlombello/graficos\evolucao_AÇÃO.csv
-2025-12-06 10:15:36,862 - INFO - Gráfico de evolução salvo com sucesso em: dlombello/graficos\evolucao_AÇÃO.png
-2025-12-06 10:15:36,864 - INFO - Iniciando cálculo de TWR...
-2025-12-06 10:15:37,184 - INFO - Dados do gráfico de TWR salvos em: dlombello/graficos\evolucao_twr_AÇÃO.csv
-2025-12-06 10:15:37,479 - INFO - Gráfico de TWR salvo com sucesso em: dlombello/graficos\evolucao_twr_AÇÃO.png
-2025-12-06 10:15:37,481 - INFO - Período da análise: 2019-04-30 a 2025-10-31
-2025-12-06 10:15:37,481 - INFO - Buscando dados para o benchmark: ^BVSP...
-2025-12-06 10:15:38,873 - INFO - Buscando dados para o benchmark: SPY...
-2025-12-06 10:15:39,465 - INFO - Buscando dados para o benchmark: IMID.L...
-2025-12-06 10:15:39,911 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IFIX'.
-2025-12-06 10:15:39,914 - INFO - Todos os arquivos necessários para o índice 'IFIX' já existem localmente. Download pulado.
-2025-12-06 10:15:40,054 - INFO - Dados do índice 'IFIX' da B3 processados com sucesso.
-2025-12-06 10:15:40,056 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IBSD'.
-2025-12-06 10:15:40,065 - INFO - Todos os arquivos necessários para o índice 'IBSD' já existem localmente. Download pulado.
-2025-12-06 10:15:40,194 - INFO - Dados do índice 'IBSD' da B3 processados com sucesso.
-2025-12-06 10:15:40,195 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IDIV'.
-2025-12-06 10:15:40,198 - INFO - Todos os arquivos necessários para o índice 'IDIV' já existem localmente. Download pulado.
-2025-12-06 10:15:40,305 - INFO - Dados do índice 'IDIV' da B3 processados com sucesso.
-2025-12-06 10:15:40,315 - INFO - Buscando dados da série 11 do BCB...
-2025-12-06 10:15:41,317 - INFO - Buscando dados da série 433 do BCB...
-2025-12-06 10:15:42,419 - INFO - Calculando benchmark sintético 'IPCA + 6%'...
-2025-12-06 10:15:42,419 - INFO - Calculando benchmark sintético 'IDIV + (IPCA+6%)'...
-2025-12-06 10:15:42,424 - INFO - Calculando benchmark sintético 'IMID + (IPCA+6%)'...
-2025-12-06 10:15:42,428 - ERROR - Ocorreu um erro fatal não capturado na execução principal.
-Traceback (most recent call last):
-  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\main.py", line 964, in <module>
-    main()
-  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\main.py", line 948, in main
-    combined_returns = pd.DataFrame({'imid': imid_returns, 'ipca6': ipca6_returns}).fillna(0)
-                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\.venv\Lib\site-packages\pandas\core\frame.py", line 782, in __init__
-    mgr = dict_to_mgr(data, index, columns, dtype=dtype, copy=copy, typ=manager)
-          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\.venv\Lib\site-packages\pandas\core\internals\construction.py", line 503, in dict_to_mgr
-    return arrays_to_mgr(arrays, columns, index, dtype=dtype, typ=typ, consolidate=copy)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\.venv\Lib\site-packages\pandas\core\internals\construction.py", line 119, in arrays_to_mgr
-    arrays, refs = _homogenize(arrays, index, dtype)
-                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\.venv\Lib\site-packages\pandas\core\internals\construction.py", line 629, in _homogenize
-    val = sanitize_array(val, index, dtype=dtype, copy=False)
-          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\.venv\Lib\site-packages\pandas\core\construction.py", line 630, in sanitize_array
-    return sanitize_array(
-           ^^^^^^^^^^^^^^^
-  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\.venv\Lib\site-packages\pandas\core\construction.py", line 656, in sanitize_array
-    subarr = _sanitize_ndim(subarr, data, dtype, index, allow_2d=allow_2d)
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\.venv\Lib\site-packages\pandas\core\construction.py", line 715, in _sanitize_ndim
-    raise ValueError(
-ValueError: Data must be 1-dimensional, got ndarray of shape (1640, 1) instead
-2025-12-06 10:19:23,353 - INFO - Modo de depuração ativado.
-2025-12-06 10:19:23,353 - INFO - 
-
-==================== NOVA ANÁLISE ====================
-2025-12-06 10:19:23,353 - INFO - Buscando histórico na API com os parâmetros: {'classe': 'AÇÃO'}
-2025-12-06 10:19:25,333 - INFO - Dados capturados com sucesso!
-2025-12-06 10:19:25,356 - DEBUG - Cabeçalho do DataFrame de histórico:
-   ativo        date    qtd         pm  price corretora  market_cod classe  vlr_investido  vlr_mercado  lucro  daytrade  proventos  volume    pm_usd      pm_fx
-0  OIBR4  2019-04-30  300.0   1.550467   1.68     CLEAR  BVMF:OIBR4   AÇÃO         465.14        504.0    0.0       0.0        0.0     0.0  0.401446   1.550467
-1  ITSA4  2019-05-31  100.0  12.143800  12.39       BTG  BVMF:ITSA4   AÇÃO        1214.38       1239.0    0.0       0.0        0.0     0.0  3.081635  12.143800
-2  OIBR4  2019-05-31  300.0   1.550467   1.60     CLEAR  BVMF:OIBR4   AÇÃO         465.14        480.0    0.0       0.0        0.0     0.0  0.401446   1.550467
-3  ITSA4  2019-06-30  100.0  12.143800  12.89       BTG  BVMF:ITSA4   AÇÃO        1214.38       1289.0    0.0       0.0        0.0     0.0  3.081635  12.143800
-4  OIBR4  2019-06-30  300.0   1.550467   1.65     CLEAR  BVMF:OIBR4   AÇÃO         465.14        495.0    0.0       0.0        0.0     0.0  0.401446   1.550467
-2025-12-06 10:19:25,406 - INFO - Histórico completo salvo em: dlombello/graficos\historico_completo_AÇÃO.csv
-2025-12-06 10:19:25,406 - INFO - Gerando gráficos...
-2025-12-06 10:19:26,298 - INFO - Dados do gráfico de evolução salvos em: dlombello/graficos\evolucao_AÇÃO.csv
-2025-12-06 10:19:28,566 - INFO - Gráfico de evolução salvo com sucesso em: dlombello/graficos\evolucao_AÇÃO.png
-2025-12-06 10:19:28,566 - INFO - Iniciando cálculo de TWR...
-2025-12-06 10:19:28,590 - DEBUG - DataFrame consolidado para TWR:
-         date   vlr_mercado  vlr_investido   proventos
-0  2019-04-30    504.000000     465.140000    0.000000
-1  2019-05-31   1719.000000    1679.520000    0.000000
-2  2019-06-30   1784.000000    1679.520000    0.000000
-3  2019-07-31   1732.500000    1701.740000    2.000000
-4  2019-08-31   1921.500000    1867.590000   37.510000
-5  2019-09-30   2896.420000    2700.890000    0.000000
-6  2019-10-31   3152.840000    2840.410000    3.150000
-7  2019-11-30   4218.980000    3850.820000   25.810000
-8  2019-12-31   4512.200000    3850.820000    6.130000
-9  2020-01-31   4971.500000    4339.360000    4.340000
-10 2020-02-29   4786.710000    4339.360000    8.940000
-11 2020-03-31   5142.160000    5756.580000   61.240000
-12 2020-04-30   5616.570000    5756.580000    7.420000
-13 2020-05-31   6232.060000    6236.960000   35.440000
-14 2020-06-30   6640.030000    6236.960000    0.000000
-15 2020-07-31   8055.190000    7157.220000    8.870000
-16 2020-08-31   7686.810000    7507.874286   80.520000
-17 2020-09-30   7375.140000    7507.874286    2.410000
-18 2020-10-31   7629.330000    7686.434286    4.020000
-19 2020-11-30   8596.650000    7686.434286   70.160000
-20 2020-12-31  13745.500000   12237.814286   11.590000
-21 2021-01-31  15382.140000   14326.994286   27.640000
-22 2021-02-28  17466.900000   16781.054286  123.290000
-23 2021-03-31  18118.230000   16781.054286   26.620000
-24 2021-04-30  17506.930000   16592.500000  104.930000
-25 2021-05-31  18548.950000   16592.500000  171.190000
-26 2021-06-30  18668.030000   17320.202857    0.000000
-27 2021-07-31  18961.540000   18373.872857   34.170000
-28 2021-08-31  19301.160000   18456.692857  316.200000
-29 2021-09-30  19021.770000   18557.212857    2.590000
-30 2021-10-31  19969.470000   19764.662857  174.010000
-31 2021-11-30  19958.490000   19670.617857   53.450000
-32 2021-12-31  20889.450000   21408.759930  745.094930
-33 2022-01-31  24681.150000   23006.729930   14.940000
-34 2022-02-28  24342.900000   23117.564930   73.370000
-35 2022-03-31  26842.740000   24117.144930   71.890000
-36 2022-04-30  25226.870000   24559.241078  152.976148
-37 2022-05-31  25829.870000   25040.214930  422.940000
-38 2022-06-30  25082.070000   26461.954930  210.460000
-39 2022-07-31  26079.980000   26560.074930  345.010000
-40 2022-08-31  26633.860000   26560.074930  462.560000
-41 2022-09-30  27679.940000   27005.504930  339.300000
-42 2022-10-31  29902.610000   27625.684930  228.900000
-43 2022-11-30  29317.130000   30170.894930  496.870000
-44 2022-12-31  27550.510000   29162.599930  239.120000
-45 2023-01-31  28421.770000   29608.029930  279.320000
-46 2023-02-28  26815.650000   29608.029930   25.170000
-47 2023-03-31  29573.700000   32695.829930  196.730000
-48 2023-04-30  31305.960000   32808.029930  389.080000
-49 2023-05-31  32745.540000   32808.029930  188.540000
-50 2023-06-30  39782.620000   37384.092865  159.652935
-51 2023-07-31  40992.520000   38244.342865  204.330000
-52 2023-08-31  41419.360000   41670.937865  194.160000
-53 2023-09-30  41396.540000   41909.897865   51.500000
-54 2023-10-31  40525.060000   42784.307865  108.500000
-55 2023-11-30  45904.270000   43139.318293  422.330428
-56 2023-12-31  50241.430000   44740.878293  161.630000
-57 2024-01-31  47128.570000   45001.728293  287.210000
-58 2024-02-29  47394.570000   45466.368293  116.090000
-59 2024-03-31  50278.140000   48059.918293  375.140000
-60 2024-04-30  49988.120000   49477.678293  579.080000
-61 2024-05-31  49838.990000   49762.478293  479.260000
-62 2024-06-30  52473.460000   51579.818293  428.490000
-63 2024-07-31  54101.600000   52774.158293  300.990000
-64 2024-08-31  58069.640000   53800.958293  361.710000
-65 2024-09-30  57518.500000   54656.108293  134.200000
-66 2024-10-31  58644.670000   57078.958293  128.740000
-67 2024-11-30  57798.289976   58475.118293   97.330000
-68 2024-12-31  56449.860037   58994.888293  430.940000
-69 2025-01-31  59417.699878   58430.408293   53.050000
-70 2025-02-28  57586.260122   58832.778293  109.630000
-71 2025-03-31  61391.300024   60410.991930  155.480000
-72 2025-04-30  65910.379963   61562.981930  110.280000
-73 2025-05-31  67505.859939   62071.111930   40.200000
-74 2025-06-30  70713.300049   63355.681930    0.000000
-75 2025-07-31  67195.700012   63712.821930    0.000000
-76 2025-08-31  69072.499854   63912.361930    0.000000
-77 2025-09-30  71276.360012   63912.361930    0.000000
-78 2025-10-31  70855.720098   63912.361930    0.000000
-2025-12-06 10:19:28,624 - DEBUG - DataFrame final com cálculo de TWR:
-         date   vlr_mercado  vlr_investido   proventos    fluxo_mes  valor_inicial_periodo     fluxo_acc    lucro_mes       hpr   twr_mes   twr_acc
-0  2019-04-30    504.000000     465.140000    0.000000   465.140000               0.000000    465.140000    38.860000  1.083545  0.083545  0.083545
-1  2019-05-31   1719.000000    1679.520000    0.000000  1214.380000             504.000000   1679.520000     0.620000  1.000361  0.000361  0.083936
-2  2019-06-30   1784.000000    1679.520000    0.000000     0.000000            1719.000000   1679.520000    65.000000  1.037813  0.037813  0.124922
-3  2019-07-31   1732.500000    1701.740000    2.000000    20.220000            1784.000000   1699.740000   -71.720000  0.960249 -0.039751  0.080205
-4  2019-08-31   1921.500000    1867.590000   37.510000   128.340000            1732.500000   1828.080000    60.660000  1.032598  0.032598  0.115418
-5  2019-09-30   2896.420000    2700.890000    0.000000   833.300000            1921.500000   2661.380000   141.620000  1.051408  0.051408  0.172760
-6  2019-10-31   3152.840000    2840.410000    3.150000   136.370000            2896.420000   2797.750000   120.050000  1.039584  0.039584  0.219182
-7  2019-11-30   4218.980000    3850.820000   25.810000   984.600000            3152.840000   3782.350000    81.540000  1.019708  0.019708  0.243210
-8  2019-12-31   4512.200000    3850.820000    6.130000    -6.130000            4218.980000   3776.220000   299.350000  1.071056  0.071056  0.331548
-9  2020-01-31   4971.500000    4339.360000    4.340000   484.200000            4512.200000   4260.420000   -24.900000  0.995016 -0.004984  0.324912
-10 2020-02-29   4786.710000    4339.360000    8.940000    -8.940000            4971.500000   4251.480000  -175.850000  0.964565 -0.035435  0.277963
-11 2020-03-31   5142.160000    5756.580000   61.240000  1355.980000            4786.710000   5607.460000 -1000.530000  0.837119 -0.162881  0.069807
-12 2020-04-30   5616.570000    5756.580000    7.420000    -7.420000            5142.160000   5600.040000   481.830000  1.093837  0.093837  0.170194
-13 2020-05-31   6232.060000    6236.960000   35.440000   444.940000            5616.570000   6044.980000   170.550000  1.028137  0.028137  0.203120
-14 2020-06-30   6640.030000    6236.960000    0.000000     0.000000            6232.060000   6044.980000   407.970000  1.065463  0.065463  0.281880
-15 2020-07-31   8055.190000    7157.220000    8.870000   911.390000            6640.030000   6956.370000   503.770000  1.066712  0.066712  0.367396
-16 2020-08-31   7686.810000    7507.874286   80.520000   270.134286            8055.190000   7226.504286  -638.514286  0.923305 -0.076695  0.262523
-17 2020-09-30   7375.140000    7507.874286    2.410000    -2.410000            7686.810000   7224.094286  -309.260000  0.959755 -0.040245  0.211713
-18 2020-10-31   7629.330000    7686.434286    4.020000   174.540000            7375.140000   7398.634286    79.650000  1.010550  0.010550  0.224497
-19 2020-11-30   8596.650000    7686.434286   70.160000   -70.160000            7629.330000   7328.474286  1037.480000  1.137248  0.137248  0.392556
-20 2020-12-31  13745.500000   12237.814286   11.590000  4539.790000            8596.650000  11868.264286   609.060000  1.046364  0.046364  0.457121
-21 2021-01-31  15382.140000   14326.994286   27.640000  2061.540000           13745.500000  13929.804286  -424.900000  0.973120 -0.026880  0.417953
-22 2021-02-28  17466.900000   16781.054286  123.290000  2330.770000           15382.140000  16260.574286  -246.010000  0.986111 -0.013889  0.398259
-23 2021-03-31  18118.230000   16781.054286   26.620000   -26.620000           17466.900000  16233.954286   677.950000  1.038873  0.038873  0.452613
-24 2021-04-30  17506.930000   16592.500000  104.930000  -293.484286           18118.230000  15940.470000  -317.815714  0.982170 -0.017830  0.426713
-25 2021-05-31  18548.950000   16592.500000  171.190000  -171.190000           17506.930000  15769.280000  1213.210000  1.069983  0.069983  0.526559
-26 2021-06-30  18668.030000   17320.202857    0.000000   727.702857           18548.950000  16496.982857  -608.622857  0.968427 -0.031573  0.478361
-27 2021-07-31  18961.540000   18373.872857   34.170000  1019.500000           18668.030000  17516.482857  -725.990000  0.963124 -0.036876  0.423845
-28 2021-08-31  19301.160000   18456.692857  316.200000  -233.380000           18961.540000  17283.102857   573.000000  1.030596  0.030596  0.467409
-29 2021-09-30  19021.770000   18557.212857    2.590000    97.930000           19301.160000  17381.032857  -377.320000  0.980550 -0.019450  0.438867
-30 2021-10-31  19969.470000   19764.662857  174.010000  1033.440000           19021.770000  18414.472857   -85.740000  0.995725 -0.004275  0.432716
-31 2021-11-30  19958.490000   19670.617857   53.450000  -147.495000           19969.470000  18266.977857   136.515000  1.006887  0.006887  0.442583
-32 2021-12-31  20889.450000   21408.759930  745.094930   993.047143           19958.490000  19260.025000   -62.087143  0.997037 -0.002963  0.438308
-33 2022-01-31  24681.150000   23006.729930   14.940000  1583.030000           20889.450000  20843.055000  2208.670000  1.098283  0.098283  0.579670
-34 2022-02-28  24342.900000   23117.564930   73.370000    37.465000           24681.150000  20880.520000  -375.715000  0.984800 -0.015200  0.555659
-35 2022-03-31  26842.740000   24117.144930   71.890000   927.690000           24342.900000  21808.210000  1572.150000  1.062213  0.062213  0.652441
-36 2022-04-30  25226.870000   24559.241078  152.976148   289.120000           26842.740000  22097.330000 -1904.990000  0.929788 -0.070212  0.536419
-37 2022-05-31  25829.870000   25040.214930  422.940000    58.033852           25226.870000  22155.363852   544.966148  1.021553  0.021553  0.569534
-38 2022-06-30  25082.070000   26461.954930  210.460000  1211.280000           25829.870000  23366.643852 -1959.080000  0.927552 -0.072448  0.455824
-39 2022-07-31  26079.980000   26560.074930  345.010000  -246.890000           25082.070000  23119.753852  1244.800000  1.050122  0.050122  0.528793
-40 2022-08-31  26633.860000   26560.074930  462.560000  -462.560000           26079.980000  22657.193852  1016.440000  1.039678  0.039678  0.589452
-41 2022-09-30  27679.940000   27005.504930  339.300000   106.130000           26633.860000  22763.323852   939.950000  1.035151  0.035151  0.645324
-42 2022-10-31  29902.610000   27625.684930  228.900000   391.280000           27679.940000  23154.603852  1831.390000  1.065241  0.065241  0.752666
-43 2022-11-30  29317.130000   30170.894930  496.870000  2048.340000           29902.610000  25202.943852 -2633.820000  0.917567 -0.082433  0.608188
-44 2022-12-31  27550.510000   29162.599930  239.120000 -1247.415000           29317.130000  23955.528852  -519.205000  0.981503 -0.018497  0.578442
-45 2023-01-31  28421.770000   29608.029930  279.320000   166.110000           27550.510000  24121.638852   705.150000  1.025441  0.025441  0.618600
-46 2023-02-28  26815.650000   29608.029930   25.170000   -25.170000           28421.770000  24096.468852 -1580.950000  0.944326 -0.055674  0.528486
-47 2023-03-31  29573.700000   32695.829930  196.730000  2891.070000           26815.650000  26987.538852  -133.020000  0.995522 -0.004478  0.521642
-48 2023-04-30  31305.960000   32808.029930  389.080000  -276.880000           29573.700000  26710.658852  2009.140000  1.068579  0.068579  0.625994
-49 2023-05-31  32745.540000   32808.029930  188.540000  -188.540000           31305.960000  26522.118852  1628.120000  1.052322  0.052322  0.711069
-50 2023-06-30  39782.620000   37384.092865  159.652935  4416.410000           32745.540000  30938.528852  2620.670000  1.070520  0.070520  0.831734
-51 2023-07-31  40992.520000   38244.342865  204.330000   655.920000           39782.620000  31594.448852   553.980000  1.013699  0.013699  0.856827
-52 2023-08-31  41419.360000   41670.937865  194.160000  3232.435000           40992.520000  34826.883852 -2805.595000  0.936561 -0.063439  0.739032
-53 2023-09-30  41396.540000   41909.897865   51.500000   187.460000           41419.360000  35014.343852  -210.280000  0.994946 -0.005054  0.730243
-54 2023-10-31  40525.060000   42784.307865  108.500000   765.910000           41396.540000  35780.253852 -1637.390000  0.961165 -0.038835  0.663048
-55 2023-11-30  45904.270000   43139.318293  422.330428   -67.320000           40525.060000  35712.933852  5446.530000  1.134623  0.134623  0.886932
-56 2023-12-31  50241.430000   44740.878293  161.630000  1439.930000           45904.270000  37152.863852  2897.230000  1.061195  0.061195  1.002403
-57 2024-01-31  47128.570000   45001.728293  287.210000   -26.360000           50241.430000  37126.503852 -3086.500000  0.938534 -0.061466  0.879324
-58 2024-02-29  47394.570000   45466.368293  116.090000   348.550000           47128.570000  37475.053852   -82.550000  0.998261 -0.001739  0.876057
-59 2024-03-31  50278.140000   48059.918293  375.140000  2218.410000           47394.570000  39693.463852   665.160000  1.013407  0.013407  0.901209
-60 2024-04-30  49988.120000   49477.678293  579.080000   838.680000           50278.140000  40532.143852 -1128.700000  0.977919 -0.022081  0.859229
-61 2024-05-31  49838.990000   49762.478293  479.260000  -194.460000           49988.120000  40337.683852    45.330000  1.000910  0.000910  0.860921
-62 2024-06-30  52473.460000   51579.818293  428.490000  1388.850000           49838.990000  41726.533852  1245.620000  1.024315  0.024315  0.906170
-63 2024-07-31  54101.600000   52774.158293  300.990000   893.350000           52473.460000  42619.883852   734.790000  1.013769  0.013769  0.932415
-64 2024-08-31  58069.640000   53800.958293  361.710000   665.090000           54101.600000  43284.973852  3302.950000  1.060309  0.060309  1.048958
-65 2024-09-30  57518.500000   54656.108293  134.200000   720.950000           58069.640000  44005.923852 -1272.090000  0.978362 -0.021638  1.004624
-66 2024-10-31  58644.670000   57078.958293  128.740000  2294.110000           57518.500000  46300.033852 -1167.940000  0.980473 -0.019527  0.965480
-67 2024-11-30  57798.289976   58475.118293   97.330000  1298.830000           58644.670000  47598.863852 -2145.210024  0.964213 -0.035787  0.895141
-68 2024-12-31  56449.860037   58994.888293  430.940000    88.830000           57798.289976  47687.693852 -1437.259939  0.975171 -0.024829  0.848087
-69 2025-01-31  59417.699878   58430.408293   53.050000  -617.530000           56449.860037  47070.163852  3585.369841  1.064217  0.064217  0.966765
-70 2025-02-28  57586.260122   58832.778293  109.630000   292.740000           59417.699878  47362.903852 -2124.179756  0.964425 -0.035575  0.896798
-71 2025-03-31  61391.300024   60410.991930  155.480000  1422.733636           57586.260122  48785.637488  2382.306266  1.040372  0.040372  0.973376
-72 2025-04-30  65910.379963   61562.981930  110.280000  1041.710000           61391.300024  49827.347488  3477.369939  1.055698  0.055698  1.083288
-73 2025-05-31  67505.859939   62071.111930   40.200000   467.930000           65910.379963  50295.277488  1127.549976  1.016987  0.016987  1.118676
-74 2025-06-30  70713.300049   63355.681930    0.000000  1284.570000           67505.859939  51579.847488  1922.870110  1.027953  0.027953  1.177899
-75 2025-07-31  67195.700012   63712.821930    0.000000   357.140000           70713.300049  51936.987488 -3874.740037  0.945480 -0.054520  1.059160
-76 2025-08-31  69072.499854   63912.361930    0.000000   199.540000           67195.700012  52136.527488  1677.259841  1.024887  0.024887  1.110407
-77 2025-09-30  71276.360012   63912.361930    0.000000     0.000000           69072.499854  52136.527488  2203.860159  1.031906  0.031906  1.177742
-78 2025-10-31  70855.720098   63912.361930    0.000000     0.000000           71276.360012  52136.527488  -420.639915  0.994098 -0.005902  1.164890
-2025-12-06 10:19:28,842 - INFO - Dados do gráfico de TWR salvos em: dlombello/graficos\evolucao_twr_AÇÃO.csv
-2025-12-06 10:19:29,066 - INFO - Gráfico de TWR salvo com sucesso em: dlombello/graficos\evolucao_twr_AÇÃO.png
-2025-12-06 10:19:29,066 - INFO - Período da análise: 2019-04-30 a 2025-10-31
-2025-12-06 10:19:29,066 - INFO - Buscando dados para o benchmark: ^BVSP...
-2025-12-06 10:19:30,451 - INFO - Buscando dados para o benchmark: SPY...
-2025-12-06 10:19:31,045 - INFO - Buscando dados para o benchmark: IMID.L...
-2025-12-06 10:19:31,673 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IFIX'.
-2025-12-06 10:19:31,673 - DEBUG - Anos necessários para a análise de 'IFIX': [2019, 2020, 2021, 2022, 2023, 2024, 2025]
-2025-12-06 10:19:31,673 - INFO - Todos os arquivos necessários para o índice 'IFIX' já existem localmente. Download pulado.
-2025-12-06 10:19:31,673 - DEBUG - Processando arquivo: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados\IFIX-2019.csv
-2025-12-06 10:19:31,690 - DEBUG - Processando arquivo: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados\IFIX-2020.csv
-2025-12-06 10:19:31,706 - DEBUG - Processando arquivo: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados\IFIX-2021.csv
-2025-12-06 10:19:31,723 - DEBUG - Processando arquivo: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados\IFIX-2022.csv
-2025-12-06 10:19:31,738 - DEBUG - Processando arquivo: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados\IFIX-2023.csv
-2025-12-06 10:19:31,739 - DEBUG - Processando arquivo: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados\IFIX-2024.csv
-2025-12-06 10:19:31,758 - DEBUG - Processando arquivo: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados\IFIX-2025.csv
-2025-12-06 10:19:31,780 - INFO - Dados do índice 'IFIX' da B3 processados com sucesso.
-2025-12-06 10:19:31,780 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IBSD'.
-2025-12-06 10:19:31,780 - DEBUG - Anos necessários para a análise de 'IBSD': [2019, 2020, 2021, 2022, 2023, 2024, 2025]
-2025-12-06 10:19:31,780 - INFO - Todos os arquivos necessários para o índice 'IBSD' já existem localmente. Download pulado.
-2025-12-06 10:19:31,787 - DEBUG - Processando arquivo: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados\IBSD-2019.csv
-2025-12-06 10:19:31,795 - DEBUG - Processando arquivo: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados\IBSD-2020.csv
-2025-12-06 10:19:31,807 - DEBUG - Processando arquivo: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados\IBSD-2021.csv
-2025-12-06 10:19:31,823 - DEBUG - Processando arquivo: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados\IBSD-2022.csv
-2025-12-06 10:19:31,839 - DEBUG - Processando arquivo: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados\IBSD-2023.csv
-2025-12-06 10:19:31,839 - DEBUG - Processando arquivo: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados\IBSD-2024.csv
-2025-12-06 10:19:31,863 - DEBUG - Processando arquivo: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados\IBSD-2025.csv
-2025-12-06 10:19:31,875 - INFO - Dados do índice 'IBSD' da B3 processados com sucesso.
-2025-12-06 10:19:31,875 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IDIV'.
-2025-12-06 10:19:31,883 - DEBUG - Anos necessários para a análise de 'IDIV': [2019, 2020, 2021, 2022, 2023, 2024, 2025]
-2025-12-06 10:19:31,884 - INFO - Todos os arquivos necessários para o índice 'IDIV' já existem localmente. Download pulado.
-2025-12-06 10:19:31,886 - DEBUG - Processando arquivo: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados\IDIV-2019.csv
-2025-12-06 10:19:31,896 - DEBUG - Processando arquivo: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados\IDIV-2020.csv
-2025-12-06 10:19:31,908 - DEBUG - Processando arquivo: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados\IDIV-2021.csv
-2025-12-06 10:19:31,923 - DEBUG - Processando arquivo: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados\IDIV-2022.csv
-2025-12-06 10:19:31,942 - DEBUG - Processando arquivo: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados\IDIV-2023.csv
-2025-12-06 10:19:31,954 - DEBUG - Processando arquivo: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados\IDIV-2024.csv
-2025-12-06 10:19:31,967 - DEBUG - Processando arquivo: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados\IDIV-2025.csv
-2025-12-06 10:19:31,982 - INFO - Dados do índice 'IDIV' da B3 processados com sucesso.
-2025-12-06 10:19:31,983 - INFO - Buscando dados da série 11 do BCB...
-2025-12-06 10:19:33,171 - INFO - Buscando dados da série 433 do BCB...
-2025-12-06 10:19:33,921 - INFO - Calculando benchmark sintético 'IPCA + 6%'...
-2025-12-06 10:19:33,921 - INFO - Calculando benchmark sintético 'IDIV + (IPCA+6%)'...
-2025-12-06 10:19:33,935 - INFO - Calculando benchmark sintético 'IMID + (IPCA+6%)'...
-2025-12-06 10:19:34,055 - DEBUG - Iniciando cálculo de rentabilidades para a tabela de resumo.
-2025-12-06 10:19:34,077 - DEBUG - Tipo de dados para 'Carteira': <class 'pandas.core.series.Series'>
-2025-12-06 10:19:34,082 - DEBUG - Tipo de dados para o benchmark 'IBOV (YFinance)': <class 'pandas.core.series.Series'>
-2025-12-06 10:19:34,085 - DEBUG - Tipo de dados para o benchmark 'S&P 500': <class 'pandas.core.series.Series'>
-2025-12-06 10:19:34,092 - DEBUG - Tipo de dados para o benchmark 'IMID': <class 'pandas.core.series.Series'>
-2025-12-06 10:19:34,094 - DEBUG - Tipo de dados para o benchmark 'IFIX': <class 'pandas.core.series.Series'>
-2025-12-06 10:19:34,098 - DEBUG - Tipo de dados para o benchmark 'IBSD': <class 'pandas.core.series.Series'>
-2025-12-06 10:19:34,101 - DEBUG - Tipo de dados para o benchmark 'IDIV': <class 'pandas.core.series.Series'>
-2025-12-06 10:19:34,102 - DEBUG - Tipo de dados para o benchmark 'SELIC': <class 'pandas.core.series.Series'>
-2025-12-06 10:19:34,107 - DEBUG - Tipo de dados para o benchmark 'IPCA': <class 'pandas.core.series.Series'>
-2025-12-06 10:19:34,112 - DEBUG - Tipo de dados para o benchmark 'IPCA + 6%': <class 'pandas.core.series.Series'>
-2025-12-06 10:19:34,115 - DEBUG - Tipo de dados para o benchmark 'IDIV + (IPCA+6%)': <class 'pandas.core.series.Series'>
-2025-12-06 10:19:34,118 - DEBUG - Tipo de dados para o benchmark 'IMID + (IPCA+6%)': <class 'pandas.core.series.Series'>
-2025-12-06 10:19:34,123 - DEBUG - Rentabilidades totais calculadas: {'Carteira - AÇÃO': 1.164890223387872, 'IBOV (YFinance)': 0.5441138314323373, 'S&P 500': 1.5521867306779291, 'IMID': 1.0769579955706625, 'IFIX': 0.4325898463194404, 'IBSD': 0.7572002774636777, 'IDIV': 1.040225794389685, 'SELIC': 0.7543313516892791, 'IPCA': 0.41457140016429594, 'IPCA + 6%': 1.0659176093780194, 'IDIV + (IPCA+6%)': 1.1278059124615503, 'IMID + (IPCA+6%)': 1.1202480274816171}
-2025-12-06 10:19:36,156 - DEBUG - Iniciando cálculo de rentabilidades para a tabela de resumo.
-2025-12-06 10:19:36,156 - DEBUG - Tipo de dados para 'Carteira': <class 'pandas.core.series.Series'>
-2025-12-06 10:19:36,156 - DEBUG - Tipo de dados para o benchmark 'IBOV (YFinance)': <class 'pandas.core.series.Series'>
-2025-12-06 10:19:36,168 - DEBUG - Tipo de dados para o benchmark 'S&P 500': <class 'pandas.core.series.Series'>
-2025-12-06 10:19:36,172 - DEBUG - Tipo de dados para o benchmark 'IMID': <class 'pandas.core.series.Series'>
-2025-12-06 10:19:36,177 - DEBUG - Tipo de dados para o benchmark 'IFIX': <class 'pandas.core.series.Series'>
-2025-12-06 10:19:36,180 - DEBUG - Tipo de dados para o benchmark 'IBSD': <class 'pandas.core.series.Series'>
-2025-12-06 10:19:36,181 - DEBUG - Tipo de dados para o benchmark 'IDIV': <class 'pandas.core.series.Series'>
-2025-12-06 10:19:36,187 - DEBUG - Tipo de dados para o benchmark 'SELIC': <class 'pandas.core.series.Series'>
-2025-12-06 10:19:36,191 - DEBUG - Tipo de dados para o benchmark 'IPCA': <class 'pandas.core.series.Series'>
-2025-12-06 10:19:36,195 - DEBUG - Tipo de dados para o benchmark 'IPCA + 6%': <class 'pandas.core.series.Series'>
-2025-12-06 10:19:36,198 - DEBUG - Tipo de dados para o benchmark 'IDIV + (IPCA+6%)': <class 'pandas.core.series.Series'>
-2025-12-06 10:19:36,201 - DEBUG - Tipo de dados para o benchmark 'IMID + (IPCA+6%)': <class 'pandas.core.series.Series'>
-2025-12-06 10:19:36,206 - DEBUG - Rentabilidades totais calculadas: {'Carteira - AÇÃO': 1.164890223387872, 'IBOV (YFinance)': 0.5441138314323373, 'S&P 500': 1.5521867306779291, 'IMID': 1.0769579955706625, 'IFIX': 0.4325898463194404, 'IBSD': 0.7572002774636777, 'IDIV': 1.040225794389685, 'SELIC': 0.7543313516892791, 'IPCA': 0.41457140016429594, 'IPCA + 6%': 1.0659176093780194, 'IDIV + (IPCA+6%)': 1.1278059124615503, 'IMID + (IPCA+6%)': 1.1202480274816171}
-2025-12-06 10:19:37,858 - INFO - Gráfico comparativo de TWR salvo com sucesso em: dlombello/graficos\comparativo_twr_AÇÃO.png
-2025-12-06 10:29:15,525 - INFO - 
-
-==================== NOVA ANÁLISE ====================
-2025-12-06 10:29:15,525 - INFO - Buscando histórico na API com os parâmetros: {'classe': 'AÇÃO'}
-2025-12-06 10:29:18,388 - INFO - Dados capturados com sucesso!
-2025-12-06 10:29:18,447 - INFO - Histórico completo salvo em: dlombello/graficos\historico_completo_AÇÃO.csv
-2025-12-06 10:29:18,449 - INFO - Gerando gráficos...
-2025-12-06 10:29:19,443 - INFO - Dados do gráfico de evolução salvos em: dlombello/graficos\evolucao_AÇÃO.csv
-2025-12-06 10:29:22,042 - INFO - Gráfico de evolução salvo com sucesso em: dlombello/graficos\evolucao_AÇÃO.png
-2025-12-06 10:29:22,046 - INFO - Iniciando cálculo de TWR...
-2025-12-06 10:29:22,280 - INFO - Dados do gráfico de TWR salvos em: dlombello/graficos\evolucao_twr_AÇÃO.csv
-2025-12-06 10:29:22,531 - INFO - Gráfico de TWR salvo com sucesso em: dlombello/graficos\evolucao_twr_AÇÃO.png
-2025-12-06 10:29:22,533 - INFO - Período da análise: 2019-04-30 a 2025-10-31
-2025-12-06 10:29:22,533 - INFO - Buscando dados para o benchmark: ^BVSP...
-2025-12-06 10:29:24,460 - INFO - Buscando dados para o benchmark: SPY...
-2025-12-06 10:29:25,368 - INFO - Buscando dados para o benchmark: IMID.L...
-2025-12-06 10:29:25,781 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IFIX'.
-2025-12-06 10:29:25,786 - INFO - Todos os arquivos necessários para o índice 'IFIX' já existem localmente. Download pulado.
-2025-12-06 10:29:25,877 - INFO - Dados do índice 'IFIX' da B3 processados com sucesso.
-2025-12-06 10:29:25,877 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IBSD'.
-2025-12-06 10:29:25,877 - INFO - Todos os arquivos necessários para o índice 'IBSD' já existem localmente. Download pulado.
-2025-12-06 10:29:25,977 - INFO - Dados do índice 'IBSD' da B3 processados com sucesso.
-2025-12-06 10:29:25,979 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IDIV'.
-2025-12-06 10:29:25,981 - INFO - Todos os arquivos necessários para o índice 'IDIV' já existem localmente. Download pulado.
-2025-12-06 10:29:26,064 - INFO - Dados do índice 'IDIV' da B3 processados com sucesso.
-2025-12-06 10:29:26,065 - INFO - Buscando dados da série 11 do BCB...
-2025-12-06 10:29:37,005 - INFO - Buscando dados da série 433 do BCB...
-2025-12-06 10:29:37,963 - INFO - Calculando benchmark sintético 'IPCA + 6%'...
-2025-12-06 10:29:37,978 - INFO - Calculando benchmark sintético 'IDIV + (IPCA+6%)'...
-2025-12-06 10:29:37,982 - INFO - Calculando benchmark sintético 'IMID + (IPCA+6%)'...
-2025-12-06 10:29:42,996 - INFO - Gráfico comparativo de TWR salvo com sucesso em: dlombello/graficos\comparativo_twr_AÇÃO.png
-2025-12-06 10:32:08,961 - INFO - 
-
-==================== NOVA ANÁLISE ====================
-2025-12-06 10:32:08,972 - INFO - Buscando histórico na API com os parâmetros: {'classe': 'AÇÃO'}
-2025-12-06 10:32:11,149 - INFO - Dados capturados com sucesso!
-2025-12-06 10:32:11,275 - INFO - Histórico completo salvo em: dlombello/graficos\historico_completo_AÇÃO.csv
-2025-12-06 10:32:11,276 - INFO - Gerando gráficos...
-2025-12-06 10:32:12,295 - INFO - Dados do gráfico de evolução salvos em: dlombello/graficos\evolucao_AÇÃO.csv
-2025-12-06 10:32:14,245 - INFO - Gráfico de evolução salvo com sucesso em: dlombello/graficos\evolucao_AÇÃO.png
-2025-12-06 10:32:14,261 - INFO - Iniciando cálculo de TWR...
-2025-12-06 10:32:14,461 - INFO - Dados do gráfico de TWR salvos em: dlombello/graficos\evolucao_twr_AÇÃO.csv
-2025-12-06 10:32:14,663 - INFO - Gráfico de TWR salvo com sucesso em: dlombello/graficos\evolucao_twr_AÇÃO.png
-2025-12-06 10:32:14,664 - INFO - Período da análise: 2019-04-30 a 2025-10-31
-2025-12-06 10:32:14,664 - INFO - Buscando dados para o benchmark: ^BVSP...
-2025-12-06 10:32:15,933 - INFO - Buscando dados para o benchmark: SPY...
-2025-12-06 10:32:16,514 - INFO - Buscando dados para o benchmark: IMID.L...
-2025-12-06 10:32:17,006 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IFIX'.
-2025-12-06 10:32:17,009 - INFO - Todos os arquivos necessários para o índice 'IFIX' já existem localmente. Download pulado.
-2025-12-06 10:32:17,082 - INFO - Dados do índice 'IFIX' da B3 processados com sucesso.
-2025-12-06 10:32:17,097 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IBSD'.
-2025-12-06 10:32:17,101 - INFO - Todos os arquivos necessários para o índice 'IBSD' já existem localmente. Download pulado.
-2025-12-06 10:32:17,176 - INFO - Dados do índice 'IBSD' da B3 processados com sucesso.
-2025-12-06 10:32:17,177 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IDIV'.
-2025-12-06 10:32:17,179 - INFO - Todos os arquivos necessários para o índice 'IDIV' já existem localmente. Download pulado.
-2025-12-06 10:32:17,259 - INFO - Dados do índice 'IDIV' da B3 processados com sucesso.
-2025-12-06 10:32:17,260 - INFO - Buscando dados da série 11 do BCB...
-2025-12-06 10:32:17,998 - INFO - Buscando dados da série 433 do BCB...
-2025-12-06 10:32:18,583 - INFO - Calculando benchmark sintético 'IPCA + 6%'...
-2025-12-06 10:32:18,583 - INFO - Calculando benchmark sintético 'IDIV + (IPCA+6%)'...
-2025-12-06 10:32:18,599 - INFO - Calculando benchmark sintético 'IMID + (IPCA+6%)'...
-2025-12-06 10:32:18,605 - INFO - Calculando benchmark sintético 'Carteira Teórica'...
-2025-12-06 10:32:22,769 - INFO - Gráfico comparativo de TWR salvo com sucesso em: dlombello/graficos\comparativo_twr_AÇÃO.png
-2025-12-06 10:35:51,961 - INFO - 
-
-==================== NOVA ANÁLISE ====================
-2025-12-06 10:35:51,971 - INFO - Buscando histórico na API com os parâmetros: {'classe': 'AÇÃO'}
-2025-12-06 10:35:53,865 - INFO - Dados capturados com sucesso!
-2025-12-06 10:35:53,903 - INFO - Histórico completo salvo em: dlombello/graficos\historico_completo_AÇÃO.csv
-2025-12-06 10:35:53,903 - INFO - Gerando gráficos...
-2025-12-06 10:35:54,733 - INFO - Dados do gráfico de evolução salvos em: dlombello/graficos\evolucao_AÇÃO.csv
-2025-12-06 10:35:56,445 - INFO - Gráfico de evolução salvo com sucesso em: dlombello/graficos\evolucao_AÇÃO.png
-2025-12-06 10:35:56,445 - INFO - Iniciando cálculo de TWR...
-2025-12-06 10:35:56,649 - INFO - Dados do gráfico de TWR salvos em: dlombello/graficos\evolucao_twr_AÇÃO.csv
-2025-12-06 10:35:56,850 - INFO - Gráfico de TWR salvo com sucesso em: dlombello/graficos\evolucao_twr_AÇÃO.png
-2025-12-06 10:35:56,850 - INFO - Período da análise: 2019-04-30 a 2025-10-31
-2025-12-06 10:35:56,850 - INFO - Buscando dados para o benchmark: ^BVSP...
-2025-12-06 10:35:58,959 - INFO - Buscando dados para o benchmark: SPY...
-2025-12-06 10:35:59,791 - INFO - Buscando dados para o benchmark: IMID.L...
-2025-12-06 10:36:00,196 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IFIX'.
-2025-12-06 10:36:00,196 - INFO - Todos os arquivos necessários para o índice 'IFIX' já existem localmente. Download pulado.
-2025-12-06 10:36:00,271 - INFO - Dados do índice 'IFIX' da B3 processados com sucesso.
-2025-12-06 10:36:00,271 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IBSD'.
-2025-12-06 10:36:00,271 - INFO - Todos os arquivos necessários para o índice 'IBSD' já existem localmente. Download pulado.
-2025-12-06 10:36:00,384 - INFO - Dados do índice 'IBSD' da B3 processados com sucesso.
-2025-12-06 10:36:00,385 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IDIV'.
-2025-12-06 10:36:00,386 - INFO - Todos os arquivos necessários para o índice 'IDIV' já existem localmente. Download pulado.
-2025-12-06 10:36:00,471 - INFO - Dados do índice 'IDIV' da B3 processados com sucesso.
-2025-12-06 10:36:00,471 - INFO - Buscando dados da série 11 do BCB...
-2025-12-06 10:36:01,254 - INFO - Buscando dados da série 433 do BCB...
-2025-12-06 10:36:01,872 - INFO - Calculando benchmark sintético 'IPCA + 6%'...
-2025-12-06 10:36:01,872 - INFO - Calculando benchmark sintético 'IDIV + (IPCA+6%)'...
-2025-12-06 10:36:01,872 - INFO - Calculando benchmark sintético 'IMID + (IPCA+6%)'...
-2025-12-06 10:36:01,893 - INFO - Calculando benchmark sintético 'Carteira Teórica'...
-2025-12-06 10:36:06,060 - INFO - Gráfico comparativo de TWR salvo com sucesso em: dlombello/graficos\comparativo_twr_AÇÃO.png
-2025-12-06 10:40:39,699 - INFO - 
-
-==================== NOVA ANÁLISE ====================
-2025-12-06 10:40:39,701 - INFO - Buscando histórico na API com os parâmetros: {'classe': 'AÇÃO'}
-2025-12-06 10:40:41,762 - INFO - Dados capturados com sucesso!
-2025-12-06 10:40:41,851 - INFO - Histórico completo salvo em: dlombello/graficos\historico_completo_AÇÃO.csv
-2025-12-06 10:40:41,853 - INFO - Gerando gráficos...
-2025-12-06 10:40:43,008 - INFO - Dados do gráfico de evolução salvos em: dlombello/graficos\evolucao_AÇÃO.csv
-2025-12-06 10:40:45,658 - INFO - Gráfico de evolução salvo com sucesso em: dlombello/graficos\evolucao_AÇÃO.png
-2025-12-06 10:40:45,660 - INFO - Iniciando cálculo de TWR...
-2025-12-06 10:40:45,938 - INFO - Dados do gráfico de TWR salvos em: dlombello/graficos\evolucao_twr_AÇÃO.csv
-2025-12-06 10:40:46,202 - INFO - Gráfico de TWR salvo com sucesso em: dlombello/graficos\evolucao_twr_AÇÃO.png
-2025-12-06 10:40:46,203 - INFO - Período da análise: 2019-04-30 a 2025-10-31
-2025-12-06 10:40:46,204 - INFO - Buscando dados para o benchmark: SPY...
-2025-12-06 10:40:47,544 - INFO - Buscando dados para o benchmark: IMID.L...
-2025-12-06 10:40:47,976 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IDIV'.
-2025-12-06 10:40:47,979 - INFO - Todos os arquivos necessários para o índice 'IDIV' já existem localmente. Download pulado.
-2025-12-06 10:40:48,093 - INFO - Dados do índice 'IDIV' da B3 processados com sucesso.
-2025-12-06 10:40:50,407 - INFO - Gráfico comparativo de TWR salvo com sucesso em: dlombello/graficos\comparativo_twr_AÇÃO.png
-2025-12-06 10:44:08,454 - INFO - 
-
-==================== NOVA ANÁLISE ====================
-2025-12-06 10:44:08,455 - INFO - Buscando histórico na API com os parâmetros: {'classe': 'AÇÃO'}
-2025-12-06 10:44:11,148 - INFO - Dados capturados com sucesso!
-2025-12-06 10:44:11,211 - INFO - Histórico completo salvo em: dlombello/graficos\historico_completo_AÇÃO.csv
-2025-12-06 10:44:11,211 - INFO - Gerando gráficos...
-2025-12-06 10:44:12,513 - INFO - Dados do gráfico de evolução salvos em: dlombello/graficos\evolucao_AÇÃO.csv
-2025-12-06 10:44:14,729 - INFO - Gráfico de evolução salvo com sucesso em: dlombello/graficos\evolucao_AÇÃO.png
-2025-12-06 10:44:14,729 - INFO - Iniciando cálculo de TWR...
-2025-12-06 10:44:14,929 - INFO - Dados do gráfico de TWR salvos em: dlombello/graficos\evolucao_twr_AÇÃO.csv
-2025-12-06 10:44:15,112 - INFO - Gráfico de TWR salvo com sucesso em: dlombello/graficos\evolucao_twr_AÇÃO.png
-2025-12-06 10:44:15,129 - INFO - Período da análise: 2019-04-30 a 2025-10-31
-2025-12-06 10:44:15,129 - INFO - Buscando dados para o benchmark: SPY...
-2025-12-06 10:44:18,429 - INFO - Buscando dados para o benchmark: IMID.L...
-2025-12-06 10:44:18,833 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IDIV'.
-2025-12-06 10:44:18,835 - INFO - Todos os arquivos necessários para o índice 'IDIV' já existem localmente. Download pulado.
-2025-12-06 10:44:18,913 - INFO - Dados do índice 'IDIV' da B3 processados com sucesso.
-2025-12-06 10:44:18,914 - INFO - Buscando dados da série 433 do BCB...
-2025-12-06 10:44:19,615 - INFO - Calculando benchmark sintético 'IPCA + 6%'...
-2025-12-06 10:44:19,615 - INFO - Calculando benchmark sintético 'IDIV + (IPCA+6%)'...
-2025-12-06 10:44:19,620 - INFO - Calculando benchmark sintético 'IMID + (IPCA+6%)'...
-2025-12-06 10:44:19,624 - INFO - Calculando benchmark sintético 'Carteira Teórica'...
-2025-12-06 10:44:22,886 - INFO - Gráfico comparativo de TWR salvo com sucesso em: dlombello/graficos\comparativo_twr_AÇÃO.png
-2025-12-06 10:51:08,357 - INFO - 
-
-==================== NOVA ANÁLISE ====================
-2025-12-06 10:51:08,374 - INFO - Buscando histórico na API com os parâmetros: {'classe': 'AÇÃO'}
-2025-12-06 10:51:11,144 - INFO - Dados capturados com sucesso!
-2025-12-06 10:51:11,178 - INFO - Histórico completo salvo em: dlombello/graficos\historico_completo_AÇÃO.csv
-2025-12-06 10:51:11,178 - INFO - Gerando gráficos...
-2025-12-06 10:51:12,005 - INFO - Dados do gráfico de evolução salvos em: dlombello/graficos\evolucao_AÇÃO.csv
-2025-12-06 10:51:13,646 - INFO - Gráfico de evolução salvo com sucesso em: dlombello/graficos\evolucao_AÇÃO.png
-2025-12-06 10:51:13,646 - INFO - Iniciando cálculo de TWR...
-2025-12-06 10:51:13,863 - INFO - Dados do gráfico de TWR salvos em: dlombello/graficos\evolucao_twr_AÇÃO.csv
-2025-12-06 10:51:14,063 - INFO - Gráfico de TWR salvo com sucesso em: dlombello/graficos\evolucao_twr_AÇÃO.png
-2025-12-06 10:51:14,074 - INFO - Período da análise: 2019-04-30 a 2025-10-31
-2025-12-06 10:51:14,074 - INFO - Buscando dados para o benchmark: SPY...
-2025-12-06 10:51:15,781 - INFO - Buscando dados para o benchmark: IMID.L...
-2025-12-06 10:51:16,200 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IBSD'.
-2025-12-06 10:51:16,200 - INFO - Todos os arquivos necessários para o índice 'IBSD' já existem localmente. Download pulado.
-2025-12-06 10:51:16,292 - INFO - Dados do índice 'IBSD' da B3 processados com sucesso.
-2025-12-06 10:51:16,293 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IDIV'.
-2025-12-06 10:51:16,296 - INFO - Todos os arquivos necessários para o índice 'IDIV' já existem localmente. Download pulado.
-2025-12-06 10:51:16,374 - INFO - Dados do índice 'IDIV' da B3 processados com sucesso.
-2025-12-06 10:51:16,375 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IBLV'.
-2025-12-06 10:51:16,377 - INFO - Arquivos não encontrados para os anos: [2019, 2020, 2021, 2022, 2023, 2024, 2025]. Iniciando download...
-2025-12-06 10:51:16,377 - INFO - Iniciando orquestrador de downloads da B3.
-2025-12-06 10:51:16,378 - INFO - --- Iniciando script de download de dados da B3 ---
-2025-12-06 10:51:16,380 - INFO - Pastas de trabalho verificadas/criadas com sucesso.
-2025-12-06 10:51:16,381 - INFO - Inicializando driver do Chrome...
-2025-12-06 10:51:22,718 - INFO - Iniciando download para o índice 'IBLV', ano 2019.
-2025-12-06 10:51:25,053 - INFO - Botão de download clicado. Aguardando o arquivo...
-2025-12-06 10:51:26,636 - INFO - Arquivo 'Evolucao_Diaria.csv' encontrado na pasta de downloads.
-2025-12-06 10:51:26,652 - INFO - Arquivo renomeado e movido para: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IBLV-2019.csv
-2025-12-06 10:51:26,664 - INFO - Iniciando download para o índice 'IBLV', ano 2020.
-2025-12-06 10:51:28,341 - INFO - Botão de download clicado. Aguardando o arquivo...
-2025-12-06 10:51:58,374 - ERROR - Tempo de espera excedido (30s). O arquivo 'Evolucao_Diaria.csv' não foi encontrado em 'C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\downloads'.
-2025-12-06 10:51:58,374 - ERROR - Falha ao baixar dados para o índice 'IBLV' ano 2020. Erro: Download do arquivo demorou demais.
-2025-12-06 10:51:58,374 - INFO - Iniciando download para o índice 'IBLV', ano 2021.
-2025-12-06 10:51:59,387 - INFO - Botão de download clicado. Aguardando o arquivo...
-2025-12-06 10:51:59,894 - INFO - Arquivo 'Evolucao_Diaria.csv' encontrado na pasta de downloads.
-2025-12-06 10:51:59,898 - INFO - Arquivo renomeado e movido para: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IBLV-2021.csv
-2025-12-06 10:51:59,899 - INFO - Iniciando download para o índice 'IBLV', ano 2022.
-2025-12-06 10:52:01,246 - INFO - Botão de download clicado. Aguardando o arquivo...
-2025-12-06 10:52:01,852 - INFO - Arquivo 'Evolucao_Diaria.csv' encontrado na pasta de downloads.
-2025-12-06 10:52:01,856 - INFO - Arquivo renomeado e movido para: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IBLV-2022.csv
-2025-12-06 10:52:01,856 - INFO - Iniciando download para o índice 'IBLV', ano 2023.
-2025-12-06 10:52:03,066 - INFO - Botão de download clicado. Aguardando o arquivo...
-2025-12-06 10:52:03,572 - INFO - Arquivo 'Evolucao_Diaria.csv' encontrado na pasta de downloads.
-2025-12-06 10:52:03,574 - INFO - Arquivo renomeado e movido para: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IBLV-2023.csv
-2025-12-06 10:52:03,575 - INFO - Iniciando download para o índice 'IBLV', ano 2024.
-2025-12-06 10:52:04,745 - INFO - Botão de download clicado. Aguardando o arquivo...
-2025-12-06 10:52:05,354 - INFO - Arquivo 'Evolucao_Diaria.csv' encontrado na pasta de downloads.
-2025-12-06 10:52:05,357 - INFO - Arquivo renomeado e movido para: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IBLV-2024.csv
-2025-12-06 10:52:05,358 - INFO - Iniciando download para o índice 'IBLV', ano 2025.
-2025-12-06 10:52:05,979 - INFO - Botão de download clicado. Aguardando o arquivo...
-2025-12-06 10:52:06,591 - INFO - Arquivo 'Evolucao_Diaria.csv' encontrado na pasta de downloads.
-2025-12-06 10:52:06,594 - INFO - Arquivo renomeado e movido para: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IBLV-2025.csv
-2025-12-06 10:52:06,594 - INFO - --- Processo de download da B3 finalizado. ---
-2025-12-06 10:52:09,454 - INFO - Driver do Chrome encerrado.
-2025-12-06 10:52:09,468 - WARNING - Arquivo 'C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados\IBLV-2020.csv' não encontrado após tentativa de download. Pulando ano 2020.
-2025-12-06 10:52:09,544 - INFO - Dados do índice 'IBLV' da B3 processados com sucesso.
-2025-12-06 10:52:09,544 - INFO - Buscando dados da série 433 do BCB...
-2025-12-06 10:52:11,197 - INFO - Calculando benchmark sintético 'IPCA + 6%'...
-2025-12-06 10:52:11,197 - INFO - Calculando benchmark sintético 'IDIV + (IPCA+6%)'...
-2025-12-06 10:52:11,201 - INFO - Calculando benchmark sintético 'IMID + (IPCA+6%)'...
-2025-12-06 10:52:11,208 - INFO - Calculando benchmark sintético 'Carteira Teórica'...
-2025-12-06 10:52:15,681 - INFO - Gráfico comparativo de TWR salvo com sucesso em: dlombello/graficos\comparativo_twr_AÇÃO.png
-2025-12-06 10:57:19,377 - INFO - 
-
-==================== NOVA ANÁLISE ====================
-2025-12-06 10:57:19,377 - INFO - Buscando histórico na API com os parâmetros: {'classe': 'AÇÃO'}
-2025-12-06 10:57:21,332 - INFO - Dados capturados com sucesso!
-2025-12-06 10:57:21,386 - INFO - Histórico completo salvo em: dlombello/graficos\historico_completo_AÇÃO.csv
-2025-12-06 10:57:21,387 - INFO - Gerando gráficos...
-2025-12-06 10:57:22,029 - INFO - Dados do gráfico de evolução salvos em: dlombello/graficos\evolucao_AÇÃO.csv
-2025-12-06 10:57:23,940 - INFO - Gráfico de evolução salvo com sucesso em: dlombello/graficos\evolucao_AÇÃO.png
-2025-12-06 10:57:23,948 - INFO - Iniciando cálculo de TWR...
-2025-12-06 10:57:24,360 - INFO - Dados do gráfico de TWR salvos em: dlombello/graficos\evolucao_twr_AÇÃO.csv
-2025-12-06 10:57:24,673 - INFO - Gráfico de TWR salvo com sucesso em: dlombello/graficos\evolucao_twr_AÇÃO.png
-2025-12-06 10:57:24,675 - INFO - Período da análise: 2019-04-30 a 2025-10-31
-2025-12-06 10:57:24,675 - INFO - Buscando dados para o benchmark: SPY...
-2025-12-06 10:57:26,085 - INFO - Buscando dados para o benchmark: IMID.L...
-2025-12-06 10:57:26,521 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IBSD'.
-2025-12-06 10:57:26,521 - INFO - Todos os arquivos necessários para o índice 'IBSD' já existem localmente. Download pulado.
-2025-12-06 10:57:26,604 - INFO - Dados do índice 'IBSD' da B3 processados com sucesso.
-2025-12-06 10:57:26,605 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IDIV'.
-2025-12-06 10:57:26,607 - INFO - Todos os arquivos necessários para o índice 'IDIV' já existem localmente. Download pulado.
-2025-12-06 10:57:26,668 - INFO - Dados do índice 'IDIV' da B3 processados com sucesso.
-2025-12-06 10:57:26,684 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IBLV'.
-2025-12-06 10:57:26,687 - INFO - Arquivos não encontrados para os anos: [2020]. Iniciando download...
-2025-12-06 10:57:26,688 - INFO - Iniciando orquestrador de downloads da B3.
-2025-12-06 10:57:26,689 - INFO - --- Iniciando script de download de dados da B3 ---
-2025-12-06 10:57:26,690 - INFO - Pastas de trabalho verificadas/criadas com sucesso.
-2025-12-06 10:57:26,691 - INFO - Inicializando driver do Chrome...
-2025-12-06 10:57:32,998 - INFO - Iniciando download para o índice 'IBLV', ano 2020.
-2025-12-06 10:57:37,120 - INFO - Botão de download clicado. Aguardando o arquivo...
-2025-12-06 10:57:37,930 - INFO - Arquivo 'Evolucao_Diaria.csv' encontrado na pasta de downloads.
-2025-12-06 10:57:37,936 - INFO - Arquivo renomeado e movido para: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IBLV-2020.csv
-2025-12-06 10:57:37,936 - INFO - --- Processo de download da B3 finalizado. ---
-2025-12-06 10:57:40,499 - INFO - Driver do Chrome encerrado.
-2025-12-06 10:57:40,602 - INFO - Dados do índice 'IBLV' da B3 processados com sucesso.
-2025-12-06 10:57:40,602 - INFO - Buscando dados da série 433 do BCB...
-2025-12-06 10:57:41,615 - INFO - Calculando benchmark sintético 'IPCA + 6%'...
-2025-12-06 10:57:41,615 - INFO - Calculando benchmark sintético 'IDIV + (IPCA+6%)'...
-2025-12-06 10:57:41,632 - INFO - Calculando benchmark sintético 'IMID + (IPCA+6%)'...
-2025-12-06 10:57:41,642 - INFO - Calculando benchmark sintético 'Carteira Teórica'...
-2025-12-06 10:57:41,654 - INFO - Calculando benchmark sintético 'Carteira B3'...
-2025-12-06 10:57:47,666 - INFO - Gráfico comparativo de TWR salvo com sucesso em: dlombello/graficos\comparativo_twr_AÇÃO.png
-2025-12-06 11:04:35,766 - INFO - 
-
-==================== NOVA ANÁLISE ====================
-2025-12-06 11:04:35,767 - INFO - Buscando histórico na API com os parâmetros: {'classe': 'AÇÃO'}
-2025-12-06 11:04:40,516 - INFO - Dados capturados com sucesso!
-2025-12-06 11:04:40,572 - INFO - Histórico completo salvo em: dlombello/graficos\historico_completo_AÇÃO.csv
-2025-12-06 11:04:40,573 - INFO - Gerando gráficos...
-2025-12-06 11:04:41,418 - INFO - Dados do gráfico de evolução salvos em: dlombello/graficos\evolucao_AÇÃO.csv
-2025-12-06 11:04:43,085 - INFO - Gráfico de evolução salvo com sucesso em: dlombello/graficos\evolucao_AÇÃO.png
-2025-12-06 11:04:43,087 - INFO - Iniciando cálculo de TWR...
-2025-12-06 11:04:43,285 - INFO - Dados do gráfico de TWR salvos em: dlombello/graficos\evolucao_twr_AÇÃO.csv
-2025-12-06 11:04:43,487 - INFO - Gráfico de TWR salvo com sucesso em: dlombello/graficos\evolucao_twr_AÇÃO.png
-2025-12-06 11:04:43,487 - INFO - Período da análise: 2019-04-30 a 2025-10-31
-2025-12-06 11:04:43,487 - INFO - Buscando dados para o benchmark: SPY...
-2025-12-06 11:04:45,010 - INFO - Buscando dados para o benchmark: IMID.L...
-2025-12-06 11:04:45,406 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IBSD'.
-2025-12-06 11:04:45,413 - INFO - Todos os arquivos necessários para o índice 'IBSD' já existem localmente. Download pulado.
-2025-12-06 11:04:45,492 - INFO - Dados do índice 'IBSD' da B3 processados com sucesso.
-2025-12-06 11:04:45,493 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IDIV'.
-2025-12-06 11:04:45,495 - INFO - Todos os arquivos necessários para o índice 'IDIV' já existem localmente. Download pulado.
-2025-12-06 11:04:45,574 - INFO - Dados do índice 'IDIV' da B3 processados com sucesso.
-2025-12-06 11:04:45,575 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IBLV'.
-2025-12-06 11:04:45,577 - INFO - Todos os arquivos necessários para o índice 'IBLV' já existem localmente. Download pulado.
-2025-12-06 11:04:45,657 - INFO - Dados do índice 'IBLV' da B3 processados com sucesso.
-2025-12-06 11:04:45,658 - INFO - Buscando dados da série 433 do BCB...
-2025-12-06 11:04:46,455 - INFO - Calculando benchmark sintético 'IPCA + 6%'...
-2025-12-06 11:04:46,455 - INFO - Calculando benchmark sintético 'IDIV + (IPCA+6%)'...
-2025-12-06 11:04:46,455 - INFO - Calculando benchmark sintético 'IMID + (IPCA+6%)'...
-2025-12-06 11:04:46,466 - INFO - Calculando benchmark sintético 'Carteira Teórica'...
-2025-12-06 11:04:46,472 - INFO - Calculando benchmark sintético 'Carteira B3'...
-2025-12-06 11:04:46,589 - ERROR - Ocorreu um erro durante o processamento de benchmarks para a análise 'AÇÃO'.
-Traceback (most recent call last):
-  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\main.py", line 1069, in processar_benchmarks_e_gerar_grafico
-    gerar_grafico_comparativo_twr(benchmarks_data, nome_grafico=nome_analise, logger=logger, df_twr=df_twr)
-  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\main.py", line 669, in gerar_grafico_comparativo_twr
-    df_resumo = calcular_rentabilidades_resumo(benchmarks_data, nome_grafico, logger, df_twr)
-                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\main.py", line 457, in calcular_rentabilidades_resumo
-    logger.debug("Iniciando cálculo de rentabilidades para a tabela de resumo.")
-    ^^^^^^^^^^^^
-  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\.venv\Lib\site-packages\pandas\core\generic.py", line 6321, in __getattr__
-    return object.__getattribute__(self, name)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-AttributeError: 'DataFrame' object has no attribute 'debug'
-2025-12-06 11:15:18,120 - INFO - 
-
-==================== NOVA ANÁLISE ====================
-2025-12-06 11:15:18,120 - INFO - Buscando histórico na API com os parâmetros: {'classe': 'AÇÃO'}
-2025-12-06 11:15:20,103 - INFO - Dados capturados com sucesso!
-2025-12-06 11:15:20,137 - INFO - Histórico completo salvo em: dlombello/graficos\historico_completo_AÇÃO.csv
-2025-12-06 11:15:20,137 - INFO - Gerando gráficos...
-2025-12-06 11:15:21,020 - INFO - Dados do gráfico de evolução salvos em: dlombello/graficos\evolucao_AÇÃO.csv
-2025-12-06 11:15:22,789 - INFO - Gráfico de evolução salvo com sucesso em: dlombello/graficos\evolucao_AÇÃO.png
-2025-12-06 11:15:22,789 - INFO - Iniciando cálculo de TWR...
-2025-12-06 11:15:22,989 - INFO - Dados do gráfico de TWR salvos em: dlombello/graficos\evolucao_twr_AÇÃO.csv
-2025-12-06 11:15:23,172 - INFO - Gráfico de TWR salvo com sucesso em: dlombello/graficos\evolucao_twr_AÇÃO.png
-2025-12-06 11:15:23,189 - INFO - Período da análise: 2019-04-30 a 2025-10-31
-2025-12-06 11:15:23,189 - INFO - Buscando dados para o benchmark: SPY...
-2025-12-06 11:15:24,774 - INFO - Buscando dados para o benchmark: IMID.L...
-2025-12-06 11:15:25,216 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IBSD'.
-2025-12-06 11:15:25,216 - INFO - Todos os arquivos necessários para o índice 'IBSD' já existem localmente. Download pulado.
-2025-12-06 11:15:25,295 - INFO - Dados do índice 'IBSD' da B3 processados com sucesso.
-2025-12-06 11:15:25,295 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IDIV'.
-2025-12-06 11:15:25,295 - INFO - Todos os arquivos necessários para o índice 'IDIV' já existem localmente. Download pulado.
-2025-12-06 11:15:25,387 - INFO - Dados do índice 'IDIV' da B3 processados com sucesso.
-2025-12-06 11:15:25,387 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IBLV'.
-2025-12-06 11:15:25,389 - INFO - Todos os arquivos necessários para o índice 'IBLV' já existem localmente. Download pulado.
-2025-12-06 11:15:25,469 - INFO - Dados do índice 'IBLV' da B3 processados com sucesso.
-2025-12-06 11:15:25,469 - INFO - Buscando dados da série 433 do BCB...
-2025-12-06 11:15:26,476 - INFO - Calculando benchmark sintético 'IPCA + 6%'...
-2025-12-06 11:15:26,476 - INFO - Calculando benchmark sintético 'IDIV + (IPCA+6%)'...
-2025-12-06 11:15:26,480 - INFO - Calculando benchmark sintético 'IMID + (IPCA+6%)'...
-2025-12-06 11:15:26,487 - INFO - Calculando benchmark sintético 'Carteira Teórica'...
-2025-12-06 11:15:26,493 - INFO - Calculando benchmark sintético 'Carteira B3'...
-2025-12-06 11:15:26,993 - INFO - TWR histórico salvo em: dlombello/graficos\twr_historico_10y_AÇÃO.png e dados em dlombello/graficos\twr_historico_10y_AÇÃO.csv
-2025-12-06 11:15:31,114 - INFO - Gráfico comparativo de TWR salvo com sucesso em: dlombello/graficos\comparativo_twr_AÇÃO.png
-2025-12-06 11:23:11,335 - INFO - Modo histórico standalone: gerando TWR dos benchmarks para 10 anos (2015-12-07 a 2025-12-06).
-2025-12-06 11:23:11,335 - INFO - Buscando dados para o benchmark: SPY...
-2025-12-06 11:23:13,418 - INFO - Buscando dados para o benchmark: IMID.L...
-2025-12-06 11:23:13,931 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IBSD'.
-2025-12-06 11:23:13,939 - INFO - Arquivos não encontrados para os anos: [2015, 2016, 2017, 2018]. Iniciando download...
-2025-12-06 11:23:13,939 - INFO - Iniciando orquestrador de downloads da B3.
-2025-12-06 11:23:13,939 - INFO - --- Iniciando script de download de dados da B3 ---
-2025-12-06 11:23:13,939 - INFO - Pastas de trabalho verificadas/criadas com sucesso.
-2025-12-06 11:23:13,939 - INFO - Inicializando driver do Chrome...
-2025-12-06 11:23:20,982 - INFO - Iniciando download para o índice 'IBSD', ano 2015.
-2025-12-06 11:23:53,584 - ERROR - Falha ao baixar dados para o índice 'IBSD' ano 2015. Erro: Message: 
+2025-12-06 11:35:07,689 - INFO - Buscando histórico na API com os parâmetros: {'classe': 'AÇÃO'}
+2025-12-06 11:35:09,520 - INFO - Dados capturados com sucesso!
+2025-12-06 11:35:09,570 - INFO - Histórico completo salvo em: dlombello/graficos\historico_completo_AÇÃO.csv
+2025-12-06 11:35:09,570 - INFO - Gerando gráficos...
+2025-12-06 11:35:10,331 - INFO - Dados do gráfico de evolução salvos em: dlombello/graficos\evolucao_AÇÃO.csv
+2025-12-06 11:35:12,056 - INFO - Gráfico de evolução salvo com sucesso em: dlombello/graficos\evolucao_AÇÃO.png
+2025-12-06 11:35:12,056 - INFO - Iniciando cálculo de TWR...
+2025-12-06 11:35:12,273 - INFO - Dados do gráfico de TWR salvos em: dlombello/graficos\evolucao_twr_AÇÃO.csv
+2025-12-06 11:35:12,473 - INFO - Gráfico de TWR salvo com sucesso em: dlombello/graficos\evolucao_twr_AÇÃO.png
+2025-12-06 11:35:12,473 - INFO - Período da análise: 2019-04-30 a 2025-10-31
+2025-12-06 11:35:12,473 - INFO - Buscando dados para o benchmark: SPY...
+2025-12-06 11:35:13,801 - INFO - Buscando dados para o benchmark: IMID.L...
+2025-12-06 11:35:14,208 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IBSD'.
+2025-12-06 11:35:14,208 - INFO - Todos os arquivos necessários para o índice 'IBSD' já existem localmente. Download pulado.
+2025-12-06 11:35:14,296 - INFO - Dados do índice 'IBSD' da B3 processados com sucesso.
+2025-12-06 11:35:14,297 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IDIV'.
+2025-12-06 11:35:14,299 - INFO - Todos os arquivos necessários para o índice 'IDIV' já existem localmente. Download pulado.
+2025-12-06 11:35:14,373 - INFO - Dados do índice 'IDIV' da B3 processados com sucesso.
+2025-12-06 11:35:14,374 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IBLV'.
+2025-12-06 11:35:14,377 - INFO - Todos os arquivos necessários para o índice 'IBLV' já existem localmente. Download pulado.
+2025-12-06 11:35:14,457 - INFO - Dados do índice 'IBLV' da B3 processados com sucesso.
+2025-12-06 11:35:14,457 - INFO - Buscando dados da série 433 do BCB...
+2025-12-06 11:35:15,084 - INFO - Calculando benchmark sintético 'IPCA + 6%'...
+2025-12-06 11:35:15,086 - INFO - Calculando benchmark sintético 'IDIV + (IPCA+6%)'...
+2025-12-06 11:35:15,090 - INFO - Calculando benchmark sintético 'IMID + (IPCA+6%)'...
+2025-12-06 11:35:15,095 - INFO - Calculando benchmark sintético 'Carteira Teórica'...
+2025-12-06 11:35:15,099 - INFO - Calculando benchmark sintético 'Carteira B3'...
+2025-12-06 11:35:19,417 - INFO - Gráfico comparativo de TWR salvo com sucesso em: dlombello/graficos\comparativo_twr_AÇÃO.png
+2025-12-06 11:35:33,019 - INFO - Modo histórico standalone: gerando TWR dos benchmarks para 10 anos (2015-12-07 a 2025-12-06).
+2025-12-06 11:35:33,021 - INFO - Buscando dados para o benchmark: SPY...
+2025-12-06 11:35:34,511 - INFO - Buscando dados para o benchmark: IMID.L...
+2025-12-06 11:35:35,064 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IBSD'.
+2025-12-06 11:35:35,072 - INFO - Arquivos não encontrados para os anos: [2015, 2016, 2017, 2018]. Iniciando download...
+2025-12-06 11:35:35,072 - INFO - Iniciando orquestrador de downloads da B3.
+2025-12-06 11:35:35,072 - INFO - --- Iniciando script de download de dados da B3 ---
+2025-12-06 11:35:35,072 - INFO - Pastas de trabalho verificadas/criadas com sucesso.
+2025-12-06 11:35:35,072 - INFO - Inicializando driver do Chrome...
+2025-12-06 11:35:41,209 - INFO - Iniciando download para o índice 'IBSD', ano 2015.
+2025-12-06 11:36:13,742 - ERROR - Falha ao baixar dados para o índice 'IBSD' ano 2015. Erro: Message: 
 Stacktrace:
 Symbols not available. Dumping unresolved backtrace:
-	0xc64103
-	0xc64144
-	0xa6e71d
-	0xaba03d
-	0xaba41b
-	0xb017f2
-	0xadc954
-	0xafee17
-	0xadc706
-	0xaada30
-	0xaaed54
-	0xed57b4
-	0xed098a
-	0xc8c392
-	0xc7c4c8
-	0xc8324d
-	0xc6c478
-	0xc6c63c
-	0xc567ca
+	0xa84103
+	0xa84144
+	0x88e71d
+	0x8da03d
+	0x8da41b
+	0x9217f2
+	0x8fc954
+	0x91ee17
+	0x8fc706
+	0x8cda30
+	0x8ced54
+	0xcf57b4
+	0xcf098a
+	0xaac392
+	0xa9c4c8
+	0xaa324d
+	0xa8c478
+	0xa8c63c
+	0xa767ca
 	0x75c25d49
 	0x7758d6db
 	0x7758d661
 
-2025-12-06 11:23:53,584 - INFO - Iniciando download para o índice 'IBSD', ano 2016.
-2025-12-06 11:24:09,206 - ERROR - Falha ao baixar dados para o índice 'IBSD' ano 2016. Erro: Message: invalid session id: session deleted as the browser has closed the connection
-from disconnected: not connected to DevTools
-  (Session info: chrome=142.0.7444.176); For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#invalidsessionidexception
+2025-12-06 11:36:13,742 - INFO - Iniciando download para o índice 'IBSD', ano 2016.
+2025-12-06 11:36:44,269 - ERROR - Falha ao baixar dados para o índice 'IBSD' ano 2016. Erro: Message: 
 Stacktrace:
 Symbols not available. Dumping unresolved backtrace:
-	0xc64103
-	0xc64144
-	0xa6e71d
-	0xa5d910
-	0xa7c714
-	0xae3475
-	0xafe749
-	0xadc706
-	0xaada30
-	0xaaed54
-	0xed57b4
-	0xed098a
-	0xc8c392
-	0xc7c4c8
-	0xc8324d
-	0xc6c478
-	0xc6c63c
-	0xc567ca
+	0xa84103
+	0xa84144
+	0x88e71d
+	0x8da03d
+	0x8da41b
+	0x9217f2
+	0x8fc954
+	0x91ee17
+	0x8fc706
+	0x8cda30
+	0x8ced54
+	0xcf57b4
+	0xcf098a
+	0xaac392
+	0xa9c4c8
+	0xaa324d
+	0xa8c478
+	0xa8c63c
+	0xa767ca
 	0x75c25d49
 	0x7758d6db
 	0x7758d661
 
-2025-12-06 11:24:09,208 - INFO - Iniciando download para o índice 'IBSD', ano 2017.
-2025-12-06 11:24:09,716 - ERROR - Falha ao baixar dados para o índice 'IBSD' ano 2017. Erro: Message: invalid session id; For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#invalidsessionidexception
+2025-12-06 11:36:44,269 - INFO - Iniciando download para o índice 'IBSD', ano 2017.
+2025-12-06 11:37:14,781 - ERROR - Falha ao baixar dados para o índice 'IBSD' ano 2017. Erro: Message: 
 Stacktrace:
 Symbols not available. Dumping unresolved backtrace:
-	0xc64103
-	0xc64144
-	0xa6e56b
-	0xaace58
-	0xadc7c6
-	0xad8030
-	0xad7563
-	0xa3e4dd
-	0xa3ea6e
-	0xa3ef3d
-	0xed57b4
-	0xed098a
-	0xc8c392
-	0xc7c4c8
-	0xc8324d
-	0xa3e193
-	0xa3d848
-	0x102b0cf
+	0xa84103
+	0xa84144
+	0x88e71d
+	0x8da03d
+	0x8da41b
+	0x9217f2
+	0x8fc954
+	0x91ee17
+	0x8fc706
+	0x8cda30
+	0x8ced54
+	0xcf57b4
+	0xcf098a
+	0xaac392
+	0xa9c4c8
+	0xaa324d
+	0xa8c478
+	0xa8c63c
+	0xa767ca
 	0x75c25d49
 	0x7758d6db
 	0x7758d661
 
-2025-12-06 11:24:09,717 - INFO - Iniciando download para o índice 'IBSD', ano 2018.
-2025-12-06 11:24:09,721 - ERROR - Falha ao baixar dados para o índice 'IBSD' ano 2018. Erro: Message: invalid session id; For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#invalidsessionidexception
+2025-12-06 11:37:14,781 - INFO - Iniciando download para o índice 'IBSD', ano 2018.
+2025-12-06 11:37:45,281 - ERROR - Falha ao baixar dados para o índice 'IBSD' ano 2018. Erro: Message: 
 Stacktrace:
 Symbols not available. Dumping unresolved backtrace:
-	0xc64103
-	0xc64144
-	0xa6e56b
-	0xaace58
-	0xadc7c6
-	0xad8030
-	0xad7563
-	0xa3e4dd
-	0xa3ea6e
-	0xa3ef3d
-	0xed57b4
-	0xed098a
-	0xc8c392
-	0xc7c4c8
-	0xc8324d
-	0xa3e193
-	0xa3d848
-	0x102b0cf
+	0xa84103
+	0xa84144
+	0x88e71d
+	0x8da03d
+	0x8da41b
+	0x9217f2
+	0x8fc954
+	0x91ee17
+	0x8fc706
+	0x8cda30
+	0x8ced54
+	0xcf57b4
+	0xcf098a
+	0xaac392
+	0xa9c4c8
+	0xaa324d
+	0xa8c478
+	0xa8c63c
+	0xa767ca
 	0x75c25d49
 	0x7758d6db
 	0x7758d661
 
-2025-12-06 11:24:09,722 - INFO - --- Processo de download da B3 finalizado. ---
-2025-12-06 11:24:11,918 - INFO - Driver do Chrome encerrado.
-2025-12-06 11:24:11,919 - WARNING - Arquivo 'C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados\IBSD-2015.csv' não encontrado após tentativa de download. Pulando ano 2015.
-2025-12-06 11:24:11,920 - WARNING - Arquivo 'C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados\IBSD-2016.csv' não encontrado após tentativa de download. Pulando ano 2016.
-2025-12-06 11:24:11,920 - WARNING - Arquivo 'C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados\IBSD-2017.csv' não encontrado após tentativa de download. Pulando ano 2017.
-2025-12-06 11:24:11,920 - WARNING - Arquivo 'C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados\IBSD-2018.csv' não encontrado após tentativa de download. Pulando ano 2018.
-2025-12-06 11:24:12,043 - INFO - Dados do índice 'IBSD' da B3 processados com sucesso.
-2025-12-06 11:24:12,047 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IDIV'.
-2025-12-06 11:24:12,052 - INFO - Arquivos não encontrados para os anos: [2015, 2016, 2017, 2018]. Iniciando download...
-2025-12-06 11:24:12,052 - INFO - Iniciando orquestrador de downloads da B3.
-2025-12-06 11:24:12,053 - INFO - --- Iniciando script de download de dados da B3 ---
-2025-12-06 11:24:12,056 - INFO - Pastas de trabalho verificadas/criadas com sucesso.
-2025-12-06 11:24:12,056 - INFO - Inicializando driver do Chrome...
-2025-12-06 11:24:19,271 - INFO - Iniciando download para o índice 'IDIV', ano 2015.
-2025-12-06 11:24:21,318 - INFO - Botão de download clicado. Aguardando o arquivo...
-2025-12-06 11:24:22,233 - INFO - Arquivo 'Evolucao_Diaria.csv' encontrado na pasta de downloads.
-2025-12-06 11:24:22,236 - INFO - Arquivo renomeado e movido para: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IDIV-2015.csv
-2025-12-06 11:24:22,237 - INFO - Iniciando download para o índice 'IDIV', ano 2016.
-2025-12-06 11:24:23,595 - INFO - Botão de download clicado. Aguardando o arquivo...
-2025-12-06 11:24:24,203 - INFO - Arquivo 'Evolucao_Diaria.csv' encontrado na pasta de downloads.
-2025-12-06 11:24:24,205 - INFO - Arquivo renomeado e movido para: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IDIV-2016.csv
-2025-12-06 11:24:24,205 - INFO - Iniciando download para o índice 'IDIV', ano 2017.
-2025-12-06 11:24:25,411 - INFO - Botão de download clicado. Aguardando o arquivo...
-2025-12-06 11:24:26,020 - INFO - Arquivo 'Evolucao_Diaria.csv' encontrado na pasta de downloads.
-2025-12-06 11:24:26,020 - INFO - Arquivo renomeado e movido para: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IDIV-2017.csv
-2025-12-06 11:24:26,025 - INFO - Iniciando download para o índice 'IDIV', ano 2018.
-2025-12-06 11:24:27,201 - INFO - Botão de download clicado. Aguardando o arquivo...
-2025-12-06 11:24:27,710 - INFO - Arquivo 'Evolucao_Diaria.csv' encontrado na pasta de downloads.
-2025-12-06 11:24:27,710 - INFO - Arquivo renomeado e movido para: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IDIV-2018.csv
-2025-12-06 11:24:27,710 - INFO - --- Processo de download da B3 finalizado. ---
-2025-12-06 11:24:30,727 - INFO - Driver do Chrome encerrado.
-2025-12-06 11:24:30,869 - INFO - Dados do índice 'IDIV' da B3 processados com sucesso.
-2025-12-06 11:24:30,869 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IBLV'.
-2025-12-06 11:24:30,869 - INFO - Arquivos não encontrados para os anos: [2015, 2016, 2017, 2018]. Iniciando download...
-2025-12-06 11:24:30,869 - INFO - Iniciando orquestrador de downloads da B3.
-2025-12-06 11:24:30,869 - INFO - --- Iniciando script de download de dados da B3 ---
-2025-12-06 11:24:30,869 - INFO - Pastas de trabalho verificadas/criadas com sucesso.
-2025-12-06 11:24:30,869 - INFO - Inicializando driver do Chrome...
-2025-12-06 11:24:38,837 - INFO - Iniciando download para o índice 'IBLV', ano 2015.
-2025-12-06 11:24:41,393 - INFO - Botão de download clicado. Aguardando o arquivo...
-2025-12-06 11:24:42,625 - INFO - Arquivo 'Evolucao_Diaria.csv' encontrado na pasta de downloads.
-2025-12-06 11:24:42,641 - INFO - Arquivo renomeado e movido para: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IBLV-2015.csv
-2025-12-06 11:24:42,642 - INFO - Iniciando download para o índice 'IBLV', ano 2016.
-2025-12-06 11:24:44,370 - INFO - Botão de download clicado. Aguardando o arquivo...
-2025-12-06 11:24:45,407 - INFO - Arquivo 'Evolucao_Diaria.csv' encontrado na pasta de downloads.
-2025-12-06 11:24:45,410 - INFO - Arquivo renomeado e movido para: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IBLV-2016.csv
-2025-12-06 11:24:45,412 - INFO - Iniciando download para o índice 'IBLV', ano 2017.
-2025-12-06 11:24:46,996 - INFO - Botão de download clicado. Aguardando o arquivo...
-2025-12-06 11:25:17,080 - ERROR - Tempo de espera excedido (30s). O arquivo 'Evolucao_Diaria.csv' não foi encontrado em 'C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\downloads'.
-2025-12-06 11:25:17,081 - ERROR - Falha ao baixar dados para o índice 'IBLV' ano 2017. Erro: Download do arquivo demorou demais.
-2025-12-06 11:25:17,081 - INFO - Iniciando download para o índice 'IBLV', ano 2018.
-2025-12-06 11:25:18,178 - INFO - Botão de download clicado. Aguardando o arquivo...
-2025-12-06 11:25:18,786 - INFO - Arquivo 'Evolucao_Diaria.csv' encontrado na pasta de downloads.
-2025-12-06 11:25:18,791 - INFO - Arquivo renomeado e movido para: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IBLV-2018.csv
-2025-12-06 11:25:18,791 - INFO - --- Processo de download da B3 finalizado. ---
-2025-12-06 11:25:21,704 - INFO - Driver do Chrome encerrado.
-2025-12-06 11:25:21,737 - WARNING - Arquivo 'C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados\IBLV-2017.csv' não encontrado após tentativa de download. Pulando ano 2017.
-2025-12-06 11:25:21,869 - INFO - Dados do índice 'IBLV' da B3 processados com sucesso.
-2025-12-06 11:25:21,869 - INFO - Buscando dados da série 433 do BCB...
-2025-12-06 11:25:23,188 - INFO - Calculando benchmark sintético 'IPCA + 6%' (histórico standalone)...
-2025-12-06 11:25:23,188 - INFO - Calculando benchmark sintético 'IDIV + (IPCA+6%)' (histórico standalone)...
-2025-12-06 11:25:23,208 - INFO - Calculando benchmark sintético 'IMID + (IPCA+6%)' (histórico standalone)...
-2025-12-06 11:25:23,216 - INFO - Calculando benchmark sintético 'Carteira Teórica' (histórico standalone)...
-2025-12-06 11:25:23,228 - INFO - Calculando benchmark sintético 'Carteira B3' (histórico standalone)...
-2025-12-06 11:25:24,481 - INFO - TWR histórico salvo em: dlombello/graficos\twr_historico_10y_historico_10y.png e dados em dlombello/graficos\twr_historico_10y_historico_10y.csv
+2025-12-06 11:37:45,283 - INFO - --- Processo de download da B3 finalizado. ---
+2025-12-06 11:37:48,285 - INFO - Driver do Chrome encerrado.
+2025-12-06 11:37:48,285 - WARNING - Arquivo 'C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados\IBSD-2015.csv' não encontrado após tentativa de download. Pulando ano 2015.
+2025-12-06 11:37:48,285 - WARNING - Arquivo 'C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados\IBSD-2016.csv' não encontrado após tentativa de download. Pulando ano 2016.
+2025-12-06 11:37:48,285 - WARNING - Arquivo 'C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados\IBSD-2017.csv' não encontrado após tentativa de download. Pulando ano 2017.
+2025-12-06 11:37:48,285 - WARNING - Arquivo 'C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados\IBSD-2018.csv' não encontrado após tentativa de download. Pulando ano 2018.
+2025-12-06 11:37:48,395 - INFO - Dados do índice 'IBSD' da B3 processados com sucesso.
+2025-12-06 11:37:48,395 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IDIV'.
+2025-12-06 11:37:48,399 - INFO - Todos os arquivos necessários para o índice 'IDIV' já existem localmente. Download pulado.
+2025-12-06 11:37:48,529 - INFO - Dados do índice 'IDIV' da B3 processados com sucesso.
+2025-12-06 11:37:48,529 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IBLV'.
+2025-12-06 11:37:48,546 - INFO - Arquivos não encontrados para os anos: [2017]. Iniciando download...
+2025-12-06 11:37:48,546 - INFO - Iniciando orquestrador de downloads da B3.
+2025-12-06 11:37:48,546 - INFO - --- Iniciando script de download de dados da B3 ---
+2025-12-06 11:37:48,552 - INFO - Pastas de trabalho verificadas/criadas com sucesso.
+2025-12-06 11:37:48,553 - INFO - Inicializando driver do Chrome...
+2025-12-06 11:37:54,469 - INFO - Iniciando download para o índice 'IBLV', ano 2017.
+2025-12-06 11:37:56,704 - INFO - Botão de download clicado. Aguardando o arquivo...
+2025-12-06 11:37:57,831 - INFO - Arquivo 'Evolucao_Diaria.csv' encontrado na pasta de downloads.
+2025-12-06 11:37:57,834 - INFO - Arquivo renomeado e movido para: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IBLV-2017.csv
+2025-12-06 11:37:57,835 - INFO - --- Processo de download da B3 finalizado. ---
+2025-12-06 11:38:00,707 - INFO - Driver do Chrome encerrado.
+2025-12-06 11:38:00,889 - INFO - Dados do índice 'IBLV' da B3 processados com sucesso.
+2025-12-06 11:38:00,890 - INFO - Buscando dados da série 433 do BCB...
+2025-12-06 11:38:01,757 - INFO - Calculando benchmark sintético 'IPCA + 6%' (histórico standalone)...
+2025-12-06 11:38:01,760 - INFO - Calculando benchmark sintético 'IDIV + (IPCA+6%)' (histórico standalone)...
+2025-12-06 11:38:01,760 - INFO - Calculando benchmark sintético 'IMID + (IPCA+6%)' (histórico standalone)...
+2025-12-06 11:38:01,771 - INFO - Calculando benchmark sintético 'Carteira Teórica' (histórico standalone)...
+2025-12-06 11:38:01,780 - INFO - Calculando benchmark sintético 'Carteira B3' (histórico standalone)...
+2025-12-06 11:38:03,481 - INFO - TWR histórico salvo em: dlombello/graficos\twr_historico_10y_historico_10y.png e dados em dlombello/graficos\twr_historico_10y_historico_10y.csv
