@@ -5555,3 +5555,130 @@ Symbols not available. Dumping unresolved backtrace:
 2025-11-20 11:58:32,720 - INFO - Buscando dados da série 433 do BCB...
 2025-11-20 11:58:33,511 - INFO - Calculando benchmark sintético 'IPCA + 6%'...
 2025-11-20 11:58:36,725 - INFO - Gráfico comparativo de TWR salvo com sucesso em: dlombello/graficos\comparativo_twr_AÇÃO.png
+2025-12-06 09:37:45,640 - INFO - 
+
+==================== NOVA ANÁLISE ====================
+2025-12-06 09:37:45,642 - INFO - Buscando histórico na API com os parâmetros: {'classe': 'AÇÃO'}
+2025-12-06 09:37:47,812 - INFO - Dados capturados com sucesso!
+2025-12-06 09:37:47,878 - INFO - Histórico completo salvo em: dlombello/graficos\historico_completo_AÇÃO.csv
+2025-12-06 09:37:47,880 - INFO - Gerando gráficos...
+2025-12-06 09:37:49,271 - INFO - Dados do gráfico de evolução salvos em: dlombello/graficos\evolucao_AÇÃO.csv
+2025-12-06 09:37:51,902 - INFO - Gráfico de evolução salvo com sucesso em: dlombello/graficos\evolucao_AÇÃO.png
+2025-12-06 09:37:51,902 - INFO - Iniciando cálculo de TWR...
+2025-12-06 09:37:52,247 - INFO - Dados do gráfico de TWR salvos em: dlombello/graficos\evolucao_twr_AÇÃO.csv
+2025-12-06 09:37:52,620 - INFO - Gráfico de TWR salvo com sucesso em: dlombello/graficos\evolucao_twr_AÇÃO.png
+2025-12-06 09:37:52,620 - INFO - Período da análise: 2019-04-30 a 2025-10-31
+2025-12-06 09:37:52,620 - INFO - Buscando dados para o benchmark: ^BVSP...
+2025-12-06 09:37:54,383 - INFO - Buscando dados para o benchmark: SPY...
+2025-12-06 09:37:54,970 - INFO - Buscando dados para o benchmark: IMID.L...
+2025-12-06 09:37:55,411 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IFIX'.
+2025-12-06 09:37:55,417 - INFO - Todos os arquivos necessários para o índice 'IFIX' já existem localmente. Download pulado.
+2025-12-06 09:37:55,517 - INFO - Dados do índice 'IFIX' da B3 processados com sucesso.
+2025-12-06 09:37:55,517 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IBSD'.
+2025-12-06 09:37:55,532 - INFO - Arquivos não encontrados para os anos: [2021]. Iniciando download...
+2025-12-06 09:37:55,533 - INFO - Iniciando orquestrador de downloads da B3.
+2025-12-06 09:37:55,536 - INFO - --- Iniciando script de download de dados da B3 ---
+2025-12-06 09:37:55,538 - INFO - Pastas de trabalho verificadas/criadas com sucesso.
+2025-12-06 09:37:55,539 - INFO - Inicializando driver do Chrome...
+2025-12-06 09:38:07,441 - INFO - Iniciando download para o índice 'IBSD', ano 2021.
+2025-12-06 09:38:10,108 - INFO - Botão de download clicado. Aguardando o arquivo...
+2025-12-06 09:38:11,159 - INFO - Arquivo 'Evolucao_Diaria.csv' encontrado na pasta de downloads.
+2025-12-06 09:38:11,164 - INFO - Arquivo renomeado e movido para: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IBSD-2021.csv
+2025-12-06 09:38:11,179 - INFO - --- Processo de download da B3 finalizado. ---
+2025-12-06 09:38:14,836 - INFO - Driver do Chrome encerrado.
+2025-12-06 09:38:15,003 - INFO - Dados do índice 'IBSD' da B3 processados com sucesso.
+2025-12-06 09:38:15,005 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IDIV'.
+2025-12-06 09:38:15,009 - INFO - Todos os arquivos necessários para o índice 'IDIV' já existem localmente. Download pulado.
+2025-12-06 09:38:15,164 - INFO - Dados do índice 'IDIV' da B3 processados com sucesso.
+2025-12-06 09:38:15,164 - INFO - Buscando dados da série 11 do BCB...
+2025-12-06 09:38:25,096 - INFO - Buscando dados da série 433 do BCB...
+2025-12-06 09:38:26,070 - INFO - Calculando benchmark sintético 'IPCA + 6%'...
+2025-12-06 09:38:30,285 - INFO - Gráfico comparativo de TWR salvo com sucesso em: dlombello/graficos\comparativo_twr_AÇÃO.png
+2025-12-06 10:04:33,625 - INFO - 
+
+==================== NOVA ANÁLISE ====================
+2025-12-06 10:04:33,625 - INFO - Buscando histórico na API com os parâmetros: {'classe': 'AÇÃO'}
+2025-12-06 10:04:35,727 - INFO - Dados capturados com sucesso!
+2025-12-06 10:04:35,778 - INFO - Histórico completo salvo em: dlombello/graficos\historico_completo_AÇÃO.csv
+2025-12-06 10:04:35,778 - INFO - Gerando gráficos...
+2025-12-06 10:04:36,612 - INFO - Dados do gráfico de evolução salvos em: dlombello/graficos\evolucao_AÇÃO.csv
+2025-12-06 10:04:39,007 - INFO - Gráfico de evolução salvo com sucesso em: dlombello/graficos\evolucao_AÇÃO.png
+2025-12-06 10:04:39,009 - INFO - Iniciando cálculo de TWR...
+2025-12-06 10:04:39,213 - INFO - Dados do gráfico de TWR salvos em: dlombello/graficos\evolucao_twr_AÇÃO.csv
+2025-12-06 10:04:39,414 - INFO - Gráfico de TWR salvo com sucesso em: dlombello/graficos\evolucao_twr_AÇÃO.png
+2025-12-06 10:04:39,414 - INFO - Período da análise: 2019-04-30 a 2025-10-31
+2025-12-06 10:04:39,430 - INFO - Buscando dados para o benchmark: ^BVSP...
+2025-12-06 10:04:41,114 - INFO - Buscando dados para o benchmark: SPY...
+2025-12-06 10:04:41,716 - INFO - Buscando dados para o benchmark: IMID.L...
+2025-12-06 10:04:42,367 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IFIX'.
+2025-12-06 10:04:42,367 - INFO - Todos os arquivos necessários para o índice 'IFIX' já existem localmente. Download pulado.
+2025-12-06 10:04:42,466 - INFO - Dados do índice 'IFIX' da B3 processados com sucesso.
+2025-12-06 10:04:42,466 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IBSD'.
+2025-12-06 10:04:42,470 - INFO - Todos os arquivos necessários para o índice 'IBSD' já existem localmente. Download pulado.
+2025-12-06 10:04:42,559 - INFO - Dados do índice 'IBSD' da B3 processados com sucesso.
+2025-12-06 10:04:42,559 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IDIV'.
+2025-12-06 10:04:42,563 - INFO - Todos os arquivos necessários para o índice 'IDIV' já existem localmente. Download pulado.
+2025-12-06 10:04:42,656 - INFO - Dados do índice 'IDIV' da B3 processados com sucesso.
+2025-12-06 10:04:42,657 - INFO - Buscando dados da série 11 do BCB...
+2025-12-06 10:04:52,713 - INFO - Buscando dados da série 433 do BCB...
+2025-12-06 10:04:53,681 - INFO - Calculando benchmark sintético 'IPCA + 6%'...
+2025-12-06 10:04:53,681 - INFO - Calculando benchmark sintético 'IDIV + (IPCA+6%)'...
+2025-12-06 10:04:57,231 - INFO - Gráfico comparativo de TWR salvo com sucesso em: dlombello/graficos\comparativo_twr_AÇÃO.png
+2025-12-06 10:08:47,060 - INFO - 
+
+==================== NOVA ANÁLISE ====================
+2025-12-06 10:08:47,076 - INFO - Buscando histórico na API com os parâmetros: {'classe': 'AÇÃO'}
+2025-12-06 10:08:48,812 - INFO - Dados capturados com sucesso!
+2025-12-06 10:08:48,873 - INFO - Histórico completo salvo em: dlombello/graficos\historico_completo_AÇÃO.csv
+2025-12-06 10:08:48,874 - INFO - Gerando gráficos...
+2025-12-06 10:08:49,863 - INFO - Dados do gráfico de evolução salvos em: dlombello/graficos\evolucao_AÇÃO.csv
+2025-12-06 10:08:51,581 - INFO - Gráfico de evolução salvo com sucesso em: dlombello/graficos\evolucao_AÇÃO.png
+2025-12-06 10:08:51,581 - INFO - Iniciando cálculo de TWR...
+2025-12-06 10:08:51,798 - INFO - Dados do gráfico de TWR salvos em: dlombello/graficos\evolucao_twr_AÇÃO.csv
+2025-12-06 10:08:51,982 - INFO - Gráfico de TWR salvo com sucesso em: dlombello/graficos\evolucao_twr_AÇÃO.png
+2025-12-06 10:08:51,982 - INFO - Período da análise: 2019-04-30 a 2025-10-31
+2025-12-06 10:08:51,982 - INFO - Buscando dados para o benchmark: ^BVSP...
+2025-12-06 10:08:53,313 - INFO - Buscando dados para o benchmark: SPY...
+2025-12-06 10:08:53,875 - INFO - Buscando dados para o benchmark: IMID.L...
+2025-12-06 10:08:54,285 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IFIX'.
+2025-12-06 10:08:54,285 - INFO - Todos os arquivos necessários para o índice 'IFIX' já existem localmente. Download pulado.
+2025-12-06 10:08:54,380 - INFO - Dados do índice 'IFIX' da B3 processados com sucesso.
+2025-12-06 10:08:54,380 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IBSD'.
+2025-12-06 10:08:54,383 - INFO - Todos os arquivos necessários para o índice 'IBSD' já existem localmente. Download pulado.
+2025-12-06 10:08:54,477 - INFO - Dados do índice 'IBSD' da B3 processados com sucesso.
+2025-12-06 10:08:54,478 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IDIV'.
+2025-12-06 10:08:54,481 - INFO - Todos os arquivos necessários para o índice 'IDIV' já existem localmente. Download pulado.
+2025-12-06 10:08:54,577 - INFO - Dados do índice 'IDIV' da B3 processados com sucesso.
+2025-12-06 10:08:54,577 - INFO - Buscando dados da série 11 do BCB...
+2025-12-06 10:08:55,335 - INFO - Buscando dados da série 433 do BCB...
+2025-12-06 10:08:55,969 - INFO - Calculando benchmark sintético 'IPCA + 6%'...
+2025-12-06 10:08:55,969 - INFO - Calculando benchmark sintético 'IDIV + (IPCA+6%)'...
+2025-12-06 10:08:55,969 - INFO - Calculando benchmark sintético 'IMID + (IPCA+6%)'...
+2025-12-06 10:08:55,969 - ERROR - Ocorreu um erro fatal não capturado na execução principal.
+Traceback (most recent call last):
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\main.py", line 964, in <module>
+    main()
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\main.py", line 948, in main
+    combined_returns = pd.DataFrame({'imid': imid_returns, 'ipca6': ipca6_returns}).fillna(0)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\.venv\Lib\site-packages\pandas\core\frame.py", line 782, in __init__
+    mgr = dict_to_mgr(data, index, columns, dtype=dtype, copy=copy, typ=manager)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\.venv\Lib\site-packages\pandas\core\internals\construction.py", line 503, in dict_to_mgr
+    return arrays_to_mgr(arrays, columns, index, dtype=dtype, typ=typ, consolidate=copy)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\.venv\Lib\site-packages\pandas\core\internals\construction.py", line 119, in arrays_to_mgr
+    arrays, refs = _homogenize(arrays, index, dtype)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\.venv\Lib\site-packages\pandas\core\internals\construction.py", line 629, in _homogenize
+    val = sanitize_array(val, index, dtype=dtype, copy=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\.venv\Lib\site-packages\pandas\core\construction.py", line 630, in sanitize_array
+    return sanitize_array(
+           ^^^^^^^^^^^^^^^
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\.venv\Lib\site-packages\pandas\core\construction.py", line 656, in sanitize_array
+    subarr = _sanitize_ndim(subarr, data, dtype, index, allow_2d=allow_2d)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\.venv\Lib\site-packages\pandas\core\construction.py", line 715, in _sanitize_ndim
+    raise ValueError(
+ValueError: Data must be 1-dimensional, got ndarray of shape (1640, 1) instead
