@@ -858,22 +858,23 @@ def main():
         if df_twr is not None:
             # Define os benchmarks para comparação
             benchmarks_yf = {
-                'IBOV (YFinance)': '^BVSP',
+                #'IBOV (YFinance)': '^BVSP',
                 'S&P 500': 'SPY', # ETF que replica o S&P 500
                 'IMID': 'IMID.L' # SPDR MSCI All Country World Investable Market UCITS ETF
             }
             # Benchmarks que serão baixados e processados da B3
             benchmarks_b3 = {
-                'IFIX': 'IFIX',
+                #'IFIX': 'IFIX',
                 'IBSD': 'IBSD',
-                'IDIV': 'IDIV'
+                'IDIV': 'IDIV',
+                'IBLV': 'IBLV'
                 #'IBOV (B3)': 'IBOV'
             }
             # Códigos das séries no SGS do Banco Central
             # 11: Taxa SELIC diária
             # 433: IPCA mensal
             benchmarks_bcb = {
-                'SELIC': 11,
+                #'SELIC': 11,
                 'IPCA': 433
             }
             

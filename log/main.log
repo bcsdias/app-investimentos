@@ -434,3 +434,111 @@ ValueError: Data must be 1-dimensional, got ndarray of shape (1640, 1) instead
 2025-12-06 10:36:01,872 - INFO - Calculando benchmark sintético 'IMID + (IPCA+6%)'...
 2025-12-06 10:36:01,893 - INFO - Calculando benchmark sintético 'Carteira Teórica'...
 2025-12-06 10:36:06,060 - INFO - Gráfico comparativo de TWR salvo com sucesso em: dlombello/graficos\comparativo_twr_AÇÃO.png
+2025-12-06 10:40:39,699 - INFO - 
+
+==================== NOVA ANÁLISE ====================
+2025-12-06 10:40:39,701 - INFO - Buscando histórico na API com os parâmetros: {'classe': 'AÇÃO'}
+2025-12-06 10:40:41,762 - INFO - Dados capturados com sucesso!
+2025-12-06 10:40:41,851 - INFO - Histórico completo salvo em: dlombello/graficos\historico_completo_AÇÃO.csv
+2025-12-06 10:40:41,853 - INFO - Gerando gráficos...
+2025-12-06 10:40:43,008 - INFO - Dados do gráfico de evolução salvos em: dlombello/graficos\evolucao_AÇÃO.csv
+2025-12-06 10:40:45,658 - INFO - Gráfico de evolução salvo com sucesso em: dlombello/graficos\evolucao_AÇÃO.png
+2025-12-06 10:40:45,660 - INFO - Iniciando cálculo de TWR...
+2025-12-06 10:40:45,938 - INFO - Dados do gráfico de TWR salvos em: dlombello/graficos\evolucao_twr_AÇÃO.csv
+2025-12-06 10:40:46,202 - INFO - Gráfico de TWR salvo com sucesso em: dlombello/graficos\evolucao_twr_AÇÃO.png
+2025-12-06 10:40:46,203 - INFO - Período da análise: 2019-04-30 a 2025-10-31
+2025-12-06 10:40:46,204 - INFO - Buscando dados para o benchmark: SPY...
+2025-12-06 10:40:47,544 - INFO - Buscando dados para o benchmark: IMID.L...
+2025-12-06 10:40:47,976 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IDIV'.
+2025-12-06 10:40:47,979 - INFO - Todos os arquivos necessários para o índice 'IDIV' já existem localmente. Download pulado.
+2025-12-06 10:40:48,093 - INFO - Dados do índice 'IDIV' da B3 processados com sucesso.
+2025-12-06 10:40:50,407 - INFO - Gráfico comparativo de TWR salvo com sucesso em: dlombello/graficos\comparativo_twr_AÇÃO.png
+2025-12-06 10:44:08,454 - INFO - 
+
+==================== NOVA ANÁLISE ====================
+2025-12-06 10:44:08,455 - INFO - Buscando histórico na API com os parâmetros: {'classe': 'AÇÃO'}
+2025-12-06 10:44:11,148 - INFO - Dados capturados com sucesso!
+2025-12-06 10:44:11,211 - INFO - Histórico completo salvo em: dlombello/graficos\historico_completo_AÇÃO.csv
+2025-12-06 10:44:11,211 - INFO - Gerando gráficos...
+2025-12-06 10:44:12,513 - INFO - Dados do gráfico de evolução salvos em: dlombello/graficos\evolucao_AÇÃO.csv
+2025-12-06 10:44:14,729 - INFO - Gráfico de evolução salvo com sucesso em: dlombello/graficos\evolucao_AÇÃO.png
+2025-12-06 10:44:14,729 - INFO - Iniciando cálculo de TWR...
+2025-12-06 10:44:14,929 - INFO - Dados do gráfico de TWR salvos em: dlombello/graficos\evolucao_twr_AÇÃO.csv
+2025-12-06 10:44:15,112 - INFO - Gráfico de TWR salvo com sucesso em: dlombello/graficos\evolucao_twr_AÇÃO.png
+2025-12-06 10:44:15,129 - INFO - Período da análise: 2019-04-30 a 2025-10-31
+2025-12-06 10:44:15,129 - INFO - Buscando dados para o benchmark: SPY...
+2025-12-06 10:44:18,429 - INFO - Buscando dados para o benchmark: IMID.L...
+2025-12-06 10:44:18,833 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IDIV'.
+2025-12-06 10:44:18,835 - INFO - Todos os arquivos necessários para o índice 'IDIV' já existem localmente. Download pulado.
+2025-12-06 10:44:18,913 - INFO - Dados do índice 'IDIV' da B3 processados com sucesso.
+2025-12-06 10:44:18,914 - INFO - Buscando dados da série 433 do BCB...
+2025-12-06 10:44:19,615 - INFO - Calculando benchmark sintético 'IPCA + 6%'...
+2025-12-06 10:44:19,615 - INFO - Calculando benchmark sintético 'IDIV + (IPCA+6%)'...
+2025-12-06 10:44:19,620 - INFO - Calculando benchmark sintético 'IMID + (IPCA+6%)'...
+2025-12-06 10:44:19,624 - INFO - Calculando benchmark sintético 'Carteira Teórica'...
+2025-12-06 10:44:22,886 - INFO - Gráfico comparativo de TWR salvo com sucesso em: dlombello/graficos\comparativo_twr_AÇÃO.png
+2025-12-06 10:51:08,357 - INFO - 
+
+==================== NOVA ANÁLISE ====================
+2025-12-06 10:51:08,374 - INFO - Buscando histórico na API com os parâmetros: {'classe': 'AÇÃO'}
+2025-12-06 10:51:11,144 - INFO - Dados capturados com sucesso!
+2025-12-06 10:51:11,178 - INFO - Histórico completo salvo em: dlombello/graficos\historico_completo_AÇÃO.csv
+2025-12-06 10:51:11,178 - INFO - Gerando gráficos...
+2025-12-06 10:51:12,005 - INFO - Dados do gráfico de evolução salvos em: dlombello/graficos\evolucao_AÇÃO.csv
+2025-12-06 10:51:13,646 - INFO - Gráfico de evolução salvo com sucesso em: dlombello/graficos\evolucao_AÇÃO.png
+2025-12-06 10:51:13,646 - INFO - Iniciando cálculo de TWR...
+2025-12-06 10:51:13,863 - INFO - Dados do gráfico de TWR salvos em: dlombello/graficos\evolucao_twr_AÇÃO.csv
+2025-12-06 10:51:14,063 - INFO - Gráfico de TWR salvo com sucesso em: dlombello/graficos\evolucao_twr_AÇÃO.png
+2025-12-06 10:51:14,074 - INFO - Período da análise: 2019-04-30 a 2025-10-31
+2025-12-06 10:51:14,074 - INFO - Buscando dados para o benchmark: SPY...
+2025-12-06 10:51:15,781 - INFO - Buscando dados para o benchmark: IMID.L...
+2025-12-06 10:51:16,200 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IBSD'.
+2025-12-06 10:51:16,200 - INFO - Todos os arquivos necessários para o índice 'IBSD' já existem localmente. Download pulado.
+2025-12-06 10:51:16,292 - INFO - Dados do índice 'IBSD' da B3 processados com sucesso.
+2025-12-06 10:51:16,293 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IDIV'.
+2025-12-06 10:51:16,296 - INFO - Todos os arquivos necessários para o índice 'IDIV' já existem localmente. Download pulado.
+2025-12-06 10:51:16,374 - INFO - Dados do índice 'IDIV' da B3 processados com sucesso.
+2025-12-06 10:51:16,375 - INFO - Iniciando processo de obtenção de dados da B3 para o índice 'IBLV'.
+2025-12-06 10:51:16,377 - INFO - Arquivos não encontrados para os anos: [2019, 2020, 2021, 2022, 2023, 2024, 2025]. Iniciando download...
+2025-12-06 10:51:16,377 - INFO - Iniciando orquestrador de downloads da B3.
+2025-12-06 10:51:16,378 - INFO - --- Iniciando script de download de dados da B3 ---
+2025-12-06 10:51:16,380 - INFO - Pastas de trabalho verificadas/criadas com sucesso.
+2025-12-06 10:51:16,381 - INFO - Inicializando driver do Chrome...
+2025-12-06 10:51:22,718 - INFO - Iniciando download para o índice 'IBLV', ano 2019.
+2025-12-06 10:51:25,053 - INFO - Botão de download clicado. Aguardando o arquivo...
+2025-12-06 10:51:26,636 - INFO - Arquivo 'Evolucao_Diaria.csv' encontrado na pasta de downloads.
+2025-12-06 10:51:26,652 - INFO - Arquivo renomeado e movido para: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IBLV-2019.csv
+2025-12-06 10:51:26,664 - INFO - Iniciando download para o índice 'IBLV', ano 2020.
+2025-12-06 10:51:28,341 - INFO - Botão de download clicado. Aguardando o arquivo...
+2025-12-06 10:51:58,374 - ERROR - Tempo de espera excedido (30s). O arquivo 'Evolucao_Diaria.csv' não foi encontrado em 'C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\downloads'.
+2025-12-06 10:51:58,374 - ERROR - Falha ao baixar dados para o índice 'IBLV' ano 2020. Erro: Download do arquivo demorou demais.
+2025-12-06 10:51:58,374 - INFO - Iniciando download para o índice 'IBLV', ano 2021.
+2025-12-06 10:51:59,387 - INFO - Botão de download clicado. Aguardando o arquivo...
+2025-12-06 10:51:59,894 - INFO - Arquivo 'Evolucao_Diaria.csv' encontrado na pasta de downloads.
+2025-12-06 10:51:59,898 - INFO - Arquivo renomeado e movido para: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IBLV-2021.csv
+2025-12-06 10:51:59,899 - INFO - Iniciando download para o índice 'IBLV', ano 2022.
+2025-12-06 10:52:01,246 - INFO - Botão de download clicado. Aguardando o arquivo...
+2025-12-06 10:52:01,852 - INFO - Arquivo 'Evolucao_Diaria.csv' encontrado na pasta de downloads.
+2025-12-06 10:52:01,856 - INFO - Arquivo renomeado e movido para: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IBLV-2022.csv
+2025-12-06 10:52:01,856 - INFO - Iniciando download para o índice 'IBLV', ano 2023.
+2025-12-06 10:52:03,066 - INFO - Botão de download clicado. Aguardando o arquivo...
+2025-12-06 10:52:03,572 - INFO - Arquivo 'Evolucao_Diaria.csv' encontrado na pasta de downloads.
+2025-12-06 10:52:03,574 - INFO - Arquivo renomeado e movido para: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IBLV-2023.csv
+2025-12-06 10:52:03,575 - INFO - Iniciando download para o índice 'IBLV', ano 2024.
+2025-12-06 10:52:04,745 - INFO - Botão de download clicado. Aguardando o arquivo...
+2025-12-06 10:52:05,354 - INFO - Arquivo 'Evolucao_Diaria.csv' encontrado na pasta de downloads.
+2025-12-06 10:52:05,357 - INFO - Arquivo renomeado e movido para: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IBLV-2024.csv
+2025-12-06 10:52:05,358 - INFO - Iniciando download para o índice 'IBLV', ano 2025.
+2025-12-06 10:52:05,979 - INFO - Botão de download clicado. Aguardando o arquivo...
+2025-12-06 10:52:06,591 - INFO - Arquivo 'Evolucao_Diaria.csv' encontrado na pasta de downloads.
+2025-12-06 10:52:06,594 - INFO - Arquivo renomeado e movido para: C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados/IBLV-2025.csv
+2025-12-06 10:52:06,594 - INFO - --- Processo de download da B3 finalizado. ---
+2025-12-06 10:52:09,454 - INFO - Driver do Chrome encerrado.
+2025-12-06 10:52:09,468 - WARNING - Arquivo 'C:\onedrive-bcsdias\OneDrive\dev\app_investimentos\dlombello\dados\IBLV-2020.csv' não encontrado após tentativa de download. Pulando ano 2020.
+2025-12-06 10:52:09,544 - INFO - Dados do índice 'IBLV' da B3 processados com sucesso.
+2025-12-06 10:52:09,544 - INFO - Buscando dados da série 433 do BCB...
+2025-12-06 10:52:11,197 - INFO - Calculando benchmark sintético 'IPCA + 6%'...
+2025-12-06 10:52:11,197 - INFO - Calculando benchmark sintético 'IDIV + (IPCA+6%)'...
+2025-12-06 10:52:11,201 - INFO - Calculando benchmark sintético 'IMID + (IPCA+6%)'...
+2025-12-06 10:52:11,208 - INFO - Calculando benchmark sintético 'Carteira Teórica'...
+2025-12-06 10:52:15,681 - INFO - Gráfico comparativo de TWR salvo com sucesso em: dlombello/graficos\comparativo_twr_AÇÃO.png
