@@ -891,17 +891,155 @@ def gerar_twr_historico(benchmarks_data: dict, years: int, nome_grafico: str, en
     df_plot = pd.concat(normalized, axis=1)
     df_plot.columns = names
 
-    # Gera gráfico
-    plt.figure(figsize=(12, 7))
-    for col in df_plot.columns:
-        plt.plot(df_plot.index, df_plot[col], label=col)
+    # Gera gráfico (usando fig/ax para permitir tabela abaixo)
+    fig, ax = plt.subplots(figsize=(12, 7))
 
-    plt.title(f'TWR Histórico ({years} anos) - {nome_grafico}', fontsize=14)
-    plt.ylabel('Performance (Base 100)', fontsize=12)
-    plt.xlabel('Data', fontsize=12)
-    plt.grid(True, which='both', linestyle='--', linewidth=0.5)
-    plt.legend(fontsize=9)
-    plt.gcf().autofmt_xdate()
+    # Captura cores para colorir os rótulos da tabela
+    color_map = {}
+    for col in df_plot.columns:
+        line, = ax.plot(df_plot.index, df_plot[col], label=col)
+        color_map[col] = line.get_color()
+
+    ax.set_title(f'TWR Histórico ({years} anos) - {nome_grafico}', fontsize=14)
+    ax.set_ylabel('Performance (Base 100)', fontsize=12)
+    ax.set_xlabel('Data', fontsize=12)
+    ax.grid(True, which='both', linestyle='--', linewidth=0.5)
+    ax.legend(fontsize=9)
+    fig.autofmt_xdate()
+
+    # --- Monta tabela de rentabilidade anual semelhante ao comparativo ---
+    # Calcula retornos anuais para cada série a partir dos dados originais (não normalizados)
+    anos_dict = {}
+    totais = {}
+    for nome in names:
+        # recupera a série original a partir do df_plot col (reconstrói fator usando índice)
+        s = df_plot[nome] / 100.0  # fator (pois df_plot é base 100)
+        # recupera fator anual no final do ano
+        try:
+            anual = s.resample('YE').last()
+            retornos = anual.pct_change().fillna(anual.iloc[0] - 1) if not anual.empty else pd.Series(dtype=float)
+        except Exception:
+            # tenta converter index para DatetimeIndex e repetir
+            temp = s.copy()
+            temp.index = pd.to_datetime(temp.index, errors='coerce')
+            temp = temp.dropna()
+            if temp.empty:
+                retornos = pd.Series(dtype=float)
+            else:
+                anual = temp.resample('YE').last()
+                retornos = anual.pct_change().fillna(anual.iloc[0] - 1) if not anual.empty else pd.Series(dtype=float)
+
+        # Armazena retornos (index são timestamps de fim de ano)
+        anos_dict[nome] = retornos
+        # total acumulado: último fator - 1
+        try:
+            totais[nome] = float(s.iloc[-1] - 1)
+        except Exception:
+            totais[nome] = np.nan
+
+    # Junta em um DataFrame: linhas = nomes, colunas = anos
+    if anos_dict:
+        df_anos = pd.DataFrame({k: v for k, v in anos_dict.items()}).T
+        # df_anos index são nomes, columns are Timestamp; convert columns to year ints when possible
+        col_years = []
+        for c in df_anos.columns:
+            try:
+                col_years.append(int(pd.to_datetime(c).year))
+            except Exception:
+                col_years.append(str(c))
+        df_anos.columns = col_years
+
+        # Adiciona coluna Total
+        df_anos['Total'] = pd.Series(totais)
+
+        # Reorder columns (years ascending then Total)
+        year_cols = [c for c in df_anos.columns if str(c).lower() != 'total']
+        try:
+            year_cols_sorted = sorted(year_cols)
+        except Exception:
+            year_cols_sorted = year_cols
+        ordered_cols = year_cols_sorted + (['Total'] if 'Total' in df_anos.columns else [])
+        df_anos = df_anos.reindex(columns=ordered_cols)
+
+        # Calcula acumulado por linha ao longo dos anos
+        if year_cols_sorted:
+            acumulado_df = (1 + df_anos[year_cols_sorted]).cumprod(axis=1) - 1
+        else:
+            acumulado_df = pd.DataFrame(index=df_anos.index)
+
+        # Formata as células: 'anual (acumulado)'
+        def _format_cell(annual, acc):
+            if pd.isna(annual):
+                return '-'
+            try:
+                if pd.isna(acc):
+                    return f'{float(annual):.1%}'
+                return f'{float(annual):.1%} ({float(acc):.1%})'
+            except Exception:
+                return str(annual)
+
+        df_formatted = pd.DataFrame(index=df_anos.index, columns=df_anos.columns, dtype=object)
+        for c in year_cols_sorted:
+            for idx in df_anos.index:
+                annual = df_anos.at[idx, c]
+                acc = acumulado_df.at[idx, c] if (idx in acumulado_df.index and c in acumulado_df.columns) else np.nan
+                df_formatted.at[idx, c] = _format_cell(annual, acc)
+
+        # Formata Total
+        if 'Total' in df_anos.columns:
+            for idx in df_anos.index:
+                total_val = df_anos.at[idx, 'Total']
+                df_formatted.at[idx, 'Total'] = f'{float(total_val):.1%}' if pd.notna(total_val) else '-'
+
+        # Adiciona a tabela abaixo do gráfico
+        cell_text = df_formatted.values
+        row_labels = list(df_formatted.index)
+        col_labels = list(df_formatted.columns)
+        col_labels_display = [f"{c} (acc)" if str(c).lower() != 'total' else 'Total' for c in col_labels]
+
+        tabela = ax.table(cellText=cell_text, rowLabels=row_labels, colLabels=col_labels_display,
+                          loc='bottom', cellLoc='center', bbox=[0, -0.45, 1, 0.4])
+        tabela.auto_set_font_size(False)
+        tabela.set_fontsize(9)
+        tabela.scale(1, 1.2)
+
+        # Colorir o rótulo das linhas para coincidir com as cores do gráfico
+        try:
+            celld = tabela.get_celld()
+
+            def _find_color_for(name):
+                if name in color_map:
+                    return color_map[name]
+                name_norm = name.strip().lower()
+                for k, v in color_map.items():
+                    if k.strip().lower() == name_norm:
+                        return v
+                for k, v in color_map.items():
+                    kn = k.strip().lower()
+                    if name_norm.startswith(kn) or kn.startswith(name_norm):
+                        return v
+                return None
+
+            for (r, c), cell in celld.items():
+                if c == -1:
+                    if 1 <= r <= len(row_labels):
+                        nome_linha = row_labels[r-1]
+                        cor = _find_color_for(nome_linha)
+                        if cor:
+                            cell.get_text().set_color(cor)
+                            cell.get_text().set_weight('bold')
+        except Exception as e:
+            logger.debug(f'Não foi possível colorir os rótulos da tabela histórica: {e}')
+
+        # Ajusta o layout para dar espaço à tabela
+        fig.subplots_adjust(bottom=0.35)
+
+        # Salva CSV da tabela numérica (não formatada) e da tabela formatada para inspeção
+        caminho_csv_table = os.path.join(pasta_graficos, f'twr_historico_{years}y_{nome_grafico}_table.csv')
+        try:
+            df_anos.to_csv(caminho_csv_table, sep=';', decimal=',')
+        except Exception:
+            logger.debug('Falha ao salvar CSV da tabela de rentabilidades históricas.')
 
     caminho_png = os.path.join(pasta_graficos, f'twr_historico_{years}y_{nome_grafico}.png')
     caminho_csv = os.path.join(pasta_graficos, f'twr_historico_{years}y_{nome_grafico}.csv')
