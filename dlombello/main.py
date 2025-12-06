@@ -949,10 +949,7 @@ def gerar_twr_historico(benchmarks_data: dict, years: int, nome_grafico: str, en
                 col_years.append(str(c))
         df_anos.columns = col_years
 
-        # Adiciona coluna Total
-        df_anos['Total'] = pd.Series(totais)
-
-        # Reorder columns (years ascending then Total)
+        # Reorder columns (years ascending then Total will be computed below)
         year_cols = [c for c in df_anos.columns if str(c).lower() != 'total']
         try:
             year_cols_sorted = sorted(year_cols)
@@ -961,11 +958,21 @@ def gerar_twr_historico(benchmarks_data: dict, years: int, nome_grafico: str, en
         ordered_cols = year_cols_sorted + (['Total'] if 'Total' in df_anos.columns else [])
         df_anos = df_anos.reindex(columns=ordered_cols)
 
-        # Calcula acumulado por linha ao longo dos anos
+        # Calcula acumulado por linha ao longo dos anos (preenche anos faltantes com 0)
         if year_cols_sorted:
-            acumulado_df = (1 + df_anos[year_cols_sorted]).cumprod(axis=1) - 1
+            # Quando faltar algum ano, considera retorno anual 0 (fillna(0)) conforme solicitado
+            acumulado_df = (1 + df_anos[year_cols_sorted].fillna(0)).cumprod(axis=1) - 1
         else:
             acumulado_df = pd.DataFrame(index=df_anos.index)
+
+        # Calcula Total a partir dos anos (tratando anos ausentes como 0)
+        if year_cols_sorted:
+            totais_calc = (1 + df_anos[year_cols_sorted].fillna(0)).prod(axis=1) - 1
+        else:
+            # Se não há colunas de ano, considera Total como 0 para todas as séries
+            totais_calc = pd.Series(0.0, index=df_anos.index)
+
+        df_anos['Total'] = totais_calc
 
         # Formata as células: 'anual (acumulado)'
         def _format_cell(annual, acc):
