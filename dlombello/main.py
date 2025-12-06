@@ -966,6 +966,30 @@ def main():
                  # Cria o índice acumulado a partir dos retornos da carteira
                  benchmarks_data['IMID + (IPCA+6%)'] = (1 + portfolio_returns).cumprod()
             
+            # 7. Calcula o benchmark sintético "Carteira Teórica" (50% IMID, 25% IDIV, 25% IPCA+6%)
+            if all(k in benchmarks_data and benchmarks_data[k] is not None for k in ['IMID', 'IDIV', 'IPCA + 6%']):
+                logger.info("Calculando benchmark sintético 'Carteira Teórica'...")
+                
+                # Pega as séries de dados dos benchmarks (garante Series)
+                imid_series = _ensure_series_local(benchmarks_data['IMID'])
+                idiv_series = _ensure_series_local(benchmarks_data['IDIV'])
+                ipca6_series = _ensure_series_local(benchmarks_data['IPCA + 6%'])
+
+                # Calcula os retornos diários de cada um
+                imid_returns = imid_series.pct_change().fillna(0)
+                idiv_returns = idiv_series.pct_change().fillna(0)
+                ipca6_returns = ipca6_series.pct_change().fillna(0)
+
+                # Alinha os índices de data e preenche valores ausentes
+                combined_returns = pd.concat([
+                    imid_returns.rename('imid'), 
+                    idiv_returns.rename('idiv'), 
+                    ipca6_returns.rename('ipca6')], axis=1).fillna(0)
+
+                # Calcula o retorno da carteira ponderada e cria o índice acumulado
+                portfolio_returns = 0.50 * combined_returns['imid'] + 0.25 * combined_returns['idiv'] + 0.25 * combined_returns['ipca6']
+                benchmarks_data['IDIV/IMID/(IPCA+6%)'] = (1 + portfolio_returns).cumprod()
+
             gerar_grafico_comparativo_twr(df_twr, benchmarks_data, nome_grafico=nome_analise, logger=logger)
 
     else:
