@@ -949,27 +949,22 @@ def main():
                 # Cria o índice acumulado a partir dos retornos da carteira
                 benchmarks_data['IDIV + (IPCA+6%)'] = (1 + portfolio_returns).cumprod()
             
-                # 6. Calcula o benchmark sintético "IMID + (IPCA+6%)" (Carteira 50/50)
-                if 'IMID' in benchmarks_data and benchmarks_data['IMID'] is not None and \
-                    'IPCA + 6%' in benchmarks_data and benchmarks_data['IPCA + 6%'] is not None:
-                     logger.info("Calculando benchmark sintético 'IMID + (IPCA+6%)'...")
-
-                     # Pega as séries de dados dos dois benchmarks (garante Series)
-                     imid_series = _ensure_series_local(benchmarks_data['IMID'])
-                     ipca6_series = _ensure_series_local(benchmarks_data['IPCA + 6%'])
-
-                     # Calcula os retornos diários de cada um
-                     imid_returns = imid_series.pct_change().fillna(0)
-                     ipca6_returns = ipca6_series.pct_change().fillna(0)
-
-                     # Alinha os índices de data e preenche valores ausentes usando concat
-                     combined_returns = pd.concat([imid_returns.rename('imid'), ipca6_returns.rename('ipca6')], axis=1).fillna(0)
-
-                     # Calcula o retorno da carteira 50/50
-                     portfolio_returns = 0.5 * combined_returns['imid'] + 0.5 * combined_returns['ipca6']
-
-                     # Cria o índice acumulado a partir dos retornos da carteira
-                     benchmarks_data['IMID + (IPCA+6%)'] = (1 + portfolio_returns).cumprod()
+            # 6. Calcula o benchmark sintético "IMID + (IPCA+6%)" (Carteira 50/50)
+            if 'IMID' in benchmarks_data and benchmarks_data['IMID'] is not None and \
+                'IPCA + 6%' in benchmarks_data and benchmarks_data['IPCA + 6%'] is not None:
+                 logger.info("Calculando benchmark sintético 'IMID + (IPCA+6%)'...")
+                 # Pega as séries de dados dos dois benchmarks (garante Series)
+                 imid_series = _ensure_series_local(benchmarks_data['IMID'])
+                 ipca6_series = _ensure_series_local(benchmarks_data['IPCA + 6%'])
+                 # Calcula os retornos diários de cada um
+                 imid_returns = imid_series.pct_change().fillna(0)
+                 ipca6_returns = ipca6_series.pct_change().fillna(0)
+                 # Alinha os índices de data e preenche valores ausentes usando concat
+                 combined_returns = pd.concat([imid_returns.rename('imid'), ipca6_returns.rename('ipca6')], axis=1).fillna(0)
+                 # Calcula o retorno da carteira 50/50
+                 portfolio_returns = 0.5 * combined_returns['imid'] + 0.5 * combined_returns['ipca6']
+                 # Cria o índice acumulado a partir dos retornos da carteira
+                 benchmarks_data['IMID + (IPCA+6%)'] = (1 + portfolio_returns).cumprod()
             
             gerar_grafico_comparativo_twr(df_twr, benchmarks_data, nome_grafico=nome_analise, logger=logger)
 
