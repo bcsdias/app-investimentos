@@ -143,10 +143,32 @@ def gerar_grafico_twr(df: pd.DataFrame, nome_grafico: str, logger) -> pd.DataFra
 
     logger.info(f"Dados do gráfico de TWR salvos em: {caminho_csv}")
 
+
     plt.savefig(caminho_arquivo)
     logger.info(f"Gráfico de TWR salvo com sucesso em: {caminho_arquivo}")
     
     return df_twr
+
+
+def _ensure_series(x) -> pd.Series | None:
+    """Garante que x seja uma pd.Series 1D com valores numéricos quando possível.
+    Retorna None se não for possível converter.
+    """
+    if x is None:
+        return None
+    if isinstance(x, pd.Series):
+        return pd.to_numeric(x, errors='coerce')
+    if isinstance(x, pd.DataFrame):
+        # prioriza colunas numéricas
+        numeric = x.select_dtypes(include=[np.number])
+        if not numeric.empty:
+            return numeric.iloc[:, 0]
+        # fallback: pega a primeira coluna e converte
+        return pd.to_numeric(x.iloc[:, 0], errors='coerce')
+    try:
+        return pd.to_numeric(pd.Series(x), errors='coerce')
+    except Exception:
+        return None
 
 def gerar_grafico_percentual(df: pd.DataFrame, nome_grafico: str, logger):
     """
@@ -810,19 +832,104 @@ def gerar_grafico_comparativo_twr(df_twr: pd.DataFrame, benchmarks_data: dict, n
     logger.info(f"Gráfico comparativo de TWR salvo com sucesso em: {caminho_arquivo}")
 
 
+def gerar_twr_historico(benchmarks_data: dict, years: int, nome_grafico: str, end_date: pd.Timestamp, logger) -> None:
+    """Gera um gráfico com o TWR histórico (normalizado em base 100) para cada benchmark
+    no período de `years` anos até `end_date`. Se uma série não tiver histórico completo,
+    ela é plotada a partir da sua primeira data disponível dentro do intervalo.
+
+    Args:
+        benchmarks_data (dict): dicionário nome -> pd.Series/df com índices de data.
+        years (int): número de anos do histórico a plotar.
+        nome_grafico (str): sufixo/nome para os arquivos gerados.
+        end_date (pd.Timestamp): data final do período (usualmente df_twr['date'].max()).
+        logger: logger para mensagens.
+    """
+    pasta_graficos = "dlombello/graficos"
+    os.makedirs(pasta_graficos, exist_ok=True)
+
+    start_candidate = end_date - pd.DateOffset(years=years) + pd.Timedelta(days=1)
+
+    # Prepara um DataFrame para armazenar as séries normalizadas (base 100)
+    normalized = []
+    names = []
+
+    for nome, série in benchmarks_data.items():
+        s = _ensure_series(série)
+        if s is None:
+            logger.debug(f"Ignorando benchmark '{nome}': série inválida")
+            continue
+
+        # Ensina selecção do período: tenta usar start_candidate, senão usa o primeiro disponível
+        try:
+            s_period = s.loc[start_candidate:end_date]
+        except Exception:
+            # índices não compatíveis, tenta converter index para DatetimeIndex
+            s = s.copy()
+            s.index = pd.to_datetime(s.index, errors='coerce')
+            s = s.dropna()
+            if s.empty:
+                logger.debug(f"Ignorando benchmark '{nome}': índice de datas inválido")
+                continue
+            s_period = s.loc[start_candidate:end_date]
+
+        if s_period.empty:
+            # plot a partir da primeira data disponível até end_date
+            s_period = s.loc[:end_date]
+            if s_period.empty:
+                logger.debug(f"Ignorando benchmark '{nome}': sem dados até {end_date}")
+                continue
+
+        # Normaliza para base 100 a partir do primeiro ponto disponível no sub-período
+        s_norm = (s_period / s_period.iloc[0]) * 100
+        normalized.append(s_norm)
+        names.append(nome)
+
+    if not normalized:
+        logger.info("Nenhum benchmark válido para gerar TWR histórico.")
+        return
+
+    df_plot = pd.concat(normalized, axis=1)
+    df_plot.columns = names
+
+    # Gera gráfico
+    plt.figure(figsize=(12, 7))
+    for col in df_plot.columns:
+        plt.plot(df_plot.index, df_plot[col], label=col)
+
+    plt.title(f'TWR Histórico ({years} anos) - {nome_grafico}', fontsize=14)
+    plt.ylabel('Performance (Base 100)', fontsize=12)
+    plt.xlabel('Data', fontsize=12)
+    plt.grid(True, which='both', linestyle='--', linewidth=0.5)
+    plt.legend(fontsize=9)
+    plt.gcf().autofmt_xdate()
+
+    caminho_png = os.path.join(pasta_graficos, f'twr_historico_{years}y_{nome_grafico}.png')
+    caminho_csv = os.path.join(pasta_graficos, f'twr_historico_{years}y_{nome_grafico}.csv')
+
+    df_plot.to_csv(caminho_csv, sep=';', decimal=',')
+    plt.savefig(caminho_png, bbox_inches='tight')
+    logger.info(f'TWR histórico salvo em: {caminho_png} e dados em {caminho_csv}')
+
+
 def main():
     """
     Função principal que orquestra a execução do script.
     """
     parser = argparse.ArgumentParser(description="Gera análises de carteira de investimentos a partir da API.")
     parser.add_argument('--debug', action='store_true', help='Ativa o modo de log detalhado (debug).')
+    parser.add_argument('--historico', type=int, help='Número de anos para gerar TWR histórico de benchmarks (ex: 1, 5, 10).')
     
     # Grupo de argumentos mutuamente exclusivos: ou --ativo ou --classe deve ser fornecido.
-    group = parser.add_mutually_exclusive_group(required=True)
+    # Não forçamos aqui o required, pois quando --historico for usado sozinho não é necessário.
+    group = parser.add_mutually_exclusive_group(required=False)
     group.add_argument('--ativo', type=str, help='Código do ativo a ser analisado (ex: KLBN11).')
     group.add_argument('--classe', type=str, help='Classe de ativos a ser analisada (ex: AÇÃO).')
 
     args = parser.parse_args()
+
+    # Se --historico não foi fornecido, então exige-se que o usuário passe --ativo ou --classe.
+    if not args.historico and not (args.ativo or args.classe):
+        parser.error("one of the arguments --ativo --classe is required unless --historico is provided")
 
     logger = setup_logger(debug=args.debug, log_file='main.log')
     if args.debug:
@@ -830,6 +937,126 @@ def main():
 
     df_historico = None
     nome_analise = ""
+
+    # Caso especial: quando o usuário solicita apenas '--historico N' (sem --ativo/--classe),
+    # geramos somente o TWR histórico dos benchmarks e encerramos o script.
+    if args.historico and not (args.ativo or args.classe):
+        years = args.historico
+        end_dt = pd.Timestamp.today()
+        start_dt = (end_dt - pd.DateOffset(years=years) + pd.Timedelta(days=1))
+        start_date = start_dt.strftime('%Y-%m-%d')
+        end_date = end_dt.strftime('%Y-%m-%d')
+
+        logger.info(f"Modo histórico standalone: gerando TWR dos benchmarks para {years} anos ({start_date} a {end_date}).")
+
+        # Define os benchmarks (mesma definição usada na execução normal)
+        benchmarks_yf = {
+            'S&P 500': 'SPY',
+            'IMID': 'IMID.L'
+        }
+        benchmarks_b3 = {
+            'IBSD': 'IBSD',
+            'IDIV': 'IDIV',
+            'IBLV': 'IBLV'
+        }
+        benchmarks_bcb = {
+            'IPCA': 433
+        }
+
+        benchmarks_data = {}
+
+        # Busca dados dos benchmarks
+        for nome, ticker in benchmarks_yf.items():
+            benchmarks_data[nome] = buscar_dados_benchmark(ticker, start_date, end_date, logger)
+
+        for nome, indice in benchmarks_b3.items():
+            benchmarks_data[nome] = buscar_dados_b3(indice, start_date, end_date, logger)
+
+        for nome, codigo in benchmarks_bcb.items():
+            benchmarks_data[nome] = buscar_dados_bcb(codigo, start_date, end_date, logger)
+
+        # Calcula IPCA + 6%
+        if 'IPCA' in benchmarks_data and benchmarks_data['IPCA'] is not None:
+            logger.info("Calculando benchmark sintético 'IPCA + 6%' (histórico standalone)...")
+            taxa_real_mensal = (1.06 ** (1/12)) - 1
+            fator_crescimento_real = pd.Series(taxa_real_mensal + 1, index=benchmarks_data['IPCA'].index).cumprod()
+            ipca_mais_6 = benchmarks_data['IPCA'] * fator_crescimento_real
+            benchmarks_data['IPCA + 6%'] = ipca_mais_6
+
+        # Helper local para garantir Series 1D
+        def _ensure_series_local(x):
+            if x is None:
+                return None
+            if isinstance(x, pd.DataFrame):
+                numeric = x.select_dtypes(include=[np.number])
+                if not numeric.empty:
+                    return numeric.iloc[:, 0]
+                return pd.to_numeric(x.iloc[:, 0], errors='coerce')
+            if isinstance(x, pd.Series):
+                return x
+            try:
+                return pd.Series(x)
+            except Exception:
+                return None
+
+        # Synthetic benchmarks (IDIV/IMID mixes)
+        if 'IDIV' in benchmarks_data and benchmarks_data['IDIV'] is not None and 'IPCA + 6%' in benchmarks_data and benchmarks_data['IPCA + 6%'] is not None:
+            logger.info("Calculando benchmark sintético 'IDIV + (IPCA+6%)' (histórico standalone)...")
+            idiv_series = _ensure_series_local(benchmarks_data['IDIV'])
+            ipca6_series = _ensure_series_local(benchmarks_data['IPCA + 6%'])
+            idiv_returns = idiv_series.pct_change().fillna(0)
+            ipca6_returns = ipca6_series.pct_change().fillna(0)
+            combined_returns = pd.concat([idiv_returns.rename('idiv'), ipca6_returns.rename('ipca6')], axis=1).fillna(0)
+            portfolio_returns = 0.5 * combined_returns['idiv'] + 0.5 * combined_returns['ipca6']
+            benchmarks_data['IDIV + (IPCA+6%)'] = (1 + portfolio_returns).cumprod()
+
+        if 'IMID' in benchmarks_data and benchmarks_data['IMID'] is not None and 'IPCA + 6%' in benchmarks_data and benchmarks_data['IPCA + 6%'] is not None:
+            logger.info("Calculando benchmark sintético 'IMID + (IPCA+6%)' (histórico standalone)...")
+            imid_series = _ensure_series_local(benchmarks_data['IMID'])
+            ipca6_series = _ensure_series_local(benchmarks_data['IPCA + 6%'])
+            imid_returns = imid_series.pct_change().fillna(0)
+            ipca6_returns = ipca6_series.pct_change().fillna(0)
+            combined_returns = pd.concat([imid_returns.rename('imid'), ipca6_returns.rename('ipca6')], axis=1).fillna(0)
+            portfolio_returns = 0.5 * combined_returns['imid'] + 0.5 * combined_returns['ipca6']
+            benchmarks_data['IMID + (IPCA+6%)'] = (1 + portfolio_returns).cumprod()
+
+        # Carteira teórica
+        if all(k in benchmarks_data and benchmarks_data[k] is not None for k in ['IMID', 'IDIV', 'IPCA + 6%']):
+            logger.info("Calculando benchmark sintético 'Carteira Teórica' (histórico standalone)...")
+            imid_series = _ensure_series_local(benchmarks_data['IMID'])
+            idiv_series = _ensure_series_local(benchmarks_data['IDIV'])
+            ipca6_series = _ensure_series_local(benchmarks_data['IPCA + 6%'])
+            imid_returns = imid_series.pct_change().fillna(0)
+            idiv_returns = idiv_series.pct_change().fillna(0)
+            ipca6_returns = ipca6_series.pct_change().fillna(0)
+            combined_returns = pd.concat([
+                imid_returns.rename('imid'),
+                idiv_returns.rename('idiv'),
+                ipca6_returns.rename('ipca6')], axis=1).fillna(0)
+            portfolio_returns = 0.50 * combined_returns['imid'] + 0.25 * combined_returns['idiv'] + 0.25 * combined_returns['ipca6']
+            benchmarks_data['IDIV/IMID/(IPCA+6%)'] = (1 + portfolio_returns).cumprod()
+
+        # Carteira B3
+        componentes_b3 = ['IBSD', 'IDIV', 'IBLV']
+        if all(k in benchmarks_data and benchmarks_data[k] is not None for k in componentes_b3):
+            logger.info("Calculando benchmark sintético 'Carteira B3' (histórico standalone)...")
+            ibsd_series = _ensure_series_local(benchmarks_data['IBSD'])
+            idiv_series = _ensure_series_local(benchmarks_data['IDIV'])
+            iblv_series = _ensure_series_local(benchmarks_data['IBLV'])
+            combined_returns = pd.concat([
+                ibsd_series.pct_change().rename('ibsd'),
+                idiv_series.pct_change().rename('idiv'),
+                iblv_series.pct_change().rename('iblv')], axis=1).fillna(0)
+            peso = 1 / len(componentes_b3)
+            portfolio_returns = combined_returns.sum(axis=1) * peso
+            benchmarks_data['IBSD/IDIV/IBLV'] = (1 + portfolio_returns).cumprod()
+
+        # Gera o TWR histórico e encerra
+        try:
+            gerar_twr_historico(benchmarks_data, years, f'historico_{years}y', end_dt, logger)
+        except Exception as e:
+            logger.exception(f"Erro ao gerar TWR histórico standalone: {e}")
+        return
 
     if args.ativo:
         nome_analise = args.ativo
@@ -1012,6 +1239,13 @@ def main():
                 peso = 1 / len(componentes_b3)
                 portfolio_returns = combined_returns.sum(axis=1) * peso
                 benchmarks_data['IBSD/IDIV/IBLV'] = (1 + portfolio_returns).cumprod()
+
+            # Se foi solicitado, gera o TWR histórico de benchmarks para o período em anos
+            if getattr(args, 'historico', None):
+                try:
+                    gerar_twr_historico(benchmarks_data, args.historico, nome_analise, df_twr['date'].max(), logger)
+                except Exception as e:
+                    logger.debug(f"Erro ao gerar TWR histórico: {e}")
 
             gerar_grafico_comparativo_twr(df_twr, benchmarks_data, nome_grafico=nome_analise, logger=logger)
 
