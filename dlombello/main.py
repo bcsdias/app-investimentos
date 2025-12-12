@@ -1179,8 +1179,14 @@ def processar_benchmarks(start_date: str, end_date: str, benchmarks_yf: dict, be
     # IMID + (IPCA+6%)
     _calc_portfolio({'IMID': 0.5, 'IPCA + 6%': 0.5}, 'IMID + (IPCA+6%)')
 
+    # IMID BRL + (IPCA+6%)
+    _calc_portfolio({'IMID BRL': 0.5, 'IPCA + 6%': 0.5}, 'IMID BRL + (IPCA+6%)')
+
     # Carteira Teórica Global
     _calc_portfolio({'IMID': 0.50, 'IDIV': 0.25, 'IPCA + 6%': 0.25}, 'IDIV/IMID/(IPCA+6%)')
+
+    # Carteira Teórica Global BRL
+    _calc_portfolio({'IMID BRL': 0.50, 'IDIV': 0.25, 'IPCA + 6%': 0.25}, 'IDIV/IMID BRL/(IPCA+6%)')
 
     # Carteira B3
     _calc_portfolio({'IBSD': 1/3, 'IDIV': 1/3, 'IBLV': 1/3}, 'IBSD/IDIV/IBLV')
