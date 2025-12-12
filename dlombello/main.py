@@ -941,7 +941,8 @@ def gerar_twr_historico(benchmarks_data: dict, years: int, nome_grafico: str, en
     df_plot = df_plot[sorted_cols]
 
     # Gera gráfico (usando fig/ax para permitir tabela abaixo)
-    fig, ax = plt.subplots(figsize=(12, 7))
+    # Aumentado para melhorar a visualização da tabela e colunas (horizontal e vertical)
+    fig, ax = plt.subplots(figsize=(18, 10))
 
     # Captura cores para colorir os rótulos da tabela
     color_map = {}
@@ -1055,10 +1056,11 @@ def gerar_twr_historico(benchmarks_data: dict, years: int, nome_grafico: str, en
         col_labels_display = [f"{c} (acc)" if str(c).lower() != 'total' else 'Total' for c in col_labels]
 
         tabela = ax.table(cellText=cell_text, rowLabels=row_labels, colLabels=col_labels_display,
-                          loc='bottom', cellLoc='center', bbox=[0, -0.45, 1, 0.4])
+                          loc='bottom', cellLoc='center', bbox=[0, -0.65, 1, 0.45])
         tabela.auto_set_font_size(False)
         tabela.set_fontsize(9)
-        tabela.scale(1, 1.2)
+        # Aumenta a altura das linhas (1.6) para não espremer o texto
+        tabela.scale(1, 1.6)
 
         # Colorir o rótulo das linhas para coincidir com as cores do gráfico
         try:
@@ -1089,7 +1091,7 @@ def gerar_twr_historico(benchmarks_data: dict, years: int, nome_grafico: str, en
             logger.debug(f'Não foi possível colorir os rótulos da tabela histórica: {e}')
 
         # Ajusta o layout para dar espaço à tabela
-        fig.subplots_adjust(bottom=0.35)
+        fig.subplots_adjust(bottom=0.45)
 
         # Salva CSV da tabela numérica (não formatada) e da tabela formatada para inspeção
         caminho_csv_table = os.path.join(pasta_graficos, f'twr_historico_{years}y_{nome_grafico}_table.csv')
