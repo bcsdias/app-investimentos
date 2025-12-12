@@ -469,6 +469,45 @@ def buscar_dados_b3(indice: str, start_date: str, end_date: str, logger) -> pd.S
     logger.info(f"Dados do índice '{indice}' da B3 processados com sucesso.")
     return serie_final
 
+def buscar_dolar_bcb(start_date: str, end_date: str, logger) -> pd.Series | None:
+    """
+    Busca a cotação do dólar (PTAX venda) na API do Banco Central (Olinda).
+    Retorna uma série com as cotações diárias.
+    """
+    try:
+        # A API espera datas no formato 'MM-DD-YYYY'
+        dt_ini = pd.to_datetime(start_date).strftime('%m-%d-%Y')
+        dt_fim = pd.to_datetime(end_date).strftime('%m-%d-%Y')
+        
+        url = f"https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/CotacaoDolarPeriodo(dataInicial=@dataInicial,dataFinalCotacao=@dataFinalCotacao)?@dataInicial='{dt_ini}'&@dataFinalCotacao='{dt_fim}'&$top=10000&$format=json&$select=cotacaoVenda,dataHoraCotacao"
+        
+        logger.info(f"Buscando cotação do dólar na API do BCB (Olinda)...")
+        response = requests.get(url)
+        response.raise_for_status()
+        
+        data = response.json()
+        if 'value' not in data or not data['value']:
+            logger.warning("Nenhum dado de dólar encontrado no período.")
+            return None
+            
+        df = pd.DataFrame(data['value'])
+        if df.empty:
+             logger.warning("DataFrame de dólar vazio.")
+             return None
+
+        df['dataHoraCotacao'] = pd.to_datetime(df['dataHoraCotacao'])
+        df['Date'] = df['dataHoraCotacao'].dt.normalize() # Remove hora
+        # Ordena por data/hora e remove duplicatas de dia mantendo a última (evita erro no reindex)
+        df = df.sort_values('dataHoraCotacao')
+        df = df.drop_duplicates(subset=['Date'], keep='last')
+        df = df.set_index('Date').sort_index()
+        
+        return df['cotacaoVenda']
+        
+    except Exception as e:
+        logger.error(f"Erro ao buscar cotação do dólar: {e}")
+        return None
+
 def calcular_rentabilidades_resumo(df_twr: pd.DataFrame, benchmarks_data: dict, nome_carteira: str, logger) -> pd.DataFrame | None:
     """
     Calcula a rentabilidade anual e total para a carteira e benchmarks.
@@ -1055,6 +1094,85 @@ def gerar_twr_historico(benchmarks_data: dict, years: int, nome_grafico: str, en
     plt.savefig(caminho_png, bbox_inches='tight')
     logger.info(f'TWR histórico salvo em: {caminho_png} e dados em {caminho_csv}')
 
+def processar_benchmarks(start_date: str, end_date: str, benchmarks_yf: dict, benchmarks_b3: dict, benchmarks_bcb: dict, logger) -> dict:
+    """
+    Centraliza a busca e cálculo de benchmarks e índices sintéticos.
+    """
+    benchmarks_data = {}
+
+    # 1. Busca YF
+    for nome, ticker in benchmarks_yf.items():
+        benchmarks_data[nome] = buscar_dados_benchmark(ticker, start_date, end_date, logger)
+
+    # 2. Busca B3
+    for nome, indice in benchmarks_b3.items():
+        benchmarks_data[nome] = buscar_dados_b3(indice, start_date, end_date, logger)
+
+    # 3. Busca BCB
+    for nome, codigo in benchmarks_bcb.items():
+        benchmarks_data[nome] = buscar_dados_bcb(codigo, start_date, end_date, logger)
+
+    # 4. Dolar & Conversões para BRL
+    dolar_ptax = buscar_dolar_bcb(start_date, end_date, logger)
+    if dolar_ptax is not None:
+        # IMID BRL
+        if 'IMID' in benchmarks_data and benchmarks_data['IMID'] is not None:
+            imid_series = _ensure_series(benchmarks_data['IMID'])
+            if imid_series is not None:
+                logger.info("Calculando benchmark 'IMID BRL'...")
+                dolar_aligned = dolar_ptax.reindex(imid_series.index, method='ffill')
+                benchmarks_data['IMID BRL'] = imid_series * dolar_aligned
+
+        # S&P 500 BRL
+        if 'S&P 500' in benchmarks_data and benchmarks_data['S&P 500'] is not None:
+            spy_series = _ensure_series(benchmarks_data['S&P 500'])
+            if spy_series is not None:
+                logger.info("Calculando benchmark 'S&P 500 BRL'...")
+                dolar_aligned = dolar_ptax.reindex(spy_series.index, method='ffill')
+                benchmarks_data['S&P 500 BRL'] = spy_series * dolar_aligned
+
+    # 5. IPCA + 6%
+    if 'IPCA' in benchmarks_data and benchmarks_data['IPCA'] is not None:
+        logger.info("Calculando benchmark sintético 'IPCA + 6%'...")
+        taxa_real_mensal = (1.06 ** (1/12)) - 1
+        fator_crescimento_real = pd.Series(taxa_real_mensal + 1, index=benchmarks_data['IPCA'].index).cumprod()
+        benchmarks_data['IPCA + 6%'] = benchmarks_data['IPCA'] * fator_crescimento_real
+
+    # Helper interno para cálculos de portfólio sintético
+    def _calc_portfolio(assets_weights: dict, name: str):
+        series_list = []
+        valid = True
+        for nome, peso in assets_weights.items():
+            if nome not in benchmarks_data or benchmarks_data[nome] is None:
+                valid = False
+                break
+            s = _ensure_series(benchmarks_data[nome])
+            if s is None:
+                valid = False
+                break
+            # Calcula retorno ponderado
+            series_list.append(s.pct_change().fillna(0) * peso)
+        
+        if valid:
+            logger.info(f"Calculando benchmark sintético '{name}'...")
+            combined = pd.concat(series_list, axis=1).fillna(0)
+            portfolio_ret = combined.sum(axis=1)
+            benchmarks_data[name] = (1 + portfolio_ret).cumprod()
+
+    # 6. Sintéticos Compostos (Carteiras Teóricas)
+    # IDIV + (IPCA+6%)
+    _calc_portfolio({'IDIV': 0.5, 'IPCA + 6%': 0.5}, 'IDIV + (IPCA+6%)')
+    
+    # IMID + (IPCA+6%)
+    _calc_portfolio({'IMID': 0.5, 'IPCA + 6%': 0.5}, 'IMID + (IPCA+6%)')
+
+    # Carteira Teórica Global
+    _calc_portfolio({'IMID': 0.50, 'IDIV': 0.25, 'IPCA + 6%': 0.25}, 'IDIV/IMID/(IPCA+6%)')
+
+    # Carteira B3
+    _calc_portfolio({'IBSD': 1/3, 'IDIV': 1/3, 'IBLV': 1/3}, 'IBSD/IDIV/IBLV')
+
+    return benchmarks_data
 
 def main():
     """
@@ -1094,107 +1212,24 @@ def main():
 
         logger.info(f"Modo histórico standalone: gerando TWR dos benchmarks para {years} anos ({start_date} a {end_date}).")
 
-        # Define os benchmarks (mesma definição usada na execução normal)
+        # Define os benchmarks para o modo Histórico (visão macro)
         benchmarks_yf = {
             'S&P 500': 'SPY',
+            #'S&P 500 BRL': 'SPY.BA',
+            'IVVB11': 'IVVB11.SA',
             'IMID': 'IMID.L'
         }
         benchmarks_b3 = {
-            'IBSD': 'IBSD',
-            'IDIV': 'IDIV',
-            'IBLV': 'IBLV'
+            #'IBSD': 'IBSD',
+            'IDIV': 'IDIV'
+            #'IBLV': 'IBLV'
         }
         benchmarks_bcb = {
             'IPCA': 433
         }
 
-        benchmarks_data = {}
-
-        # Busca dados dos benchmarks
-        for nome, ticker in benchmarks_yf.items():
-            benchmarks_data[nome] = buscar_dados_benchmark(ticker, start_date, end_date, logger)
-
-        for nome, indice in benchmarks_b3.items():
-            benchmarks_data[nome] = buscar_dados_b3(indice, start_date, end_date, logger)
-
-        for nome, codigo in benchmarks_bcb.items():
-            benchmarks_data[nome] = buscar_dados_bcb(codigo, start_date, end_date, logger)
-
-        # Calcula IPCA + 6%
-        if 'IPCA' in benchmarks_data and benchmarks_data['IPCA'] is not None:
-            logger.info("Calculando benchmark sintético 'IPCA + 6%' (histórico standalone)...")
-            taxa_real_mensal = (1.06 ** (1/12)) - 1
-            fator_crescimento_real = pd.Series(taxa_real_mensal + 1, index=benchmarks_data['IPCA'].index).cumprod()
-            ipca_mais_6 = benchmarks_data['IPCA'] * fator_crescimento_real
-            benchmarks_data['IPCA + 6%'] = ipca_mais_6
-
-        # Helper local para garantir Series 1D
-        def _ensure_series_local(x):
-            if x is None:
-                return None
-            if isinstance(x, pd.DataFrame):
-                numeric = x.select_dtypes(include=[np.number])
-                if not numeric.empty:
-                    return numeric.iloc[:, 0]
-                return pd.to_numeric(x.iloc[:, 0], errors='coerce')
-            if isinstance(x, pd.Series):
-                return x
-            try:
-                return pd.Series(x)
-            except Exception:
-                return None
-
-        # Synthetic benchmarks (IDIV/IMID mixes)
-        if 'IDIV' in benchmarks_data and benchmarks_data['IDIV'] is not None and 'IPCA + 6%' in benchmarks_data and benchmarks_data['IPCA + 6%'] is not None:
-            logger.info("Calculando benchmark sintético 'IDIV + (IPCA+6%)' (histórico standalone)...")
-            idiv_series = _ensure_series_local(benchmarks_data['IDIV'])
-            ipca6_series = _ensure_series_local(benchmarks_data['IPCA + 6%'])
-            idiv_returns = idiv_series.pct_change().fillna(0)
-            ipca6_returns = ipca6_series.pct_change().fillna(0)
-            combined_returns = pd.concat([idiv_returns.rename('idiv'), ipca6_returns.rename('ipca6')], axis=1).fillna(0)
-            portfolio_returns = 0.5 * combined_returns['idiv'] + 0.5 * combined_returns['ipca6']
-            benchmarks_data['IDIV + (IPCA+6%)'] = (1 + portfolio_returns).cumprod()
-
-        if 'IMID' in benchmarks_data and benchmarks_data['IMID'] is not None and 'IPCA + 6%' in benchmarks_data and benchmarks_data['IPCA + 6%'] is not None:
-            logger.info("Calculando benchmark sintético 'IMID + (IPCA+6%)' (histórico standalone)...")
-            imid_series = _ensure_series_local(benchmarks_data['IMID'])
-            ipca6_series = _ensure_series_local(benchmarks_data['IPCA + 6%'])
-            imid_returns = imid_series.pct_change().fillna(0)
-            ipca6_returns = ipca6_series.pct_change().fillna(0)
-            combined_returns = pd.concat([imid_returns.rename('imid'), ipca6_returns.rename('ipca6')], axis=1).fillna(0)
-            portfolio_returns = 0.5 * combined_returns['imid'] + 0.5 * combined_returns['ipca6']
-            benchmarks_data['IMID + (IPCA+6%)'] = (1 + portfolio_returns).cumprod()
-
-        # Carteira teórica
-        if all(k in benchmarks_data and benchmarks_data[k] is not None for k in ['IMID', 'IDIV', 'IPCA + 6%']):
-            logger.info("Calculando benchmark sintético 'Carteira Teórica' (histórico standalone)...")
-            imid_series = _ensure_series_local(benchmarks_data['IMID'])
-            idiv_series = _ensure_series_local(benchmarks_data['IDIV'])
-            ipca6_series = _ensure_series_local(benchmarks_data['IPCA + 6%'])
-            imid_returns = imid_series.pct_change().fillna(0)
-            idiv_returns = idiv_series.pct_change().fillna(0)
-            ipca6_returns = ipca6_series.pct_change().fillna(0)
-            combined_returns = pd.concat([
-                imid_returns.rename('imid'),
-                idiv_returns.rename('idiv'),
-                ipca6_returns.rename('ipca6')], axis=1).fillna(0)
-            portfolio_returns = 0.50 * combined_returns['imid'] + 0.25 * combined_returns['idiv'] + 0.25 * combined_returns['ipca6']
-            benchmarks_data['IDIV/IMID/(IPCA+6%)'] = (1 + portfolio_returns).cumprod()
-
-        # Carteira B3
-        componentes_b3 = ['IBSD', 'IDIV', 'IBLV']
-        if all(k in benchmarks_data and benchmarks_data[k] is not None for k in componentes_b3):
-            logger.info("Calculando benchmark sintético 'Carteira B3' (histórico standalone)...")
-            ibsd_series = _ensure_series_local(benchmarks_data['IBSD'])
-            idiv_series = _ensure_series_local(benchmarks_data['IDIV'])
-            iblv_series = _ensure_series_local(benchmarks_data['IBLV'])
-            combined_returns = pd.concat([
-                ibsd_series.pct_change().rename('ibsd'),
-                idiv_series.pct_change().rename('idiv'),
-                iblv_series.pct_change().rename('iblv')], axis=1).fillna(0)
-            peso = 1 / len(componentes_b3)
-            portfolio_returns = combined_returns.sum(axis=1) * peso
-            benchmarks_data['IBSD/IDIV/IBLV'] = (1 + portfolio_returns).cumprod()
+        # Processa benchmarks usando a função centralizada
+        benchmarks_data = processar_benchmarks(start_date, end_date, benchmarks_yf, benchmarks_b3, benchmarks_bcb, logger)
 
         # Gera o TWR histórico e encerra
         try:
@@ -1228,7 +1263,7 @@ def main():
         df_twr = gerar_grafico_twr(df_historico, nome_grafico=nome_analise, logger=logger)
 
         if df_twr is not None:
-            # Define os benchmarks para comparação
+            # Define os benchmarks para o modo Comparativo (Ativo vs Mercado)
             benchmarks_yf = {
                 #'IBOV (YFinance)': '^BVSP',
                 'S&P 500': 'SPY', # ETF que replica o S&P 500
@@ -1255,135 +1290,8 @@ def main():
             end_date = df_twr['date'].max().strftime('%Y-%m-%d')
             logger.info(f"Período da análise: {start_date} a {end_date}")
 
-            benchmarks_data = {}
-
-            # 1. Busca os dados dos benchmarks do Yahoo Finance
-            for nome, ticker in benchmarks_yf.items():
-                benchmarks_data[nome] = buscar_dados_benchmark(ticker, start_date, end_date, logger)
-            
-            # 2. Busca e processa os dados dos benchmarks da B3
-            for nome, indice in benchmarks_b3.items():
-                benchmarks_data[nome] = buscar_dados_b3(indice, start_date, end_date, logger)
-
-            # 3. Busca os dados dos benchmarks do Banco Central
-            for nome, codigo in benchmarks_bcb.items():
-                benchmarks_data[nome] = buscar_dados_bcb(codigo, start_date, end_date, logger)
-
-            # 4. Calcula o benchmark sintético "IPCA + 6%"
-            if 'IPCA' in benchmarks_data and benchmarks_data['IPCA'] is not None:
-                logger.info("Calculando benchmark sintético 'IPCA + 6%'...")
-                # Converte a taxa anual de 6% para uma taxa mensal equivalente
-                taxa_real_mensal = (1.06 ** (1/12)) - 1
-                
-                # Cria um fator de crescimento mensal constante
-                fator_crescimento_real = pd.Series(taxa_real_mensal + 1, index=benchmarks_data['IPCA'].index).cumprod()
-                
-                # Multiplica o índice IPCA pelo fator de crescimento real para obter o IPCA + 6%
-                ipca_mais_6 = benchmarks_data['IPCA'] * fator_crescimento_real
-                benchmarks_data['IPCA + 6%'] = ipca_mais_6
-
-            # Helper local: garante que 'x' seja uma pd.Series numérica (1D)
-            def _ensure_series_local(x):
-                if x is None:
-                    return None
-                if isinstance(x, pd.DataFrame):
-                    # prioriza colunas numéricas
-                    numeric = x.select_dtypes(include=[np.number])
-                    if not numeric.empty:
-                        return numeric.iloc[:, 0]
-                    # fallback: pega a primeira coluna e converte
-                    return pd.to_numeric(x.iloc[:, 0], errors='coerce')
-                if isinstance(x, pd.Series):
-                    return x
-                try:
-                    return pd.Series(x)
-                except Exception:
-                    return None
-
-            # 5. Calcula o benchmark sintético "IDIV + (IPCA+6%)" (Carteira 50/50)
-            if 'IDIV' in benchmarks_data and benchmarks_data['IDIV'] is not None and \
-               'IPCA + 6%' in benchmarks_data and benchmarks_data['IPCA + 6%'] is not None:
-                logger.info("Calculando benchmark sintético 'IDIV + (IPCA+6%)'...")
-
-                # Pega as séries de dados dos dois benchmarks (garante Series)
-                idiv_series = _ensure_series_local(benchmarks_data['IDIV'])
-                ipca6_series = _ensure_series_local(benchmarks_data['IPCA + 6%'])
-
-                # Calcula os retornos diários de cada um
-                idiv_returns = idiv_series.pct_change().fillna(0)
-                ipca6_returns = ipca6_series.pct_change().fillna(0)
-
-                # Alinha os índices de data e preenche valores ausentes usando concat
-                combined_returns = pd.concat([idiv_returns.rename('idiv'), ipca6_returns.rename('ipca6')], axis=1).fillna(0)
-
-                # Calcula o retorno da carteira 50/50
-                portfolio_returns = 0.5 * combined_returns['idiv'] + 0.5 * combined_returns['ipca6']
-
-                # Cria o índice acumulado a partir dos retornos da carteira
-                benchmarks_data['IDIV + (IPCA+6%)'] = (1 + portfolio_returns).cumprod()
-            
-            # 6. Calcula o benchmark sintético "IMID + (IPCA+6%)" (Carteira 50/50)
-            if 'IMID' in benchmarks_data and benchmarks_data['IMID'] is not None and \
-                'IPCA + 6%' in benchmarks_data and benchmarks_data['IPCA + 6%'] is not None:
-                 logger.info("Calculando benchmark sintético 'IMID + (IPCA+6%)'...")
-                 # Pega as séries de dados dos dois benchmarks (garante Series)
-                 imid_series = _ensure_series_local(benchmarks_data['IMID'])
-                 ipca6_series = _ensure_series_local(benchmarks_data['IPCA + 6%'])
-                 # Calcula os retornos diários de cada um
-                 imid_returns = imid_series.pct_change().fillna(0)
-                 ipca6_returns = ipca6_series.pct_change().fillna(0)
-                 # Alinha os índices de data e preenche valores ausentes usando concat
-                 combined_returns = pd.concat([imid_returns.rename('imid'), ipca6_returns.rename('ipca6')], axis=1).fillna(0)
-                 # Calcula o retorno da carteira 50/50
-                 portfolio_returns = 0.5 * combined_returns['imid'] + 0.5 * combined_returns['ipca6']
-                 # Cria o índice acumulado a partir dos retornos da carteira
-                 benchmarks_data['IMID + (IPCA+6%)'] = (1 + portfolio_returns).cumprod()
-            
-            # 7. Calcula o benchmark sintético "Carteira Teórica" (50% IMID, 25% IDIV, 25% IPCA+6%)
-            if all(k in benchmarks_data and benchmarks_data[k] is not None for k in ['IMID', 'IDIV', 'IPCA + 6%']):
-                logger.info("Calculando benchmark sintético 'Carteira Teórica'...")
-                
-                # Pega as séries de dados dos benchmarks (garante Series)
-                imid_series = _ensure_series_local(benchmarks_data['IMID'])
-                idiv_series = _ensure_series_local(benchmarks_data['IDIV'])
-                ipca6_series = _ensure_series_local(benchmarks_data['IPCA + 6%'])
-
-                # Calcula os retornos diários de cada um
-                imid_returns = imid_series.pct_change().fillna(0)
-                idiv_returns = idiv_series.pct_change().fillna(0)
-                ipca6_returns = ipca6_series.pct_change().fillna(0)
-
-                # Alinha os índices de data e preenche valores ausentes
-                combined_returns = pd.concat([
-                    imid_returns.rename('imid'), 
-                    idiv_returns.rename('idiv'), 
-                    ipca6_returns.rename('ipca6')], axis=1).fillna(0)
-
-                # Calcula o retorno da carteira ponderada e cria o índice acumulado
-                portfolio_returns = 0.50 * combined_returns['imid'] + 0.25 * combined_returns['idiv'] + 0.25 * combined_returns['ipca6']
-                benchmarks_data['IDIV/IMID/(IPCA+6%)'] = (1 + portfolio_returns).cumprod()
-
-            # 8. Calcula o benchmark sintético "Carteira B3" (IBSD/IDIV/IBLV com pesos iguais)
-            componentes_b3 = ['IBSD', 'IDIV', 'IBLV']
-            if all(k in benchmarks_data and benchmarks_data[k] is not None for k in componentes_b3):
-                logger.info("Calculando benchmark sintético 'Carteira B3'...")
-                
-                # Pega as séries de dados dos benchmarks (garante Series)
-                ibsd_series = _ensure_series_local(benchmarks_data['IBSD'])
-                idiv_series = _ensure_series_local(benchmarks_data['IDIV'])
-                iblv_series = _ensure_series_local(benchmarks_data['IBLV'])
-
-                # Calcula os retornos diários e alinha em um único DataFrame
-                combined_returns = pd.concat([
-                    ibsd_series.pct_change().rename('ibsd'),
-                    idiv_series.pct_change().rename('idiv'),
-                    iblv_series.pct_change().rename('iblv')
-                ], axis=1).fillna(0)
-
-                # Calcula o retorno da carteira com pesos iguais (1/3 para cada)
-                peso = 1 / len(componentes_b3)
-                portfolio_returns = combined_returns.sum(axis=1) * peso
-                benchmarks_data['IBSD/IDIV/IBLV'] = (1 + portfolio_returns).cumprod()
+            # Processa benchmarks usando a função centralizada
+            benchmarks_data = processar_benchmarks(start_date, end_date, benchmarks_yf, benchmarks_b3, benchmarks_bcb, logger)
 
             # Se foi solicitado, gera o TWR histórico de benchmarks para o período em anos
             if getattr(args, 'historico', None):
