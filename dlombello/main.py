@@ -930,13 +930,24 @@ def gerar_twr_historico(benchmarks_data: dict, years: int, nome_grafico: str, en
     df_plot = pd.concat(normalized, axis=1)
     df_plot.columns = names
 
+    # Calcula rentabilidade total para ordenação (do maior para o menor)
+    # df_plot está em base 100. Usamos o último valor válido de cada série.
+    total_returns = pd.Series(index=df_plot.columns, dtype=float)
+    for col in df_plot.columns:
+        last_valid = df_plot[col].dropna().iloc[-1]
+        total_returns[col] = (last_valid / 100) - 1
+
+    sorted_cols = total_returns.sort_values(ascending=False).index.tolist()
+    df_plot = df_plot[sorted_cols]
+
     # Gera gráfico (usando fig/ax para permitir tabela abaixo)
     fig, ax = plt.subplots(figsize=(12, 7))
 
     # Captura cores para colorir os rótulos da tabela
     color_map = {}
     for col in df_plot.columns:
-        line, = ax.plot(df_plot.index, df_plot[col], label=col)
+        label_text = f"{col} ({total_returns[col]:.1%})" if pd.notna(total_returns[col]) else col
+        line, = ax.plot(df_plot.index, df_plot[col], label=label_text)
         color_map[col] = line.get_color()
 
     ax.set_title(f'TWR Histórico ({years} anos) - {nome_grafico}', fontsize=14)
@@ -950,7 +961,7 @@ def gerar_twr_historico(benchmarks_data: dict, years: int, nome_grafico: str, en
     # Calcula retornos anuais para cada série a partir dos dados originais (não normalizados)
     anos_dict = {}
     totais = {}
-    for nome in names:
+    for nome in sorted_cols:
         # recupera a série original a partir do df_plot col (reconstrói fator usando índice)
         s = df_plot[nome] / 100.0  # fator (pois df_plot é base 100)
         # recupera fator anual no final do ano
