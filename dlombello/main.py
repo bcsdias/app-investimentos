@@ -1,6 +1,7 @@
 import requests
 import os
 import sys
+import time
 import argparse
 from dotenv import load_dotenv
 import pandas as pd
@@ -347,6 +348,65 @@ def buscar_dados_benchmark(ticker: str, start_date: str, end_date: str, logger) 
         return dados['Close']
     except Exception as e:
         logger.error(f"Erro ao buscar dados do benchmark {ticker}: {e}")
+        return None
+
+def buscar_dados_tesouro(titulo_nome: str, vencimento_str: str, start_date: str, end_date: str, logger) -> pd.Series | None:
+    """
+    Busca dados históricos de títulos do Tesouro Direto via Tesouro Transparente.
+    Faz download do CSV oficial e filtra pelo título e vencimento.
+    """
+    pasta_dados = "dlombello/dados"
+    os.makedirs(pasta_dados, exist_ok=True)
+    arquivo_csv = os.path.join(pasta_dados, "PrecoTaxaTesouroDireto.csv")
+    url_tesouro = "https://www.tesourotransparente.gov.br/ckan/dataset/df56aa71-6d69-4c59-98e2-f8ef2008863d/resource/796d2059-14e9-44e3-80c9-2d9e30b405c1/download/PrecoTaxaTesouroDireto.csv"
+
+    # Verifica se precisa baixar (se não existe ou se é mais antigo que 24h)
+    precisa_baixar = True
+    if os.path.exists(arquivo_csv):
+        tempo_arquivo = os.path.getmtime(arquivo_csv)
+        if (time.time() - tempo_arquivo) < 86400: # 24 horas
+            precisa_baixar = False
+            logger.info("Usando cache local dos dados do Tesouro Direto.")
+
+    if precisa_baixar:
+        logger.info("Baixando dados históricos do Tesouro Direto (pode demorar um pouco)...")
+        try:
+            response = requests.get(url_tesouro, stream=True)
+            response.raise_for_status()
+            with open(arquivo_csv, 'wb') as f:
+                for chunk in response.iter_content(chunk_size=8192):
+                    f.write(chunk)
+            logger.info("Download do Tesouro Direto concluído.")
+        except Exception as e:
+            logger.error(f"Erro ao baixar dados do Tesouro Direto: {e}")
+            if not os.path.exists(arquivo_csv):
+                return None
+
+    try:
+        logger.info(f"Processando dados do Tesouro: {titulo_nome} {vencimento_str}...")
+        # Lê apenas colunas necessárias para otimizar memória
+        df = pd.read_csv(
+            arquivo_csv, 
+            sep=';', 
+            decimal=',', 
+            encoding='latin-1',
+            usecols=['Tipo Titulo', 'Data Vencimento', 'Data Base', 'PU Base Manha']
+        )
+        
+        # Filtra pelo título e vencimento
+        df['Data Vencimento'] = pd.to_datetime(df['Data Vencimento'], dayfirst=True)
+        df['Data Base'] = pd.to_datetime(df['Data Base'], dayfirst=True)
+        
+        vencimento_dt = pd.to_datetime(vencimento_str, dayfirst=True)
+        
+        mask = (df['Tipo Titulo'] == titulo_nome) & (df['Data Vencimento'] == vencimento_dt)
+        df_filtrado = df[mask].set_index('Data Base').sort_index()
+        
+        # Retorna a série no período solicitado (PU Base Manha é o preço de referência)
+        return df_filtrado.loc[start_date:end_date, 'PU Base Manha']
+        
+    except Exception as e:
+        logger.error(f"Erro ao processar dados do Tesouro Direto: {e}")
         return None
 
 def buscar_dados_bcb(codigo_bcb: int, start_date: str, end_date: str, logger) -> pd.Series | None:
@@ -1211,7 +1271,7 @@ def gerar_analise_risco(benchmarks_data: dict, risk_free_series: pd.Series | Non
     plt.savefig(caminho_png, bbox_inches='tight')
     logger.info(f"Gráfico de Risco x Retorno salvo em: {caminho_png}")
 
-def processar_benchmarks(start_date: str, end_date: str, benchmarks_yf: dict, benchmarks_b3: dict, benchmarks_bcb: dict, logger) -> dict:
+def processar_benchmarks(start_date: str, end_date: str, benchmarks_yf: dict, benchmarks_b3: dict, benchmarks_bcb: dict, benchmarks_td: dict, logger) -> dict:
     """
     Centraliza a busca e cálculo de benchmarks e índices sintéticos.
     """
@@ -1228,6 +1288,10 @@ def processar_benchmarks(start_date: str, end_date: str, benchmarks_yf: dict, be
     # 3. Busca BCB
     for nome, codigo in benchmarks_bcb.items():
         benchmarks_data[nome] = buscar_dados_bcb(codigo, start_date, end_date, logger)
+
+    # 4. Busca Tesouro Direto
+    for nome, config in benchmarks_td.items():
+        benchmarks_data[nome] = buscar_dados_tesouro(config['titulo'], config['vencimento'], start_date, end_date, logger)
 
     # 4. Dolar & Conversões para BRL
     dolar_ptax = buscar_dolar_bcb(start_date, end_date, logger)
@@ -1325,6 +1389,44 @@ def processar_benchmarks(start_date: str, end_date: str, benchmarks_yf: dict, be
     # 40/60 -> 38/57/5
     _calc_portfolio({'IMID BRL': 0.38, 'IPCA + 6%': 0.57, 'Bitcoin BRL': 0.05}, 'IMID BRL 38 + (IPCA+6%) 57 + BTC 5')
 
+    # Carteiras com 5% de Bitcoin e TD IPCA 2035 (substituindo IPCA+6%)
+    # 50/50 -> 47.5/47.5/5
+    _calc_portfolio({'IMID BRL': 0.475, 'TD IPCA 2035': 0.475, 'Bitcoin BRL': 0.05}, 'IMID BRL 47.5 + TD 2035 47.5 + BTC 5')
+    
+    # 25/75 -> 23.75/71.25/5
+    _calc_portfolio({'IMID BRL': 0.2375, 'TD IPCA 2035': 0.7125, 'Bitcoin BRL': 0.05}, 'IMID BRL 23.75 + TD 2035 71.25 + BTC 5')
+
+    # 75/25 -> 71.25/23.75/5
+    _calc_portfolio({'IMID BRL': 0.7125, 'TD IPCA 2035': 0.2375, 'Bitcoin BRL': 0.05}, 'IMID BRL 71.25 + TD 2035 23.75 + BTC 5')
+
+    # 75/25 -> 70/25/5
+    _calc_portfolio({'IMID BRL': 0.7, 'TD IPCA 2035': 0.25, 'Bitcoin BRL': 0.05}, 'IMID BRL 70 + TD 2035 25 + BTC 5')
+
+    # 60/40 -> 57/38/5
+    _calc_portfolio({'IMID BRL': 0.57, 'TD IPCA 2035': 0.38, 'Bitcoin BRL': 0.05}, 'IMID BRL 57 + TD 2035 38 + BTC 5')
+
+    # 40/60 -> 38/57/5
+    _calc_portfolio({'IMID BRL': 0.38, 'TD IPCA 2035': 0.57, 'Bitcoin BRL': 0.05}, 'IMID BRL 38 + TD 2035 57 + BTC 5')
+
+    # Carteiras com 5% de Bitcoin e TD IPCA 2045 (substituindo IPCA+6%)
+    # 50/50 -> 47.5/47.5/5
+    _calc_portfolio({'IMID BRL': 0.475, 'TD IPCA 2045': 0.475, 'Bitcoin BRL': 0.05}, 'IMID BRL 47.5 + TD 2045 47.5 + BTC 5')
+    
+    # 25/75 -> 23.75/71.25/5
+    _calc_portfolio({'IMID BRL': 0.2375, 'TD IPCA 2045': 0.7125, 'Bitcoin BRL': 0.05}, 'IMID BRL 23.75 + TD 2045 71.25 + BTC 5')
+
+    # 75/25 -> 71.25/23.75/5
+    _calc_portfolio({'IMID BRL': 0.7125, 'TD IPCA 2045': 0.2375, 'Bitcoin BRL': 0.05}, 'IMID BRL 71.25 + TD 2045 23.75 + BTC 5')
+
+    # 75/25 -> 70/25/5
+    _calc_portfolio({'IMID BRL': 0.7, 'TD IPCA 2045': 0.25, 'Bitcoin BRL': 0.05}, 'IMID BRL 70 + TD 2045 25 + BTC 5')
+
+    # 60/40 -> 57/38/5
+    _calc_portfolio({'IMID BRL': 0.57, 'TD IPCA 2045': 0.38, 'Bitcoin BRL': 0.05}, 'IMID BRL 57 + TD 2045 38 + BTC 5')
+
+    # 40/60 -> 38/57/5
+    _calc_portfolio({'IMID BRL': 0.38, 'TD IPCA 2045': 0.57, 'Bitcoin BRL': 0.05}, 'IMID BRL 38 + TD 2045 57 + BTC 5')
+
     # Carteira Teórica Global
     #_calc_portfolio({'IMID': 0.50, 'IDIV': 0.25, 'IPCA + 6%': 0.25}, 'IDIV/IMID/(IPCA+6%)')
 
@@ -1385,6 +1487,11 @@ def main():
         'SELIC': 11,
         'IPCA': 433
     }
+    benchmarks_td_config = {
+        # Nome do título deve ser exato como no CSV do Tesouro (Tesouro IPCA+)
+        'TD IPCA 2035': {'titulo': 'Tesouro IPCA+', 'vencimento': '15/05/2035'},
+        'TD IPCA 2045': {'titulo': 'Tesouro IPCA+', 'vencimento': '15/05/2045'}
+    }
 
     # Lista de benchmarks que serão EXIBIDOS nos gráficos e tabelas.
     # O script calcula todos (para compor carteiras), mas só mostra estes.
@@ -1396,6 +1503,7 @@ def main():
         #'IPCA',
         #'SELIC',
         'IMID BRL',
+        'TD IPCA 2035',
         'S&P 500 BRL',
         'IPCA + 6%',
         'IMID BRL 50 + (IPCA+6%) 50',
@@ -1409,6 +1517,18 @@ def main():
         'IMID BRL 70 + (IPCA+6%) 25 + BTC 5',
         'IMID BRL 57 + (IPCA+6%) 38 + BTC 5',
         'IMID BRL 38 + (IPCA+6%) 57 + BTC 5',
+        'IMID BRL 47.5 + TD 2035 47.5 + BTC 5',
+        'IMID BRL 23.75 + TD 2035 71.25 + BTC 5',
+        'IMID BRL 71.25 + TD 2035 23.75 + BTC 5',
+        'IMID BRL 70 + TD 2035 25 + BTC 5',
+        'IMID BRL 57 + TD 2035 38 + BTC 5',
+        'IMID BRL 38 + TD 2035 57 + BTC 5',
+        'IMID BRL 47.5 + TD 2045 47.5 + BTC 5',
+        'IMID BRL 23.75 + TD 2045 71.25 + BTC 5',
+        'IMID BRL 71.25 + TD 2045 23.75 + BTC 5',
+        'IMID BRL 70 + TD 2045 25 + BTC 5',
+        'IMID BRL 57 + TD 2045 38 + BTC 5',
+        'IMID BRL 38 + TD 2045 57 + BTC 5',
         #'IDIV/IMID BRL/(IPCA+6%)'
     ]
 
@@ -1425,7 +1545,7 @@ def main():
 
         # Define os benchmarks para o modo Histórico (visão macro)
         # Usa a configuração centralizada
-        benchmarks_data = processar_benchmarks(start_date, end_date, benchmarks_yf_config, benchmarks_b3_config, benchmarks_bcb_config, logger)
+        benchmarks_data = processar_benchmarks(start_date, end_date, benchmarks_yf_config, benchmarks_b3_config, benchmarks_bcb_config, benchmarks_td_config, logger)
         
         # Captura SELIC para cálculo de Sharpe antes de filtrar
         selic_series = benchmarks_data.get('SELIC')
@@ -1476,7 +1596,7 @@ def main():
             logger.info(f"Período da análise: {start_date} a {end_date}")
 
             # Processa benchmarks usando a função centralizada
-            benchmarks_data = processar_benchmarks(start_date, end_date, benchmarks_yf_config, benchmarks_b3_config, benchmarks_bcb_config, logger)
+            benchmarks_data = processar_benchmarks(start_date, end_date, benchmarks_yf_config, benchmarks_b3_config, benchmarks_bcb_config, benchmarks_td_config, logger)
             
             # Captura SELIC para cálculo de Sharpe antes de filtrar
             selic_series = benchmarks_data.get('SELIC')
