@@ -1252,7 +1252,8 @@ def main():
             'S&P 500': 'SPY',
             #'S&P 500 BRL': 'SPY.BA',
             'IVVB11': 'IVVB11.SA',
-            'IMID': 'IMID.L'
+            'IMID': 'IMID.L',
+            'Bitcoin': 'BTC-USD'
         }
         benchmarks_b3 = {
             #'IBSD': 'IBSD',
@@ -1303,7 +1304,8 @@ def main():
             benchmarks_yf = {
                 #'IBOV (YFinance)': '^BVSP',
                 'S&P 500': 'SPY', # ETF que replica o S&P 500
-                'IMID': 'IMID.L' # SPDR MSCI All Country World Investable Market UCITS ETF
+                'IMID': 'IMID.L', # SPDR MSCI All Country World Investable Market UCITS ETF
+                'Bitcoin': 'BTC-USD'
             }
             # Benchmarks que serão baixados e processados da B3
             benchmarks_b3 = {
