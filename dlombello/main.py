@@ -1236,6 +1236,25 @@ def main():
     df_historico = None
     nome_analise = ""
 
+    # Configuração centralizada de benchmarks (pode ser ajustada conforme necessidade)
+    # Use esta lista para garantir consistência entre os modos
+    benchmarks_yf_config = {
+        'S&P 500': 'SPY',
+        #'S&P 500 BRL': 'SPY.BA',
+        'IVVB11': 'IVVB11.SA', # Disponível em ambos agora
+        'IMID': 'IMID.L',
+        'Bitcoin': 'BTC-USD'
+    }
+    benchmarks_b3_config = {
+        #'IBSD': 'IBSD', # Disponível em ambos agora
+        'IDIV': 'IDIV',
+        #'IBLV': 'IBLV'  # Disponível em ambos agora
+    }
+    benchmarks_bcb_config = {
+        'SELIC': 11,
+        'IPCA': 433
+    }
+
     # Caso especial: quando o usuário solicita apenas '--historico N' (sem --ativo/--classe),
     # geramos somente o TWR histórico dos benchmarks e encerramos o script.
     if args.historico and not (args.ativo or args.classe):
@@ -1248,25 +1267,9 @@ def main():
         logger.info(f"Modo histórico standalone: gerando TWR dos benchmarks para {years} anos ({start_date} a {end_date}).")
 
         # Define os benchmarks para o modo Histórico (visão macro)
-        benchmarks_yf = {
-            'S&P 500': 'SPY',
-            #'S&P 500 BRL': 'SPY.BA',
-            'IVVB11': 'IVVB11.SA',
-            'IMID': 'IMID.L',
-            'Bitcoin': 'BTC-USD'
-        }
-        benchmarks_b3 = {
-            #'IBSD': 'IBSD',
-            'IDIV': 'IDIV'
-            #'IBLV': 'IBLV'
-        }
-        benchmarks_bcb = {
-            'SELIC': 11,
-            'IPCA': 433
-        }
+        # Usa a configuração centralizada
+        benchmarks_data = processar_benchmarks(start_date, end_date, benchmarks_yf_config, benchmarks_b3_config, benchmarks_bcb_config, logger)
 
-        # Processa benchmarks usando a função centralizada
-        benchmarks_data = processar_benchmarks(start_date, end_date, benchmarks_yf, benchmarks_b3, benchmarks_bcb, logger)
 
         # Gera o TWR histórico e encerra
         try:
@@ -1301,27 +1304,7 @@ def main():
 
         if df_twr is not None:
             # Define os benchmarks para o modo Comparativo (Ativo vs Mercado)
-            benchmarks_yf = {
-                #'IBOV (YFinance)': '^BVSP',
-                'S&P 500': 'SPY', # ETF que replica o S&P 500
-                'IMID': 'IMID.L', # SPDR MSCI All Country World Investable Market UCITS ETF
-                'Bitcoin': 'BTC-USD'
-            }
-            # Benchmarks que serão baixados e processados da B3
-            benchmarks_b3 = {
-                #'IFIX': 'IFIX',
-                'IBSD': 'IBSD',
-                'IDIV': 'IDIV',
-                'IBLV': 'IBLV'
-                #'IBOV (B3)': 'IBOV'
-            }
-            # Códigos das séries no SGS do Banco Central
-            # 11: Taxa SELIC diária
-            # 433: IPCA mensal
-            benchmarks_bcb = {
-                'SELIC': 11,
-                'IPCA': 433
-            }
+            # Usa a configuração centralizada
             
             # Define o período para a busca dos benchmarks
             start_date = df_twr['date'].min().strftime('%Y-%m-%d')
@@ -1329,7 +1312,7 @@ def main():
             logger.info(f"Período da análise: {start_date} a {end_date}")
 
             # Processa benchmarks usando a função centralizada
-            benchmarks_data = processar_benchmarks(start_date, end_date, benchmarks_yf, benchmarks_b3, benchmarks_bcb, logger)
+            benchmarks_data = processar_benchmarks(start_date, end_date, benchmarks_yf_config, benchmarks_b3_config, benchmarks_bcb_config, logger)
 
             # Se foi solicitado, gera o TWR histórico de benchmarks para o período em anos
             if getattr(args, 'historico', None):
