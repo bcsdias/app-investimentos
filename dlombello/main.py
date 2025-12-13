@@ -1174,22 +1174,38 @@ def processar_benchmarks(start_date: str, end_date: str, benchmarks_yf: dict, be
 
     # 6. Sintéticos Compostos (Carteiras Teóricas)
     # IDIV + (IPCA+6%)
-    _calc_portfolio({'IDIV': 0.5, 'IPCA + 6%': 0.5}, 'IDIV + (IPCA+6%)')
+    #_calc_portfolio({'IDIV': 0.5, 'IPCA + 6%': 0.5}, 'IDIV + (IPCA+6%)')
     
     # IMID + (IPCA+6%)
-    _calc_portfolio({'IMID': 0.5, 'IPCA + 6%': 0.5}, 'IMID + (IPCA+6%)')
+    #_calc_portfolio({'IMID': 0.5, 'IPCA + 6%': 0.5}, 'IMID + (IPCA+6%)')
 
     # IMID BRL + (IPCA+6%)
-    _calc_portfolio({'IMID BRL': 0.5, 'IPCA + 6%': 0.5}, 'IMID BRL + (IPCA+6%)')
+    _calc_portfolio({'IMID BRL': 0.5, 'IPCA + 6%': 0.5}, 'IMID BRL 50 + (IPCA+6%) 50')
+
+    # IMID BRL + (IPCA+6%)
+    _calc_portfolio({'IMID BRL': 0.25, 'IPCA + 6%': 0.75}, 'IMID BRL 25 + (IPCA+6%) 75')
+    
+    # IMID BRL + (IPCA+6%)
+    _calc_portfolio({'IMID BRL': 0.75, 'IPCA + 6%': 0.25}, 'IMID BRL 75 + (IPCA+6%) 25')
+
+    # IMID BRL + (IPCA+6%)
+    _calc_portfolio({'IMID BRL': 0.60, 'IPCA + 6%': 0.40}, 'IMID BRL 60 + (IPCA+6%) 40')
+
+    # IMID BRL + (IPCA+6%)
+    _calc_portfolio({'IMID BRL': 0.40, 'IPCA + 6%': 0.60}, 'IMID BRL 40 + (IPCA+6%) 60')
 
     # Carteira Teórica Global
-    _calc_portfolio({'IMID': 0.50, 'IDIV': 0.25, 'IPCA + 6%': 0.25}, 'IDIV/IMID/(IPCA+6%)')
+    #_calc_portfolio({'IMID': 0.50, 'IDIV': 0.25, 'IPCA + 6%': 0.25}, 'IDIV/IMID/(IPCA+6%)')
 
     # Carteira Teórica Global BRL
     _calc_portfolio({'IMID BRL': 0.50, 'IDIV': 0.25, 'IPCA + 6%': 0.25}, 'IDIV/IMID BRL/(IPCA+6%)')
 
     # Carteira B3
-    _calc_portfolio({'IBSD': 1/3, 'IDIV': 1/3, 'IBLV': 1/3}, 'IBSD/IDIV/IBLV')
+    #_calc_portfolio({'IBSD': 1/3, 'IDIV': 1/3, 'IBLV': 1/3}, 'IBSD/IDIV/IBLV')
+
+    # IMID BRL + SELIC
+    #_calc_portfolio({'IMID BRL': 0.5, 'SELIC': 0.5}, 'IMID BRL + SELIC')
+
 
     return benchmarks_data
 
@@ -1244,6 +1260,7 @@ def main():
             #'IBLV': 'IBLV'
         }
         benchmarks_bcb = {
+            'SELIC': 11,
             'IPCA': 433
         }
 
@@ -1300,7 +1317,7 @@ def main():
             # 11: Taxa SELIC diária
             # 433: IPCA mensal
             benchmarks_bcb = {
-                #'SELIC': 11,
+                'SELIC': 11,
                 'IPCA': 433
             }
             
@@ -1315,7 +1332,12 @@ def main():
             # Se foi solicitado, gera o TWR histórico de benchmarks para o período em anos
             if getattr(args, 'historico', None):
                 try:
-                    gerar_twr_historico(benchmarks_data, args.historico, nome_analise, df_twr['date'].max(), logger)
+                    # Cria uma cópia dos benchmarks e adiciona a carteira atual para comparação histórica
+                    dados_historico = benchmarks_data.copy()
+                    # Converte TWR acumulado (0.x) para fator (1.x) para ser comparável com preços
+                    dados_historico[f'Carteira - {nome_analise}'] = df_twr.set_index('date')['twr_acc'] + 1
+                    
+                    gerar_twr_historico(dados_historico, args.historico, nome_analise, df_twr['date'].max(), logger)
                 except Exception as e:
                     logger.debug(f"Erro ao gerar TWR histórico: {e}")
 
