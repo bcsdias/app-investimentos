@@ -1144,6 +1144,14 @@ def processar_benchmarks(start_date: str, end_date: str, benchmarks_yf: dict, be
                 dolar_aligned = dolar_ptax.reindex(spy_series.index, method='ffill')
                 benchmarks_data['S&P 500 BRL'] = spy_series * dolar_aligned
 
+        # Bitcoin BRL
+        if 'Bitcoin' in benchmarks_data and benchmarks_data['Bitcoin'] is not None:
+            btc_series = _ensure_series(benchmarks_data['Bitcoin'])
+            if btc_series is not None:
+                logger.info("Calculando benchmark 'Bitcoin BRL'...")
+                dolar_aligned = dolar_ptax.reindex(btc_series.index, method='ffill')
+                benchmarks_data['Bitcoin BRL'] = btc_series * dolar_aligned
+
     # 5. IPCA + 6%
     if 'IPCA' in benchmarks_data and benchmarks_data['IPCA'] is not None:
         logger.info("Calculando benchmark sintético 'IPCA + 6%'...")
@@ -1194,11 +1202,30 @@ def processar_benchmarks(start_date: str, end_date: str, benchmarks_yf: dict, be
     # IMID BRL + (IPCA+6%)
     _calc_portfolio({'IMID BRL': 0.40, 'IPCA + 6%': 0.60}, 'IMID BRL 40 + (IPCA+6%) 60')
 
+    # Carteiras com 5% de Bitcoin (pesos rebalanceados proporcionalmente para fechar 100%)
+    # 50/50 -> 47.5/47.5/5
+    _calc_portfolio({'IMID BRL': 0.475, 'IPCA + 6%': 0.475, 'Bitcoin BRL': 0.05}, 'IMID BRL 47.5 + (IPCA+6%) 47.5 + BTC 5')
+    
+    # 25/75 -> 23.75/71.25/5
+    _calc_portfolio({'IMID BRL': 0.2375, 'IPCA + 6%': 0.7125, 'Bitcoin BRL': 0.05}, 'IMID BRL 23.75 + (IPCA+6%) 71.25 + BTC 5')
+
+    # 75/25 -> 71.25/23.75/5
+    _calc_portfolio({'IMID BRL': 0.7125, 'IPCA + 6%': 0.2375, 'Bitcoin BRL': 0.05}, 'IMID BRL 71.25 + (IPCA+6%) 23.75 + BTC 5')
+
+    # 75/25 -> 70/25/5
+    _calc_portfolio({'IMID BRL': 0.7, 'IPCA + 6%': 0.25, 'Bitcoin BRL': 0.05}, 'IMID BRL 70 + (IPCA+6%) 25 + BTC 5')
+
+    # 60/40 -> 57/38/5
+    _calc_portfolio({'IMID BRL': 0.57, 'IPCA + 6%': 0.38, 'Bitcoin BRL': 0.05}, 'IMID BRL 57 + (IPCA+6%) 38 + BTC 5')
+
+    # 40/60 -> 38/57/5
+    _calc_portfolio({'IMID BRL': 0.38, 'IPCA + 6%': 0.57, 'Bitcoin BRL': 0.05}, 'IMID BRL 38 + (IPCA+6%) 57 + BTC 5')
+
     # Carteira Teórica Global
     #_calc_portfolio({'IMID': 0.50, 'IDIV': 0.25, 'IPCA + 6%': 0.25}, 'IDIV/IMID/(IPCA+6%)')
 
     # Carteira Teórica Global BRL
-    _calc_portfolio({'IMID BRL': 0.50, 'IDIV': 0.25, 'IPCA + 6%': 0.25}, 'IDIV/IMID BRL/(IPCA+6%)')
+    _calc_portfolio({'IMID BRL': 0.50, 'IDIV': 0.25, 'IPCA + 6%': 0.25}, 'IMID BRL/(IPCA+6%)')
 
     # Carteira B3
     #_calc_portfolio({'IBSD': 1/3, 'IDIV': 1/3, 'IBLV': 1/3}, 'IBSD/IDIV/IBLV')
@@ -1247,13 +1274,39 @@ def main():
     }
     benchmarks_b3_config = {
         #'IBSD': 'IBSD', # Disponível em ambos agora
-        'IDIV': 'IDIV',
+        #'IDIV': 'IDIV',
         #'IBLV': 'IBLV'  # Disponível em ambos agora
     }
     benchmarks_bcb_config = {
         'SELIC': 11,
         'IPCA': 433
     }
+
+    # Lista de benchmarks que serão EXIBIDOS nos gráficos e tabelas.
+    # O script calcula todos (para compor carteiras), mas só mostra estes.
+    benchmarks_exibir = [
+        #'S&P 500',
+        #'IVVB11',
+        #'IMID',
+        #'IDIV',
+        #'IPCA',
+        #'SELIC',
+        'IMID BRL',
+        'S&P 500 BRL',
+        'IPCA + 6%',
+        'IMID BRL 50 + (IPCA+6%) 50',
+        'IMID BRL 25 + (IPCA+6%) 75',
+        'IMID BRL 75 + (IPCA+6%) 25',
+        'IMID BRL 60 + (IPCA+6%) 40',
+        'IMID BRL 40 + (IPCA+6%) 60',
+        'IMID BRL 47.5 + (IPCA+6%) 47.5 + BTC 5',
+        'IMID BRL 23.75 + (IPCA+6%) 71.25 + BTC 5',
+        'IMID BRL 71.25 + (IPCA+6%) 23.75 + BTC 5',
+        'IMID BRL 70 + (IPCA+6%) 25 + BTC 5',
+        'IMID BRL 57 + (IPCA+6%) 38 + BTC 5',
+        'IMID BRL 38 + (IPCA+6%) 57 + BTC 5',
+        #'IDIV/IMID BRL/(IPCA+6%)'
+    ]
 
     # Caso especial: quando o usuário solicita apenas '--historico N' (sem --ativo/--classe),
     # geramos somente o TWR histórico dos benchmarks e encerramos o script.
@@ -1269,6 +1322,8 @@ def main():
         # Define os benchmarks para o modo Histórico (visão macro)
         # Usa a configuração centralizada
         benchmarks_data = processar_benchmarks(start_date, end_date, benchmarks_yf_config, benchmarks_b3_config, benchmarks_bcb_config, logger)
+        # Filtra apenas os benchmarks que devem ser exibidos
+        benchmarks_data = {k: v for k, v in benchmarks_data.items() if k in benchmarks_exibir}
 
 
         # Gera o TWR histórico e encerra
@@ -1313,6 +1368,8 @@ def main():
 
             # Processa benchmarks usando a função centralizada
             benchmarks_data = processar_benchmarks(start_date, end_date, benchmarks_yf_config, benchmarks_b3_config, benchmarks_bcb_config, logger)
+            # Filtra apenas os benchmarks que devem ser exibidos
+            benchmarks_data = {k: v for k, v in benchmarks_data.items() if k in benchmarks_exibir}
 
             # Se foi solicitado, gera o TWR histórico de benchmarks para o período em anos
             if getattr(args, 'historico', None):
