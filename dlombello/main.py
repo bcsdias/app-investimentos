@@ -1107,6 +1107,110 @@ def gerar_twr_historico(benchmarks_data: dict, years: int, nome_grafico: str, en
     plt.savefig(caminho_png, bbox_inches='tight')
     logger.info(f'TWR histórico salvo em: {caminho_png} e dados em {caminho_csv}')
 
+def gerar_analise_risco(benchmarks_data: dict, risk_free_series: pd.Series | None, nome_analise: str, logger):
+    """
+    Calcula métricas de risco (Volatilidade, Sharpe, Drawdown) e gera gráfico Risk x Return.
+    """
+    pasta_graficos = "dlombello/graficos"
+    os.makedirs(pasta_graficos, exist_ok=True)
+    
+    metricas = []
+    
+    # Prepara série de retorno livre de risco (diário) para cálculo do Sharpe
+    rf_returns = None
+    if risk_free_series is not None:
+        rf_returns = risk_free_series.pct_change().fillna(0)
+
+    for nome, serie in benchmarks_data.items():
+        s = _ensure_series(serie)
+        if s is None or s.empty:
+            continue
+            
+        # Retornos diários
+        retornos = s.pct_change().fillna(0)
+        
+        # 1. Volatilidade Anualizada (Desvio Padrão * raiz(252))
+        volatilidade = retornos.std() * np.sqrt(252)
+        
+        # 2. Retorno Anualizado (CAGR)
+        days = (s.index[-1] - s.index[0]).days
+        if days > 0:
+            cagr = (s.iloc[-1] / s.iloc[0]) ** (365.25 / days) - 1
+        else:
+            cagr = 0
+            
+        # 3. Sharpe Ratio = (Retorno Carteira - Retorno Livre de Risco) / Volatilidade
+        if rf_returns is not None:
+            # Alinha datas da SELIC com a carteira
+            rf_aligned = rf_returns.reindex(retornos.index).fillna(0)
+            excess_returns = retornos - rf_aligned
+            if excess_returns.std() > 0:
+                sharpe = (excess_returns.mean() * 252) / (excess_returns.std() * np.sqrt(252))
+            else:
+                sharpe = 0
+        else:
+            # Fallback se sem SELIC (Sharpe simples)
+            sharpe = cagr / volatilidade if volatilidade > 0 else 0
+                
+        # 4. Max Drawdown (Queda máxima do topo ao fundo)
+        cummax = s.cummax()
+        drawdown = (s / cummax) - 1
+        max_drawdown = drawdown.min()
+        
+        metricas.append({
+            'Ativo': nome,
+            'Retorno Anualizado': cagr,
+            'Volatilidade': volatilidade,
+            'Sharpe': sharpe,
+            'Max Drawdown': max_drawdown
+        })
+        
+    if not metricas:
+        logger.warning("Não foi possível calcular métricas de risco.")
+        return
+
+    df_metricas = pd.DataFrame(metricas).set_index('Ativo')
+    
+    # Ordena por Sharpe (eficiência)
+    df_metricas = df_metricas.sort_values('Sharpe', ascending=False)
+    
+    # Salva CSV
+    caminho_csv = os.path.join(pasta_graficos, f'metricas_risco_{nome_analise}.csv')
+    df_metricas.to_csv(caminho_csv, sep=';', decimal=',')
+    logger.info(f"Tabela de métricas de risco salva em: {caminho_csv}")
+    
+    # Gera Gráfico Scatter (Risco x Retorno)
+    plt.figure(figsize=(14, 9))
+    
+    # Plota os pontos
+    for ativo, row in df_metricas.iterrows():
+        x = row['Volatilidade']
+        y = row['Retorno Anualizado']
+        
+        # Destaque visual para a Carteira do usuário
+        if str(ativo).startswith('Carteira'):
+            plt.scatter(x, y, color='red', s=150, zorder=10, label=ativo, edgecolors='black')
+            plt.text(x, y, f'  {ativo}', fontsize=10, fontweight='bold', color='red', va='bottom')
+        else:
+            plt.scatter(x, y, s=80, alpha=0.7, edgecolors='white')
+            plt.text(x, y, f'  {ativo}', fontsize=8, alpha=0.8, va='bottom')
+
+    plt.title(f'Risco (Volatilidade) x Retorno - {nome_analise}', fontsize=16)
+    plt.xlabel('Risco (Volatilidade Anualizada)', fontsize=12)
+    plt.ylabel('Retorno Anualizado (CAGR)', fontsize=12)
+    
+    # Formata eixos como porcentagem
+    plt.gca().xaxis.set_major_formatter(mticker.PercentFormatter(1.0))
+    plt.gca().yaxis.set_major_formatter(mticker.PercentFormatter(1.0))
+    
+    plt.grid(True, linestyle='--', alpha=0.5)
+    plt.axhline(0, color='black', linewidth=0.8)
+    plt.axvline(0, color='black', linewidth=0.8)
+    
+    caminho_png = os.path.join(pasta_graficos, f'grafico_risco_retorno_{nome_analise}.png')
+    plt.savefig(caminho_png, bbox_inches='tight')
+    logger.info(f"Gráfico de Risco x Retorno salvo em: {caminho_png}")
+
 def processar_benchmarks(start_date: str, end_date: str, benchmarks_yf: dict, benchmarks_b3: dict, benchmarks_bcb: dict, logger) -> dict:
     """
     Centraliza a busca e cálculo de benchmarks e índices sintéticos.
@@ -1322,13 +1426,18 @@ def main():
         # Define os benchmarks para o modo Histórico (visão macro)
         # Usa a configuração centralizada
         benchmarks_data = processar_benchmarks(start_date, end_date, benchmarks_yf_config, benchmarks_b3_config, benchmarks_bcb_config, logger)
+        
+        # Captura SELIC para cálculo de Sharpe antes de filtrar
+        selic_series = benchmarks_data.get('SELIC')
+
         # Filtra apenas os benchmarks que devem ser exibidos
-        benchmarks_data = {k: v for k, v in benchmarks_data.items() if k in benchmarks_exibir}
+        benchmarks_data_exibir = {k: v for k, v in benchmarks_data.items() if k in benchmarks_exibir}
 
 
         # Gera o TWR histórico e encerra
         try:
-            gerar_twr_historico(benchmarks_data, years, f'historico_{years}y', end_dt, logger)
+            gerar_twr_historico(benchmarks_data_exibir, years, f'historico_{years}y', end_dt, logger)
+            gerar_analise_risco(benchmarks_data_exibir, selic_series, f'historico_{years}y', logger)
         except Exception as e:
             logger.exception(f"Erro ao gerar TWR histórico standalone: {e}")
         return
@@ -1368,22 +1477,32 @@ def main():
 
             # Processa benchmarks usando a função centralizada
             benchmarks_data = processar_benchmarks(start_date, end_date, benchmarks_yf_config, benchmarks_b3_config, benchmarks_bcb_config, logger)
+            
+            # Captura SELIC para cálculo de Sharpe antes de filtrar
+            selic_series = benchmarks_data.get('SELIC')
             # Filtra apenas os benchmarks que devem ser exibidos
-            benchmarks_data = {k: v for k, v in benchmarks_data.items() if k in benchmarks_exibir}
+            benchmarks_data_exibir = {k: v for k, v in benchmarks_data.items() if k in benchmarks_exibir}
 
             # Se foi solicitado, gera o TWR histórico de benchmarks para o período em anos
             if getattr(args, 'historico', None):
                 try:
                     # Cria uma cópia dos benchmarks e adiciona a carteira atual para comparação histórica
-                    dados_historico = benchmarks_data.copy()
+                    dados_historico = benchmarks_data_exibir.copy()
                     # Converte TWR acumulado (0.x) para fator (1.x) para ser comparável com preços
                     dados_historico[f'Carteira - {nome_analise}'] = df_twr.set_index('date')['twr_acc'] + 1
                     
                     gerar_twr_historico(dados_historico, args.historico, nome_analise, df_twr['date'].max(), logger)
+                    # Gera análise de risco histórica
+                    gerar_analise_risco(dados_historico, selic_series, f'{nome_analise}_historico_{args.historico}y', logger)
                 except Exception as e:
                     logger.debug(f"Erro ao gerar TWR histórico: {e}")
 
-            gerar_grafico_comparativo_twr(df_twr, benchmarks_data, nome_grafico=nome_analise, logger=logger)
+            gerar_grafico_comparativo_twr(df_twr, benchmarks_data_exibir, nome_grafico=nome_analise, logger=logger)
+            
+            # Gera análise de risco para o período comparativo (carteira vs benchmarks no período da carteira)
+            dados_comparativo = benchmarks_data_exibir.copy()
+            dados_comparativo[f'Carteira - {nome_analise}'] = df_twr.set_index('date')['twr_acc'] + 1
+            gerar_analise_risco(dados_comparativo, selic_series, f'{nome_analise}_comparativo', logger)
 
     else:
         logger.error(f"Não foi possível obter o histórico para a análise '{nome_analise}'. Encerrando o script.")
