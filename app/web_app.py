@@ -29,6 +29,12 @@ from app.main import (
     gerar_grafico_evolucao,
     gerar_grafico_percentual
 )
+from app.config import (
+    BENCHMARKS_YF,
+    BENCHMARKS_B3,
+    BENCHMARKS_BCB,
+    BENCHMARKS_TD
+)
 
 # Configuração da Página
 st.set_page_config(
@@ -68,18 +74,10 @@ modo_analise = st.sidebar.radio("Modo de Análise", ["Carteira/Ativo", "Simulaç
 
 # --- CONFIGURAÇÕES DE BENCHMARKS ---
 # (Copiado do main.py para manter consistência, mas poderia vir de um arquivo config)
-benchmarks_yf_config = {
-    'S&P 500': 'SPY',
-    'IVVB11': 'IVVB11.SA',
-    'IMID': 'IMID.L',
-    'Bitcoin': 'BTC-USD'
-}
-benchmarks_b3_config = {}
-benchmarks_bcb_config = {'SELIC': 11, 'IPCA': 433}
-benchmarks_td_config = {
-    'TD IPCA 2035': {'titulo': 'Tesouro IPCA+', 'vencimento': '15/05/2035'},
-    'TD IPCA 2045': {'titulo': 'Tesouro IPCA+', 'vencimento': '15/05/2045'}
-}
+benchmarks_yf_config = BENCHMARKS_YF
+benchmarks_b3_config = BENCHMARKS_B3
+benchmarks_bcb_config = BENCHMARKS_BCB
+benchmarks_td_config = BENCHMARKS_TD
 
 # --- INTERFACE PRINCIPAL ---
 st.title("📈 Dashboard de Investimentos")

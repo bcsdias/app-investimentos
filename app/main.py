@@ -23,6 +23,14 @@ from utils.market_data import (
     processar_benchmarks,
     _ensure_series
 )
+from app.config import (
+    BENCHMARKS_YF,
+    BENCHMARKS_B3,
+    BENCHMARKS_BCB,
+    BENCHMARKS_TD,
+    CARTEIRAS_SINTETICAS,
+    BENCHMARKS_EXIBIR
+)
 
 # Carrega as variáveis de ambiente do arquivo .env
 #load_dotenv(os.path.join(BASE_DIR, '.env'))
@@ -1147,98 +1155,17 @@ def main():
 
     # Configuração centralizada de benchmarks (pode ser ajustada conforme necessidade)
     # Use esta lista para garantir consistência entre os modos
-    benchmarks_yf_config = {
-        'S&P 500': 'SPY',
-        #'S&P 500 BRL': 'SPY.BA',
-        'IVVB11': 'IVVB11.SA', # Disponível em ambos agora
-        'IMID': 'IMID.L',
-        'Bitcoin': 'BTC-USD'
-    }
-    benchmarks_b3_config = {
-        #'IBSD': 'IBSD', # Disponível em ambos agora
-        #'IDIV': 'IDIV',
-        #'IBLV': 'IBLV'  # Disponível em ambos agora
-    }
-    benchmarks_bcb_config = {
-        'SELIC': 11,
-        'IPCA': 433
-    }
-    benchmarks_td_config = {
-        # Nome do título deve ser exato como no CSV do Tesouro (Tesouro IPCA+)
-        'TD IPCA 2035': {'titulo': 'Tesouro IPCA+', 'vencimento': '15/05/2035'},
-        'TD IPCA 2045': {'titulo': 'Tesouro IPCA+', 'vencimento': '15/05/2045'}
-    }
+    benchmarks_yf_config = BENCHMARKS_YF
+    benchmarks_b3_config = BENCHMARKS_B3
+    benchmarks_bcb_config = BENCHMARKS_BCB
+    benchmarks_td_config = BENCHMARKS_TD
     
     # Definição das Carteiras Sintéticas para geração de índices e simulação
-    carteiras_sinteticas_config = {
-        'IMID BRL 50 + (IPCA+6%) 50': {'IMID BRL': 0.5, 'IPCA + 6%': 0.5},
-        'IMID BRL 25 + (IPCA+6%) 75': {'IMID BRL': 0.25, 'IPCA + 6%': 0.75},
-        'IMID BRL 75 + (IPCA+6%) 25': {'IMID BRL': 0.75, 'IPCA + 6%': 0.25},
-        'IMID BRL 60 + (IPCA+6%) 40': {'IMID BRL': 0.60, 'IPCA + 6%': 0.40},
-        'IMID BRL 40 + (IPCA+6%) 60': {'IMID BRL': 0.40, 'IPCA + 6%': 0.60},
-        
-        'IMID BRL 47.5 + (IPCA+6%) 47.5 + BTC 5': {'IMID BRL': 0.475, 'IPCA + 6%': 0.475, 'Bitcoin BRL': 0.05},
-        'IMID BRL 23.75 + (IPCA+6%) 71.25 + BTC 5': {'IMID BRL': 0.2375, 'IPCA + 6%': 0.7125, 'Bitcoin BRL': 0.05},
-        'IMID BRL 71.25 + (IPCA+6%) 23.75 + BTC 5': {'IMID BRL': 0.7125, 'IPCA + 6%': 0.2375, 'Bitcoin BRL': 0.05},
-        'IMID BRL 70 + (IPCA+6%) 25 + BTC 5': {'IMID BRL': 0.7, 'IPCA + 6%': 0.25, 'Bitcoin BRL': 0.05},
-        'IMID BRL 57 + (IPCA+6%) 38 + BTC 5': {'IMID BRL': 0.57, 'IPCA + 6%': 0.38, 'Bitcoin BRL': 0.05},
-        'IMID BRL 38 + (IPCA+6%) 57 + BTC 5': {'IMID BRL': 0.38, 'IPCA + 6%': 0.57, 'Bitcoin BRL': 0.05},
-
-        'IMID BRL 47.5 + TD 2035 47.5 + BTC 5': {'IMID BRL': 0.475, 'TD IPCA 2035': 0.475, 'Bitcoin BRL': 0.05},
-        'IMID BRL 23.75 + TD 2035 71.25 + BTC 5': {'IMID BRL': 0.2375, 'TD IPCA 2035': 0.7125, 'Bitcoin BRL': 0.05},
-        'IMID BRL 71.25 + TD 2035 23.75 + BTC 5': {'IMID BRL': 0.7125, 'TD IPCA 2035': 0.2375, 'Bitcoin BRL': 0.05},
-        'IMID BRL 70 + TD 2035 25 + BTC 5': {'IMID BRL': 0.7, 'TD IPCA 2035': 0.25, 'Bitcoin BRL': 0.05},
-        'IMID BRL 57 + TD 2035 38 + BTC 5': {'IMID BRL': 0.57, 'TD IPCA 2035': 0.38, 'Bitcoin BRL': 0.05},
-        'IMID BRL 38 + TD 2035 57 + BTC 5': {'IMID BRL': 0.38, 'TD IPCA 2035': 0.57, 'Bitcoin BRL': 0.05},
-
-        'IMID BRL 47.5 + TD 2045 47.5 + BTC 5': {'IMID BRL': 0.475, 'TD IPCA 2045': 0.475, 'Bitcoin BRL': 0.05},
-        'IMID BRL 23.75 + TD 2045 71.25 + BTC 5': {'IMID BRL': 0.2375, 'TD IPCA 2045': 0.7125, 'Bitcoin BRL': 0.05},
-        'IMID BRL 71.25 + TD 2045 23.75 + BTC 5': {'IMID BRL': 0.7125, 'TD IPCA 2045': 0.2375, 'Bitcoin BRL': 0.05},
-        'IMID BRL 70 + TD 2045 25 + BTC 5': {'IMID BRL': 0.7, 'TD IPCA 2045': 0.25, 'Bitcoin BRL': 0.05},
-        'IMID BRL 57 + TD 2045 38 + BTC 5': {'IMID BRL': 0.57, 'TD IPCA 2045': 0.38, 'Bitcoin BRL': 0.05},
-        'IMID BRL 38 + TD 2045 57 + BTC 5': {'IMID BRL': 0.38, 'TD IPCA 2045': 0.57, 'Bitcoin BRL': 0.05},
-        
-        'IMID BRL/(IPCA+6%)': {'IMID BRL': 0.50, 'IDIV': 0.25, 'IPCA + 6%': 0.25},
-    }
+    carteiras_sinteticas_config = CARTEIRAS_SINTETICAS
 
     # Lista de benchmarks que serão EXIBIDOS nos gráficos e tabelas.
     # O script calcula todos (para compor carteiras), mas só mostra estes.
-    benchmarks_exibir = [
-        #'S&P 500',
-        #'IVVB11',
-        #'IMID',
-        #'IDIV',
-        #'IPCA',
-        #'SELIC',
-        'IMID BRL',
-        'TD IPCA 2035',
-        'S&P 500 BRL',
-        'IPCA + 6%',
-        #'IMID BRL 50 + (IPCA+6%) 50',
-        #'IMID BRL 25 + (IPCA+6%) 75',
-        #'IMID BRL 75 + (IPCA+6%) 25',
-        #'IMID BRL 60 + (IPCA+6%) 40',
-        #'IMID BRL 40 + (IPCA+6%) 60',
-        #'IMID BRL 47.5 + (IPCA+6%) 47.5 + BTC 5',
-        #'IMID BRL 23.75 + (IPCA+6%) 71.25 + BTC 5',
-        #'IMID BRL 71.25 + (IPCA+6%) 23.75 + BTC 5',
-        #'IMID BRL 70 + (IPCA+6%) 25 + BTC 5',
-        #'IMID BRL 57 + (IPCA+6%) 38 + BTC 5',
-        #'IMID BRL 38 + (IPCA+6%) 57 + BTC 5',
-        'IMID BRL 47.5 + TD 2035 47.5 + BTC 5',
-        'IMID BRL 23.75 + TD 2035 71.25 + BTC 5',
-        'IMID BRL 71.25 + TD 2035 23.75 + BTC 5',
-        'IMID BRL 70 + TD 2035 25 + BTC 5',
-        'IMID BRL 57 + TD 2035 38 + BTC 5',
-        'IMID BRL 38 + TD 2035 57 + BTC 5',
-        'IMID BRL 47.5 + TD 2045 47.5 + BTC 5',
-        'IMID BRL 23.75 + TD 2045 71.25 + BTC 5',
-        'IMID BRL 71.25 + TD 2045 23.75 + BTC 5',
-        'IMID BRL 70 + TD 2045 25 + BTC 5',
-        'IMID BRL 57 + TD 2045 38 + BTC 5',
-        'IMID BRL 38 + TD 2045 57 + BTC 5',
-        #'IDIV/IMID BRL/(IPCA+6%)'
-    ]
+    benchmarks_exibir = BENCHMARKS_EXIBIR
 
     # Caso especial: quando o usuário solicita apenas '--historico N' (sem --ativo/--classe),
     # geramos somente o TWR histórico dos benchmarks e encerramos o script.
