@@ -41,12 +41,24 @@ logger = setup_logger(log_file='web_app.log')
 # --- SIDEBAR: Configurações ---
 st.sidebar.title("⚙️ Configurações")
 
-token = os.getenv('DLP_TOKEN')
+if 'dlp_token' not in st.session_state:
+    st.session_state.dlp_token = os.getenv('DLP_TOKEN', '')
+
+if st.session_state.dlp_token:
+    st.sidebar.success("Token configurado!")
+    if st.sidebar.button("🗑️ Alterar/Remover Token"):
+        st.session_state.dlp_token = ""
+        st.rerun()
+else:
+    token_input = st.sidebar.text_input("API Token (DLP_TOKEN)", type="password")
+    if token_input:
+        st.session_state.dlp_token = token_input
+        st.rerun()
+
+token = st.session_state.dlp_token
 if not token:
-    token = st.sidebar.text_input("API Token (DLP_TOKEN)", type="password")
-    if not token:
-        st.sidebar.warning("Token não encontrado. Insira para continuar.")
-        st.stop()
+    st.sidebar.warning("Token não encontrado. Insira para continuar.")
+    st.stop()
 
 modo_analise = st.sidebar.radio("Modo de Análise", ["Carteira/Ativo", "Simulação & Histórico Macro"])
 
