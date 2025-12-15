@@ -19,7 +19,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(BASE_DIR)
 from utils.logger import setup_logger
 # Importa a função que acabamos de refatorar em import_b3.py
-from dlombello.import_b3 import run_b3_downloader
+from utils.import_b3 import run_b3_downloader
 
 
 # Carrega as variáveis de ambiente do arquivo .env
@@ -1419,6 +1419,7 @@ def simular_evolucao_patrimonio(benchmarks_data: dict, carteiras_config: dict, a
                     # Calcula valor atual total
                     valor_atual_total = (shares * row_precos).sum()
                     # Redefine shares para bater exatamente com os pesos alvo
+                    # NOTA: Isso implica VENDA de ativos que excederam a meta e COMPRA dos que estão abaixo.
                     target_values = valor_atual_total * pd.Series(pesos)
                     shares = target_values / row_precos
             
