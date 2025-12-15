@@ -178,16 +178,24 @@ def buscar_dados_bcb(codigo_bcb: int, start_date: str, end_date: str, logger) ->
             
         logger.debug(f"Dados brutos recebidos do BCB (head):\n{df.head().to_string()}")
 
-        # A API retorna a taxa em % ao dia ou ao mês.
-        # Precisamos converter para um fator de retorno e calcular o produto acumulado.
-        # Ex: 0.05% -> 1.0005
-        retorno_fator = (df[str(codigo_bcb)] / 100) + 1
+        # Lista de códigos que retornam Número Índice (já acumulado) e não Taxa %
+        # IMA-B (12466, 12467, 12468), IRF-M (12461, 12463, 12464), IMA-S (12469), IMA-Geral (12462)
+        codigos_indices = [12466, 12467, 12468, 12461, 12463, 12464, 12469, 12462]
 
-        # Calcula o retorno acumulado (índice)
-        retorno_acumulado = retorno_fator.cumprod()
-
-        # A primeira data pode ter um valor NaN se não houver dados anteriores, preenche com 1
-        retorno_acumulado = retorno_acumulado.fillna(1)
+        if codigo_bcb in codigos_indices:
+            # Se já é índice, usa o valor direto
+            retorno_acumulado = df[str(codigo_bcb)]
+            # Preenche eventuais falhas com o valor anterior
+            retorno_acumulado = retorno_acumulado.ffill()
+        else:
+            # A API retorna a taxa em % ao dia ou ao mês.
+            # Precisamos converter para um fator de retorno e calcular o produto acumulado.
+            # Ex: 0.05% -> 1.0005
+            retorno_fator = (df[str(codigo_bcb)] / 100) + 1
+            # Calcula o retorno acumulado (índice)
+            retorno_acumulado = retorno_fator.cumprod()
+            # A primeira data pode ter um valor NaN se não houver dados anteriores, preenche com 1
+            retorno_acumulado = retorno_acumulado.fillna(1)
 
         # Renomeia o índice para 'Date' para consistência
         retorno_acumulado.index.name = 'Date'

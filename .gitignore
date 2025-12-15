@@ -14,3 +14,6 @@ graficos/
 # Logs
 log/
 log/main.log
+
+# Relatorios
+reports/
