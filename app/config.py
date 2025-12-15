@@ -9,9 +9,13 @@ BENCHMARKS_YF = {
 }
 
 BENCHMARKS_B3 = {
-    #'IBSD': 'IBSD', # Disponível em ambos agora
-    #'IDIV': 'IDIV',
-    #'IBLV': 'IBLV'  # Disponível em ambos agora
+    'IBSD': 'IBSD', # Índice Brasil Setorial Dividendos
+    'IDIV': 'IDIV', # Índice Dividendos
+    'IBLV': 'IBLV', # Índice Baixa Volatilidade
+    'IBOV': 'IBOV', # Ibovespa (Benchmark Principal)
+    'SMLL': 'SMLL', # Small Caps (Empresas de menor capitalização)
+    'IFIX': 'IFIX', # Índice de Fundos Imobiliários
+    'UTIL': 'UTIL', # Índice de Utilidade Pública (Defensivo/Elétricas)
 }
 
 BENCHMARKS_BCB = {
