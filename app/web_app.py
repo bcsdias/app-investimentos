@@ -56,9 +56,6 @@ else:
         st.rerun()
 
 token = st.session_state.dlp_token
-if not token:
-    st.sidebar.warning("Token não encontrado. Insira para continuar.")
-    st.stop()
 
 modo_analise = st.sidebar.radio("Modo de Análise", ["Carteira/Ativo", "Simulação & Histórico Macro"])
 
@@ -92,7 +89,9 @@ if modo_analise == "Carteira/Ativo":
     anos_historico = st.slider("Anos de Histórico para Comparação (Benchmarks)", 1, 20, 10)
 
     if st.button("🔍 Gerar Análise"):
-        if not valor_filtro:
+        if not token:
+            st.warning("⚠️ Token não encontrado. Por favor, configure o Token na barra lateral para continuar.")
+        elif not valor_filtro:
             st.error("Por favor, insira um código para análise.")
         else:
             with st.spinner("Buscando dados e gerando gráficos..."):
