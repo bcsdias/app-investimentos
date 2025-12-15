@@ -9,6 +9,12 @@ from dotenv import load_dotenv
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(BASE_DIR)
 
+# Garante que DLP_TOKEN exista no ambiente antes de importar app.main
+# Isso evita o erro "ValueError" causado pela validação estrita no main.py
+load_dotenv()
+if "DLP_TOKEN" not in os.environ:
+    os.environ["DLP_TOKEN"] = "dummy_token_web_interface"
+
 from utils.logger import setup_logger
 from utils.market_data import (
     buscar_historico,
@@ -32,9 +38,6 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Carrega variáveis de ambiente
-load_dotenv()
-
 # Configura Logger (para aparecer no terminal onde o streamlit roda)
 logger = setup_logger(log_file='web_app.log')
 
@@ -42,7 +45,11 @@ logger = setup_logger(log_file='web_app.log')
 st.sidebar.title("⚙️ Configurações")
 
 if 'dlp_token' not in st.session_state:
-    st.session_state.dlp_token = os.getenv('DLP_TOKEN', '')
+    env_token = os.getenv('DLP_TOKEN', '')
+    # Ignora o token dummy definido acima para bypassar o main.py
+    if env_token == "dummy_token_web_interface":
+        env_token = ""
+    st.session_state.dlp_token = env_token
 
 if st.session_state.dlp_token:
     st.sidebar.success("Token configurado!")
