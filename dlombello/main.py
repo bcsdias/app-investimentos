@@ -1271,7 +1271,7 @@ def gerar_analise_risco(benchmarks_data: dict, risk_free_series: pd.Series | Non
     plt.savefig(caminho_png, bbox_inches='tight')
     logger.info(f"Gráfico de Risco x Retorno salvo em: {caminho_png}")
 
-def processar_benchmarks(start_date: str, end_date: str, benchmarks_yf: dict, benchmarks_b3: dict, benchmarks_bcb: dict, benchmarks_td: dict, logger) -> dict:
+def processar_benchmarks(start_date: str, end_date: str, benchmarks_yf: dict, benchmarks_b3: dict, benchmarks_bcb: dict, benchmarks_td: dict, carteiras_config: dict, logger) -> dict:
     """
     Centraliza a busca e cálculo de benchmarks e índices sintéticos.
     """
@@ -1348,99 +1348,127 @@ def processar_benchmarks(start_date: str, end_date: str, benchmarks_yf: dict, be
             portfolio_ret = combined.sum(axis=1)
             benchmarks_data[name] = (1 + portfolio_ret).cumprod()
 
-    # 6. Sintéticos Compostos (Carteiras Teóricas)
-    # IDIV + (IPCA+6%)
-    #_calc_portfolio({'IDIV': 0.5, 'IPCA + 6%': 0.5}, 'IDIV + (IPCA+6%)')
-    
-    # IMID + (IPCA+6%)
-    #_calc_portfolio({'IMID': 0.5, 'IPCA + 6%': 0.5}, 'IMID + (IPCA+6%)')
-
-    # IMID BRL + (IPCA+6%)
-    _calc_portfolio({'IMID BRL': 0.5, 'IPCA + 6%': 0.5}, 'IMID BRL 50 + (IPCA+6%) 50')
-
-    # IMID BRL + (IPCA+6%)
-    _calc_portfolio({'IMID BRL': 0.25, 'IPCA + 6%': 0.75}, 'IMID BRL 25 + (IPCA+6%) 75')
-    
-    # IMID BRL + (IPCA+6%)
-    _calc_portfolio({'IMID BRL': 0.75, 'IPCA + 6%': 0.25}, 'IMID BRL 75 + (IPCA+6%) 25')
-
-    # IMID BRL + (IPCA+6%)
-    _calc_portfolio({'IMID BRL': 0.60, 'IPCA + 6%': 0.40}, 'IMID BRL 60 + (IPCA+6%) 40')
-
-    # IMID BRL + (IPCA+6%)
-    _calc_portfolio({'IMID BRL': 0.40, 'IPCA + 6%': 0.60}, 'IMID BRL 40 + (IPCA+6%) 60')
-
-    # Carteiras com 5% de Bitcoin (pesos rebalanceados proporcionalmente para fechar 100%)
-    # 50/50 -> 47.5/47.5/5
-    _calc_portfolio({'IMID BRL': 0.475, 'IPCA + 6%': 0.475, 'Bitcoin BRL': 0.05}, 'IMID BRL 47.5 + (IPCA+6%) 47.5 + BTC 5')
-    
-    # 25/75 -> 23.75/71.25/5
-    _calc_portfolio({'IMID BRL': 0.2375, 'IPCA + 6%': 0.7125, 'Bitcoin BRL': 0.05}, 'IMID BRL 23.75 + (IPCA+6%) 71.25 + BTC 5')
-
-    # 75/25 -> 71.25/23.75/5
-    _calc_portfolio({'IMID BRL': 0.7125, 'IPCA + 6%': 0.2375, 'Bitcoin BRL': 0.05}, 'IMID BRL 71.25 + (IPCA+6%) 23.75 + BTC 5')
-
-    # 75/25 -> 70/25/5
-    _calc_portfolio({'IMID BRL': 0.7, 'IPCA + 6%': 0.25, 'Bitcoin BRL': 0.05}, 'IMID BRL 70 + (IPCA+6%) 25 + BTC 5')
-
-    # 60/40 -> 57/38/5
-    _calc_portfolio({'IMID BRL': 0.57, 'IPCA + 6%': 0.38, 'Bitcoin BRL': 0.05}, 'IMID BRL 57 + (IPCA+6%) 38 + BTC 5')
-
-    # 40/60 -> 38/57/5
-    _calc_portfolio({'IMID BRL': 0.38, 'IPCA + 6%': 0.57, 'Bitcoin BRL': 0.05}, 'IMID BRL 38 + (IPCA+6%) 57 + BTC 5')
-
-    # Carteiras com 5% de Bitcoin e TD IPCA 2035 (substituindo IPCA+6%)
-    # 50/50 -> 47.5/47.5/5
-    _calc_portfolio({'IMID BRL': 0.475, 'TD IPCA 2035': 0.475, 'Bitcoin BRL': 0.05}, 'IMID BRL 47.5 + TD 2035 47.5 + BTC 5')
-    
-    # 25/75 -> 23.75/71.25/5
-    _calc_portfolio({'IMID BRL': 0.2375, 'TD IPCA 2035': 0.7125, 'Bitcoin BRL': 0.05}, 'IMID BRL 23.75 + TD 2035 71.25 + BTC 5')
-
-    # 75/25 -> 71.25/23.75/5
-    _calc_portfolio({'IMID BRL': 0.7125, 'TD IPCA 2035': 0.2375, 'Bitcoin BRL': 0.05}, 'IMID BRL 71.25 + TD 2035 23.75 + BTC 5')
-
-    # 75/25 -> 70/25/5
-    _calc_portfolio({'IMID BRL': 0.7, 'TD IPCA 2035': 0.25, 'Bitcoin BRL': 0.05}, 'IMID BRL 70 + TD 2035 25 + BTC 5')
-
-    # 60/40 -> 57/38/5
-    _calc_portfolio({'IMID BRL': 0.57, 'TD IPCA 2035': 0.38, 'Bitcoin BRL': 0.05}, 'IMID BRL 57 + TD 2035 38 + BTC 5')
-
-    # 40/60 -> 38/57/5
-    _calc_portfolio({'IMID BRL': 0.38, 'TD IPCA 2035': 0.57, 'Bitcoin BRL': 0.05}, 'IMID BRL 38 + TD 2035 57 + BTC 5')
-
-    # Carteiras com 5% de Bitcoin e TD IPCA 2045 (substituindo IPCA+6%)
-    # 50/50 -> 47.5/47.5/5
-    _calc_portfolio({'IMID BRL': 0.475, 'TD IPCA 2045': 0.475, 'Bitcoin BRL': 0.05}, 'IMID BRL 47.5 + TD 2045 47.5 + BTC 5')
-    
-    # 25/75 -> 23.75/71.25/5
-    _calc_portfolio({'IMID BRL': 0.2375, 'TD IPCA 2045': 0.7125, 'Bitcoin BRL': 0.05}, 'IMID BRL 23.75 + TD 2045 71.25 + BTC 5')
-
-    # 75/25 -> 71.25/23.75/5
-    _calc_portfolio({'IMID BRL': 0.7125, 'TD IPCA 2045': 0.2375, 'Bitcoin BRL': 0.05}, 'IMID BRL 71.25 + TD 2045 23.75 + BTC 5')
-
-    # 75/25 -> 70/25/5
-    _calc_portfolio({'IMID BRL': 0.7, 'TD IPCA 2045': 0.25, 'Bitcoin BRL': 0.05}, 'IMID BRL 70 + TD 2045 25 + BTC 5')
-
-    # 60/40 -> 57/38/5
-    _calc_portfolio({'IMID BRL': 0.57, 'TD IPCA 2045': 0.38, 'Bitcoin BRL': 0.05}, 'IMID BRL 57 + TD 2045 38 + BTC 5')
-
-    # 40/60 -> 38/57/5
-    _calc_portfolio({'IMID BRL': 0.38, 'TD IPCA 2045': 0.57, 'Bitcoin BRL': 0.05}, 'IMID BRL 38 + TD 2045 57 + BTC 5')
-
-    # Carteira Teórica Global
-    #_calc_portfolio({'IMID': 0.50, 'IDIV': 0.25, 'IPCA + 6%': 0.25}, 'IDIV/IMID/(IPCA+6%)')
-
-    # Carteira Teórica Global BRL
-    _calc_portfolio({'IMID BRL': 0.50, 'IDIV': 0.25, 'IPCA + 6%': 0.25}, 'IMID BRL/(IPCA+6%)')
-
-    # Carteira B3
-    #_calc_portfolio({'IBSD': 1/3, 'IDIV': 1/3, 'IBLV': 1/3}, 'IBSD/IDIV/IBLV')
-
-    # IMID BRL + SELIC
-    #_calc_portfolio({'IMID BRL': 0.5, 'SELIC': 0.5}, 'IMID BRL + SELIC')
-
+    # 6. Sintéticos Compostos (Carteiras Teóricas) - Gerados dinamicamente via config
+    if carteiras_config:
+        for nome_carteira, pesos in carteiras_config.items():
+            _calc_portfolio(pesos, nome_carteira)
 
     return benchmarks_data
+
+def simular_evolucao_patrimonio(benchmarks_data: dict, carteiras_config: dict, aporte_mensal: float, meses_rebalanceamento: int, logger):
+    """
+    Simula a evolução do patrimônio com aportes mensais e rebalanceamento periódico.
+    Gera gráficos de área (Patrimônio vs Investido) e CSVs.
+    """
+    pasta_graficos = "dlombello/graficos"
+    os.makedirs(pasta_graficos, exist_ok=True)
+    
+    logger.info(f"Iniciando simulação: Aporte R${aporte_mensal:.2f}/mês, Rebalanceamento a cada {meses_rebalanceamento} meses.")
+
+    for nome_carteira, pesos in carteiras_config.items():
+        # Verifica se todos os ativos da carteira estão disponíveis
+        ativos_validos = True
+        series_ativos = {}
+        for ativo in pesos.keys():
+            s = _ensure_series(benchmarks_data.get(ativo))
+            if s is None or s.empty:
+                logger.warning(f"Ativo '{ativo}' não encontrado ou vazio. Pulando simulação da carteira '{nome_carteira}'.")
+                ativos_validos = False
+                break
+            series_ativos[ativo] = s
+        
+        if not ativos_validos:
+            continue
+
+        # Alinha as datas de todos os ativos (intersecção)
+        df_precos = pd.concat(series_ativos, axis=1).dropna()
+        if df_precos.empty:
+            logger.warning(f"Sem dados coincidentes para a carteira '{nome_carteira}'.")
+            continue
+
+        # Inicialização da simulação
+        # 'shares' armazena a quantidade "fictícia" de cada ativo (Valor / Preço)
+        shares = pd.Series(0.0, index=pesos.keys())
+        total_investido = 0.0
+        
+        historico_simulacao = []
+        
+        last_month = None
+        months_since_start = 0
+        
+        # Itera dia a dia
+        for data, row_precos in df_precos.iterrows():
+            current_month = data.month
+            
+            # Verifica virada de mês para Aporte e Rebalanceamento
+            if last_month is not None and current_month != last_month:
+                months_since_start += 1
+                
+                # 1. Aporte Mensal (compra ativos mantendo proporção alvo ou apenas distribuindo o aporte)
+                # Simplificação: Distribui o aporte conforme os pesos alvo
+                cash_in = aporte_mensal
+                total_investido += cash_in
+                
+                # Compra ativos
+                shares += (cash_in * pd.Series(pesos)) / row_precos
+                
+                # 2. Rebalanceamento
+                if months_since_start % meses_rebalanceamento == 0:
+                    # Calcula valor atual total
+                    valor_atual_total = (shares * row_precos).sum()
+                    # Redefine shares para bater exatamente com os pesos alvo
+                    target_values = valor_atual_total * pd.Series(pesos)
+                    shares = target_values / row_precos
+            
+            # No primeiro dia, faz o aporte inicial
+            if last_month is None:
+                total_investido += aporte_mensal
+                shares += (aporte_mensal * pd.Series(pesos)) / row_precos
+
+            last_month = current_month
+            
+            # Calcula valor diário do patrimônio
+            valor_patrimonio = (shares * row_precos).sum()
+            
+            historico_simulacao.append({
+                'Date': data,
+                'Total Investido': total_investido,
+                'Patrimônio Bruto': valor_patrimonio
+            })
+            
+        # Cria DataFrame da simulação
+        df_sim = pd.DataFrame(historico_simulacao)
+        
+        # Salva CSV
+        safe_name = nome_carteira.replace('/', '_').replace('+', 'mais')
+        caminho_csv = os.path.join(pasta_graficos, f'simulacao_{safe_name}.csv')
+        df_sim.to_csv(caminho_csv, sep=';', decimal=',', index=False)
+        
+        # Gera Gráfico
+        plt.figure(figsize=(12, 7))
+        plt.plot(df_sim['Date'], df_sim['Patrimônio Bruto'], label='Patrimônio Bruto', color='green', linewidth=2)
+        plt.plot(df_sim['Date'], df_sim['Total Investido'], label='Total Investido', color='gray', linestyle='--', linewidth=1.5)
+        
+        # Preenche a área de lucro
+        plt.fill_between(df_sim['Date'], df_sim['Total Investido'], df_sim['Patrimônio Bruto'], 
+                         where=(df_sim['Patrimônio Bruto'] >= df_sim['Total Investido']),
+                         color='green', alpha=0.1, interpolate=True)
+        
+        plt.title(f'Simulação: {nome_carteira}\n(Aporte: R${aporte_mensal} | Rebal: {meses_rebalanceamento} meses)', fontsize=14)
+        plt.xlabel('Data')
+        plt.ylabel('Valor (R$)')
+        plt.legend()
+        plt.grid(True, linestyle='--', alpha=0.5)
+        
+        # Formata eixo Y como moeda (aproximado)
+        ax = plt.gca()
+        ax.yaxis.set_major_formatter(mticker.StrMethodFormatter('R${x:,.0f}'))
+        
+        caminho_png = os.path.join(pasta_graficos, f'simulacao_{safe_name}.png')
+        plt.savefig(caminho_png, bbox_inches='tight')
+        plt.close()
+        
+        logger.info(f"Simulação '{nome_carteira}' concluída. Gráfico salvo em: {caminho_png}")
 
 def main():
     """
@@ -1450,6 +1478,9 @@ def main():
     parser.add_argument('--debug', action='store_true', help='Ativa o modo de log detalhado (debug).')
     parser.add_argument('--historico', type=int, help='Número de anos para gerar TWR histórico de benchmarks (ex: 1, 5, 10).')
     
+    parser.add_argument('--aporte', type=float, help='Valor do aporte mensal para simulação.')
+    parser.add_argument('--rebalanceamento', type=int, help='Intervalo em meses para rebalanceamento.')
+
     # Grupo de argumentos mutuamente exclusivos: ou --ativo ou --classe deve ser fornecido.
     # Não forçamos aqui o required, pois quando --historico for usado sozinho não é necessário.
     group = parser.add_mutually_exclusive_group(required=False)
@@ -1491,6 +1522,38 @@ def main():
         # Nome do título deve ser exato como no CSV do Tesouro (Tesouro IPCA+)
         'TD IPCA 2035': {'titulo': 'Tesouro IPCA+', 'vencimento': '15/05/2035'},
         'TD IPCA 2045': {'titulo': 'Tesouro IPCA+', 'vencimento': '15/05/2045'}
+    }
+    
+    # Definição das Carteiras Sintéticas para geração de índices e simulação
+    carteiras_sinteticas_config = {
+        'IMID BRL 50 + (IPCA+6%) 50': {'IMID BRL': 0.5, 'IPCA + 6%': 0.5},
+        'IMID BRL 25 + (IPCA+6%) 75': {'IMID BRL': 0.25, 'IPCA + 6%': 0.75},
+        'IMID BRL 75 + (IPCA+6%) 25': {'IMID BRL': 0.75, 'IPCA + 6%': 0.25},
+        'IMID BRL 60 + (IPCA+6%) 40': {'IMID BRL': 0.60, 'IPCA + 6%': 0.40},
+        'IMID BRL 40 + (IPCA+6%) 60': {'IMID BRL': 0.40, 'IPCA + 6%': 0.60},
+        
+        'IMID BRL 47.5 + (IPCA+6%) 47.5 + BTC 5': {'IMID BRL': 0.475, 'IPCA + 6%': 0.475, 'Bitcoin BRL': 0.05},
+        'IMID BRL 23.75 + (IPCA+6%) 71.25 + BTC 5': {'IMID BRL': 0.2375, 'IPCA + 6%': 0.7125, 'Bitcoin BRL': 0.05},
+        'IMID BRL 71.25 + (IPCA+6%) 23.75 + BTC 5': {'IMID BRL': 0.7125, 'IPCA + 6%': 0.2375, 'Bitcoin BRL': 0.05},
+        'IMID BRL 70 + (IPCA+6%) 25 + BTC 5': {'IMID BRL': 0.7, 'IPCA + 6%': 0.25, 'Bitcoin BRL': 0.05},
+        'IMID BRL 57 + (IPCA+6%) 38 + BTC 5': {'IMID BRL': 0.57, 'IPCA + 6%': 0.38, 'Bitcoin BRL': 0.05},
+        'IMID BRL 38 + (IPCA+6%) 57 + BTC 5': {'IMID BRL': 0.38, 'IPCA + 6%': 0.57, 'Bitcoin BRL': 0.05},
+
+        'IMID BRL 47.5 + TD 2035 47.5 + BTC 5': {'IMID BRL': 0.475, 'TD IPCA 2035': 0.475, 'Bitcoin BRL': 0.05},
+        'IMID BRL 23.75 + TD 2035 71.25 + BTC 5': {'IMID BRL': 0.2375, 'TD IPCA 2035': 0.7125, 'Bitcoin BRL': 0.05},
+        'IMID BRL 71.25 + TD 2035 23.75 + BTC 5': {'IMID BRL': 0.7125, 'TD IPCA 2035': 0.2375, 'Bitcoin BRL': 0.05},
+        'IMID BRL 70 + TD 2035 25 + BTC 5': {'IMID BRL': 0.7, 'TD IPCA 2035': 0.25, 'Bitcoin BRL': 0.05},
+        'IMID BRL 57 + TD 2035 38 + BTC 5': {'IMID BRL': 0.57, 'TD IPCA 2035': 0.38, 'Bitcoin BRL': 0.05},
+        'IMID BRL 38 + TD 2035 57 + BTC 5': {'IMID BRL': 0.38, 'TD IPCA 2035': 0.57, 'Bitcoin BRL': 0.05},
+
+        'IMID BRL 47.5 + TD 2045 47.5 + BTC 5': {'IMID BRL': 0.475, 'TD IPCA 2045': 0.475, 'Bitcoin BRL': 0.05},
+        'IMID BRL 23.75 + TD 2045 71.25 + BTC 5': {'IMID BRL': 0.2375, 'TD IPCA 2045': 0.7125, 'Bitcoin BRL': 0.05},
+        'IMID BRL 71.25 + TD 2045 23.75 + BTC 5': {'IMID BRL': 0.7125, 'TD IPCA 2045': 0.2375, 'Bitcoin BRL': 0.05},
+        'IMID BRL 70 + TD 2045 25 + BTC 5': {'IMID BRL': 0.7, 'TD IPCA 2045': 0.25, 'Bitcoin BRL': 0.05},
+        'IMID BRL 57 + TD 2045 38 + BTC 5': {'IMID BRL': 0.57, 'TD IPCA 2045': 0.38, 'Bitcoin BRL': 0.05},
+        'IMID BRL 38 + TD 2045 57 + BTC 5': {'IMID BRL': 0.38, 'TD IPCA 2045': 0.57, 'Bitcoin BRL': 0.05},
+        
+        'IMID BRL/(IPCA+6%)': {'IMID BRL': 0.50, 'IDIV': 0.25, 'IPCA + 6%': 0.25},
     }
 
     # Lista de benchmarks que serão EXIBIDOS nos gráficos e tabelas.
@@ -1545,7 +1608,7 @@ def main():
 
         # Define os benchmarks para o modo Histórico (visão macro)
         # Usa a configuração centralizada
-        benchmarks_data = processar_benchmarks(start_date, end_date, benchmarks_yf_config, benchmarks_b3_config, benchmarks_bcb_config, benchmarks_td_config, logger)
+        benchmarks_data = processar_benchmarks(start_date, end_date, benchmarks_yf_config, benchmarks_b3_config, benchmarks_bcb_config, benchmarks_td_config, carteiras_sinteticas_config, logger)
         
         # Captura SELIC para cálculo de Sharpe antes de filtrar
         selic_series = benchmarks_data.get('SELIC')
@@ -1558,6 +1621,13 @@ def main():
         try:
             gerar_twr_historico(benchmarks_data_exibir, years, f'historico_{years}y', end_dt, logger)
             gerar_analise_risco(benchmarks_data_exibir, selic_series, f'historico_{years}y', logger)
+            
+            # Se parâmetros de simulação foram passados, executa a simulação
+            if args.aporte and args.rebalanceamento:
+                # Filtra carteiras para simular apenas as que estão na lista de exibição (para não demorar demais)
+                carteiras_para_simular = {k: v for k, v in carteiras_sinteticas_config.items() if k in benchmarks_exibir}
+                simular_evolucao_patrimonio(benchmarks_data, carteiras_para_simular, args.aporte, args.rebalanceamento, logger)
+
         except Exception as e:
             logger.exception(f"Erro ao gerar TWR histórico standalone: {e}")
         return
@@ -1596,7 +1666,7 @@ def main():
             logger.info(f"Período da análise: {start_date} a {end_date}")
 
             # Processa benchmarks usando a função centralizada
-            benchmarks_data = processar_benchmarks(start_date, end_date, benchmarks_yf_config, benchmarks_b3_config, benchmarks_bcb_config, benchmarks_td_config, logger)
+            benchmarks_data = processar_benchmarks(start_date, end_date, benchmarks_yf_config, benchmarks_b3_config, benchmarks_bcb_config, benchmarks_td_config, carteiras_sinteticas_config, logger)
             
             # Captura SELIC para cálculo de Sharpe antes de filtrar
             selic_series = benchmarks_data.get('SELIC')
@@ -1614,6 +1684,11 @@ def main():
                     gerar_twr_historico(dados_historico, args.historico, nome_analise, df_twr['date'].max(), logger)
                     # Gera análise de risco histórica
                     gerar_analise_risco(dados_historico, selic_series, f'{nome_analise}_historico_{args.historico}y', logger)
+                    
+                    # Se parâmetros de simulação foram passados, executa a simulação
+                    if args.aporte and args.rebalanceamento:
+                        carteiras_para_simular = {k: v for k, v in carteiras_sinteticas_config.items() if k in benchmarks_exibir}
+                        simular_evolucao_patrimonio(benchmarks_data, carteiras_para_simular, args.aporte, args.rebalanceamento, logger)
                 except Exception as e:
                     logger.debug(f"Erro ao gerar TWR histórico: {e}")
 
