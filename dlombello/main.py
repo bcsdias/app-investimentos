@@ -1365,6 +1365,8 @@ def simular_evolucao_patrimonio(benchmarks_data: dict, carteiras_config: dict, a
     
     logger.info(f"Iniciando simulação: Aporte R${aporte_mensal:.2f}/mês, Rebalanceamento a cada {meses_rebalanceamento} meses.")
 
+    resultados_consolidados = {}
+
     for nome_carteira, pesos in carteiras_config.items():
         # Verifica se todos os ativos da carteira estão disponíveis
         ativos_validos = True
@@ -1439,6 +1441,9 @@ def simular_evolucao_patrimonio(benchmarks_data: dict, carteiras_config: dict, a
         # Cria DataFrame da simulação
         df_sim = pd.DataFrame(historico_simulacao)
         
+        # Armazena para o gráfico consolidado
+        resultados_consolidados[nome_carteira] = df_sim.set_index('Date')['Patrimônio Bruto']
+        
         # Salva CSV
         safe_name = nome_carteira.replace('/', '_').replace('+', 'mais')
         caminho_csv = os.path.join(pasta_graficos, f'simulacao_{safe_name}.csv')
@@ -1469,6 +1474,31 @@ def simular_evolucao_patrimonio(benchmarks_data: dict, carteiras_config: dict, a
         plt.close()
         
         logger.info(f"Simulação '{nome_carteira}' concluída. Gráfico salvo em: {caminho_png}")
+
+    # Gera Gráfico Consolidado com todas as simulações
+    if resultados_consolidados:
+        plt.figure(figsize=(16, 10))
+        
+        # Ordena pela rentabilidade final (maior para menor)
+        sorted_items = sorted(resultados_consolidados.items(), key=lambda x: x[1].iloc[-1] if not x[1].empty else 0, reverse=True)
+        
+        for nome, serie in sorted_items:
+            if serie.empty: continue
+            final_val = serie.iloc[-1]
+            plt.plot(serie.index, serie, label=f"{nome} (R${final_val:,.0f})", linewidth=2)
+            
+        plt.title(f'Consolidado: Simulações de Carteiras\n(Aporte: R${aporte_mensal} | Rebal: {meses_rebalanceamento} meses)', fontsize=16)
+        plt.xlabel('Data', fontsize=12)
+        plt.ylabel('Patrimônio Bruto (R$)', fontsize=12)
+        plt.legend(fontsize=9, loc='upper left')
+        plt.grid(True, which='both', linestyle='--', linewidth=0.5)
+        plt.gca().yaxis.set_major_formatter(mticker.StrMethodFormatter('R${x:,.0f}'))
+        plt.gcf().autofmt_xdate()
+        
+        caminho_consol = os.path.join(pasta_graficos, 'simulacao_consolidada_aportes.png')
+        plt.savefig(caminho_consol, bbox_inches='tight')
+        plt.close()
+        logger.info(f"Gráfico consolidado das simulações salvo em: {caminho_consol}")
 
 def main():
     """
