@@ -62,9 +62,9 @@ def run_b3_downloader(indices_anos: dict, logger):
     logger.info("Iniciando orquestrador de downloads da B3.")
     
     # Define os caminhos de forma dinâmica
-    project_folder = os.path.dirname(os.path.abspath(__file__))
-    download_folder = os.path.join(project_folder, 'downloads')
-    destination_folder = os.path.join(project_folder, 'dados')
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    download_folder = os.path.join(base_dir, 'data', 'downloads')
+    destination_folder = os.path.join(base_dir, 'data', 'raw')
 
     # Garante que as pastas existam
     os.makedirs(download_folder, exist_ok=True)
@@ -78,10 +78,7 @@ def run_b3_downloader(indices_anos: dict, logger):
     logger.info("--- Iniciando script de download de dados da B3 ---")
 
     # Define os caminhos de forma dinâmica, baseados na localização do script
-    project_folder = os.path.dirname(os.path.abspath(__file__))
-    download_folder = os.path.join(project_folder, 'downloads')
-    destination_folder = os.path.join(project_folder, 'dados')
-    logger.debug(f"Pasta do projeto: {project_folder}")
+    logger.debug(f"Pasta do projeto: {base_dir}")
     logger.debug(f"Pasta de downloads: {download_folder}")
     logger.debug(f"Pasta de destino: {destination_folder}")
 

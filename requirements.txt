@@ -1,0 +1,10 @@
+requests
+python-dotenv
+pandas
+numpy
+matplotlib
+yfinance
+python-bcb
+adjustText
+selenium
+webdriver-manager

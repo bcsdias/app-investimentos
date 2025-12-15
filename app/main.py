@@ -23,6 +23,7 @@ from utils.import_b3 import run_b3_downloader
 
 
 # Carrega as variáveis de ambiente do arquivo .env
+#load_dotenv(os.path.join(BASE_DIR, '.env'))
 load_dotenv()
 
 # Obtém o token da variável de ambiente
@@ -34,6 +35,13 @@ if not token:
     print(f"CRITICAL: {msg}")
     raise ValueError(msg)
 
+def get_report_path(subfolder: str) -> str:
+    """Retorna o caminho absoluto para uma subpasta de relatórios, criando-a se necessário."""
+    path = os.path.join(BASE_DIR, "reports", subfolder)
+    os.makedirs(path, exist_ok=True)
+    return path
+
+DATA_RAW_DIR = os.path.join(BASE_DIR, "data", "raw")
 
 def gerar_grafico_twr(df: pd.DataFrame, nome_grafico: str, logger) -> pd.DataFrame | None:
     """
@@ -51,8 +59,7 @@ def gerar_grafico_twr(df: pd.DataFrame, nome_grafico: str, logger) -> pd.DataFra
         return None
 
     # Garante que a pasta de gráficos exista
-    pasta_graficos = "dlombello/graficos"
-    os.makedirs(pasta_graficos, exist_ok=True)
+    pasta_graficos = get_report_path("twr")
 
     # 1. Preparar e consolidar os dados por data
     logger.info("Iniciando cálculo de TWR...")
@@ -185,8 +192,7 @@ def gerar_grafico_percentual(df: pd.DataFrame, nome_grafico: str, logger):
         return
 
     # Garante que a pasta de gráficos exista
-    pasta_graficos = "dlombello/graficos"
-    os.makedirs(pasta_graficos, exist_ok=True)
+    pasta_graficos = get_report_path("evolucao")
 
     # Prepara os dados para o gráfico
     df_grafico = df.copy()
@@ -240,8 +246,7 @@ def gerar_grafico_evolucao(df: pd.DataFrame, nome_grafico: str, logger):
         return
 
     # Garante que a pasta de gráficos exista
-    pasta_graficos = "dlombello/graficos"
-    os.makedirs(pasta_graficos, exist_ok=True)
+    pasta_graficos = get_report_path("evolucao")
 
     # Prepara os dados para o gráfico
     df_grafico = df.copy()
@@ -355,10 +360,11 @@ def buscar_dados_tesouro(titulo_nome: str, vencimento_str: str, start_date: str,
     Busca dados históricos de títulos do Tesouro Direto via Tesouro Transparente.
     Faz download do CSV oficial e filtra pelo título e vencimento.
     """
-    pasta_dados = "dlombello/dados"
-    os.makedirs(pasta_dados, exist_ok=True)
-    arquivo_csv = os.path.join(pasta_dados, "PrecoTaxaTesouroDireto.csv")
-    url_tesouro = "https://www.tesourotransparente.gov.br/ckan/dataset/df56aa71-6d69-4c59-98e2-f8ef2008863d/resource/796d2059-14e9-44e3-80c9-2d9e30b405c1/download/PrecoTaxaTesouroDireto.csv"
+    # Garante que o diretório de dados brutos exista antes de tentar salvar o arquivo
+    os.makedirs(DATA_RAW_DIR, exist_ok=True)
+
+    arquivo_csv = os.path.join(DATA_RAW_DIR, "PrecoTaxaTesouroDireto.csv")
+    url_tesouro = "https://www.tesourotransparente.gov.br/ckan/dataset/df56aa42-484a-4a59-8184-7676580c81e3/resource/796d2059-14e9-44e3-80c9-2d9e30b405c1/download/precotaxatesourodireto.csv"
 
     # Verifica se precisa baixar (se não existe ou se é mais antigo que 24h)
     precisa_baixar = True
@@ -461,7 +467,7 @@ def buscar_dados_b3(indice: str, start_date: str, end_date: str, logger) -> pd.S
     logger.debug(f"Anos necessários para a análise de '{indice}': {anos_necessarios}")
     
     # 2. Verificar quais arquivos já existem e quais precisam ser baixados
-    pasta_dados = os.path.join(os.path.dirname(__file__), 'dados')
+    pasta_dados = DATA_RAW_DIR
     anos_para_baixar = []
     for ano in anos_necessarios:
         caminho_arquivo = os.path.join(pasta_dados, f'{indice}-{ano}.csv')
@@ -753,8 +759,7 @@ def gerar_grafico_comparativo_twr(df_twr: pd.DataFrame, benchmarks_data: dict, n
                                 e o valor é uma pd.Series com os dados de preço.
         nome_grafico (str): Nome do ativo principal para o título do gráfico.
     """
-    pasta_graficos = "dlombello/graficos"
-    os.makedirs(pasta_graficos, exist_ok=True)
+    pasta_graficos = get_report_path("twr")
 
     # --- VARIÁVEL DE CONTROLE ---
     # Define a cada quantos meses um rótulo de performance será exibido no gráfico.
@@ -943,8 +948,7 @@ def gerar_twr_historico(benchmarks_data: dict, years: int, nome_grafico: str, en
         end_date (pd.Timestamp): data final do período (usualmente df_twr['date'].max()).
         logger: logger para mensagens.
     """
-    pasta_graficos = "dlombello/graficos"
-    os.makedirs(pasta_graficos, exist_ok=True)
+    pasta_graficos = get_report_path("twr")
 
     start_candidate = end_date - pd.DateOffset(years=years) + pd.Timedelta(days=1)
 
@@ -1171,8 +1175,7 @@ def gerar_analise_risco(benchmarks_data: dict, risk_free_series: pd.Series | Non
     """
     Calcula métricas de risco (Volatilidade, Sharpe, Drawdown) e gera gráfico Risk x Return.
     """
-    pasta_graficos = "dlombello/graficos"
-    os.makedirs(pasta_graficos, exist_ok=True)
+    pasta_graficos = get_report_path("risco")
     
     metricas = []
     
@@ -1360,8 +1363,7 @@ def simular_evolucao_patrimonio(benchmarks_data: dict, carteiras_config: dict, a
     Simula a evolução do patrimônio com aportes mensais e rebalanceamento periódico.
     Gera gráficos de área (Patrimônio vs Investido) e CSVs.
     """
-    pasta_graficos = "dlombello/graficos"
-    os.makedirs(pasta_graficos, exist_ok=True)
+    pasta_graficos = get_report_path("simulacao")
     
     logger.info(f"Iniciando simulação: Aporte R${aporte_mensal:.2f}/mês, Rebalanceamento a cada {meses_rebalanceamento} meses.")
 
@@ -1675,8 +1677,7 @@ def main():
         logger.debug(f"Cabeçalho do DataFrame de histórico:\n{df_historico.head().to_string()}")
 
         # Salva o histórico completo em um arquivo .csv (formato para Excel brasileiro)
-        pasta_saida = "dlombello/graficos"
-        os.makedirs(pasta_saida, exist_ok=True)
+        pasta_saida = get_report_path("dados_brutos")
         caminho_csv = os.path.join(pasta_saida, f'historico_completo_{nome_analise}.csv')
         df_historico.to_csv(caminho_csv, sep=';', decimal=',', index=False)
         logger.info(f"Histórico completo salvo em: {caminho_csv}")
