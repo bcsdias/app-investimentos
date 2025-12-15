@@ -43,7 +43,7 @@ def get_report_path(subfolder: str) -> str:
     os.makedirs(path, exist_ok=True)
     return path
 
-def gerar_grafico_twr(df: pd.DataFrame, nome_grafico: str, logger) -> pd.DataFrame | None:
+def gerar_grafico_twr(df: pd.DataFrame, nome_grafico: str, logger) -> tuple[pd.DataFrame | None, plt.Figure | None]:
     """
     Calcula o Time-Weighted Return (TWR) e gera um gráfico da sua evolução.
 
@@ -51,12 +51,12 @@ def gerar_grafico_twr(df: pd.DataFrame, nome_grafico: str, logger) -> pd.DataFra
         df (pd.DataFrame): DataFrame com o histórico, contendo 'date', 'vlr_mercado' e 'vlr_investido'.
         nome_grafico (str): Nome para o título e arquivo do gráfico (ex: 'KLBN11' ou 'Ações').
     Returns:
-        pd.DataFrame | None: DataFrame com os cálculos do TWR ou None se falhar.
+        tuple: (DataFrame TWR, Figure Object)
     """
     colunas_necessarias = ['date', 'vlr_mercado', 'vlr_investido', 'proventos']
     if not all(col in df.columns for col in colunas_necessarias):
         logger.error(f"DataFrame não contém as colunas necessárias ({', '.join(colunas_necessarias)}) para calcular o TWR.")
-        return None
+        return None, None
 
     # Garante que a pasta de gráficos exista
     pasta_graficos = get_report_path("twr")
@@ -119,7 +119,7 @@ def gerar_grafico_twr(df: pd.DataFrame, nome_grafico: str, logger) -> pd.DataFra
     logger.debug(f"DataFrame final com cálculo de TWR:\n{df_twr.to_string()}")
 
     # 6. Gerar o gráfico
-    plt.figure(figsize=(12, 7))
+    fig = plt.figure(figsize=(12, 7))
     # Multiplicamos por 100 apenas para a exibição no gráfico
     plt.plot(df_twr['date'], df_twr['twr_acc'] * 100, marker='o', linestyle='-', color='darkorange', label=nome_grafico)
     plt.title(f'Rentabilidade (TWR Acumulado) - {nome_grafico}', fontsize=16)
@@ -155,7 +155,7 @@ def gerar_grafico_twr(df: pd.DataFrame, nome_grafico: str, logger) -> pd.DataFra
     plt.savefig(caminho_arquivo)
     logger.info(f"Gráfico de TWR salvo com sucesso em: {caminho_arquivo}")
     
-    return df_twr
+    return df_twr, fig
 
 
 def gerar_grafico_percentual(df: pd.DataFrame, nome_grafico: str, logger):
@@ -185,7 +185,7 @@ def gerar_grafico_percentual(df: pd.DataFrame, nome_grafico: str, logger):
         ((df_grafico['vlr_mercado'] / df_grafico['vlr_investido']) - 1) * 100
 
     # Cria o gráfico
-    plt.figure(figsize=(12, 7))
+    fig = plt.figure(figsize=(12, 7))
     plt.plot(df_grafico['date'], df_grafico['evolucao_%'], marker='o', linestyle='-', color='seagreen', label=nome_grafico)
     
     # Customiza o gráfico
@@ -212,6 +212,7 @@ def gerar_grafico_percentual(df: pd.DataFrame, nome_grafico: str, logger):
 
     plt.savefig(caminho_arquivo)
     logger.info(f"Gráfico percentual salvo com sucesso em: {caminho_arquivo}")
+    return fig
 
 def gerar_grafico_evolucao(df: pd.DataFrame, nome_grafico: str, logger):
     """
@@ -234,7 +235,7 @@ def gerar_grafico_evolucao(df: pd.DataFrame, nome_grafico: str, logger):
     df_grafico = df_grafico.sort_values(by='date')
 
     # Cria o gráfico
-    plt.figure(figsize=(12, 7))
+    fig = plt.figure(figsize=(12, 7))
     plt.plot(df_grafico['date'], df_grafico['vlr_mercado'], marker='o', linestyle='-', color='royalblue', label=nome_grafico)
     
     # Customiza o gráfico
@@ -259,6 +260,7 @@ def gerar_grafico_evolucao(df: pd.DataFrame, nome_grafico: str, logger):
 
     plt.savefig(caminho_arquivo)
     logger.info(f"Gráfico de evolução salvo com sucesso em: {caminho_arquivo}")
+    return fig
 
 def calcular_rentabilidades_resumo(df_twr: pd.DataFrame, benchmarks_data: dict, nome_carteira: str, logger) -> pd.DataFrame | None:
     """
@@ -435,7 +437,7 @@ def calcular_rentabilidades_resumo(df_twr: pd.DataFrame, benchmarks_data: dict, 
     return df_resumo
 
 
-def gerar_grafico_comparativo_twr(df_twr: pd.DataFrame, benchmarks_data: dict, nome_grafico: str, logger):
+def gerar_grafico_comparativo_twr(df_twr: pd.DataFrame, benchmarks_data: dict, nome_grafico: str, logger) -> plt.Figure:
     """
     Gera um gráfico comparando o TWR da carteira com outros benchmarks.
                 logger.debug(f"Tipo de dados para o benchmark '{nome}': {type(retornos_anuais_bench)}")
@@ -620,9 +622,9 @@ def gerar_grafico_comparativo_twr(df_twr: pd.DataFrame, benchmarks_data: dict, n
     caminho_arquivo = os.path.join(pasta_graficos, f'comparativo_twr_{nome_grafico}.png')
     plt.savefig(caminho_arquivo, bbox_inches='tight')
     logger.info(f"Gráfico comparativo de TWR salvo com sucesso em: {caminho_arquivo}")
+    return fig
 
-
-def gerar_twr_historico(benchmarks_data: dict, years: int, nome_grafico: str, end_date: pd.Timestamp, logger) -> None:
+def gerar_twr_historico(benchmarks_data: dict, years: int, nome_grafico: str, end_date: pd.Timestamp, logger) -> plt.Figure | None:
     """Gera um gráfico com o TWR histórico (normalizado em base 100) para cada benchmark
     no período de `years` anos até `end_date`. Se uma série não tiver histórico completo,
     ela é plotada a partir da sua primeira data disponível dentro do intervalo.
@@ -675,7 +677,7 @@ def gerar_twr_historico(benchmarks_data: dict, years: int, nome_grafico: str, en
 
     if not normalized:
         logger.info("Nenhum benchmark válido para gerar TWR histórico.")
-        return
+        return None
 
     df_plot = pd.concat(normalized, axis=1)
     df_plot.columns = names
@@ -856,8 +858,9 @@ def gerar_twr_historico(benchmarks_data: dict, years: int, nome_grafico: str, en
     df_plot.to_csv(caminho_csv, sep=';', decimal=',')
     plt.savefig(caminho_png, bbox_inches='tight')
     logger.info(f'TWR histórico salvo em: {caminho_png} e dados em {caminho_csv}')
+    return fig
 
-def gerar_analise_risco(benchmarks_data: dict, risk_free_series: pd.Series | None, nome_analise: str, logger):
+def gerar_analise_risco(benchmarks_data: dict, risk_free_series: pd.Series | None, nome_analise: str, logger) -> plt.Figure | None:
     """
     Calcula métricas de risco (Volatilidade, Sharpe, Drawdown) e gera gráfico Risk x Return.
     """
@@ -916,7 +919,7 @@ def gerar_analise_risco(benchmarks_data: dict, risk_free_series: pd.Series | Non
         
     if not metricas:
         logger.warning("Não foi possível calcular métricas de risco.")
-        return
+        return None
 
     df_metricas = pd.DataFrame(metricas).set_index('Ativo')
     
@@ -929,7 +932,7 @@ def gerar_analise_risco(benchmarks_data: dict, risk_free_series: pd.Series | Non
     logger.info(f"Tabela de métricas de risco salva em: {caminho_csv}")
     
     # Gera Gráfico Scatter (Risco x Retorno)
-    plt.figure(figsize=(14, 9))
+    fig = plt.figure(figsize=(14, 9))
     
     # Plota os pontos
     for ativo, row in df_metricas.iterrows():
@@ -959,17 +962,20 @@ def gerar_analise_risco(benchmarks_data: dict, risk_free_series: pd.Series | Non
     caminho_png = os.path.join(pasta_graficos, f'grafico_risco_retorno_{nome_analise}.png')
     plt.savefig(caminho_png, bbox_inches='tight')
     logger.info(f"Gráfico de Risco x Retorno salvo em: {caminho_png}")
+    return fig
 
-def simular_evolucao_patrimonio(benchmarks_data: dict, carteiras_config: dict, aporte_mensal: float, meses_rebalanceamento: int, logger):
+def simular_evolucao_patrimonio(benchmarks_data: dict, carteiras_config: dict, aporte_mensal: float, meses_rebalanceamento: int, logger) -> dict:
     """
     Simula a evolução do patrimônio com aportes mensais e rebalanceamento periódico.
     Gera gráficos de área (Patrimônio vs Investido) e CSVs.
+    Retorna um dicionário com os objetos Figure gerados.
     """
     pasta_graficos = get_report_path("simulacao")
     
     logger.info(f"Iniciando simulação: Aporte R${aporte_mensal:.2f}/mês, Rebalanceamento a cada {meses_rebalanceamento} meses.")
 
     resultados_consolidados = {}
+    figuras_geradas = {}
 
     for nome_carteira, pesos in carteiras_config.items():
         # Verifica se todos os ativos da carteira estão disponíveis
@@ -1055,7 +1061,7 @@ def simular_evolucao_patrimonio(benchmarks_data: dict, carteiras_config: dict, a
         df_sim.to_csv(caminho_csv, sep=';', decimal=',', index=False)
         
         # Gera Gráfico
-        plt.figure(figsize=(12, 7))
+        fig = plt.figure(figsize=(12, 7))
         plt.plot(df_sim['Date'], df_sim['Patrimônio Bruto'], label='Patrimônio Bruto', color='green', linewidth=2)
         plt.plot(df_sim['Date'], df_sim['Total Investido'], label='Total Investido', color='gray', linestyle='--', linewidth=1.5)
         
@@ -1079,10 +1085,11 @@ def simular_evolucao_patrimonio(benchmarks_data: dict, carteiras_config: dict, a
         plt.close()
         
         logger.info(f"Simulação '{nome_carteira}' concluída. Gráfico salvo em: {caminho_png}")
+        figuras_geradas[nome_carteira] = fig
 
     # Gera Gráfico Consolidado com todas as simulações
     if resultados_consolidados:
-        plt.figure(figsize=(16, 10))
+        fig_consol = plt.figure(figsize=(16, 10))
         
         # Ordena pela rentabilidade final (maior para menor)
         sorted_items = sorted(resultados_consolidados.items(), key=lambda x: x[1].iloc[-1] if not x[1].empty else 0, reverse=True)
@@ -1104,6 +1111,9 @@ def simular_evolucao_patrimonio(benchmarks_data: dict, carteiras_config: dict, a
         plt.savefig(caminho_consol, bbox_inches='tight')
         plt.close()
         logger.info(f"Gráfico consolidado das simulações salvo em: {caminho_consol}")
+        figuras_geradas['Consolidado'] = fig_consol
+
+    return figuras_geradas
 
 def main():
     """
@@ -1288,7 +1298,7 @@ def main():
         gerar_grafico_evolucao(df_historico, nome_grafico=nome_analise, logger=logger)
         
         # Calcula o TWR e obtém o dataframe com os resultados
-        df_twr = gerar_grafico_twr(df_historico, nome_grafico=nome_analise, logger=logger)
+        df_twr, _ = gerar_grafico_twr(df_historico, nome_grafico=nome_analise, logger=logger)
 
         if df_twr is not None:
             # Define os benchmarks para o modo Comparativo (Ativo vs Mercado)
