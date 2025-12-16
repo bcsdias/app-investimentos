@@ -83,6 +83,14 @@ def gerar_grafico_twr(df: pd.DataFrame, nome_grafico: str, logger) -> tuple[pd.D
     df_twr = df_twr.sort_values(by='date').reset_index(drop=True)
     logger.debug(f"DataFrame consolidado para TWR:\n{df_twr.to_string()}")
 
+    # --- NORMALIZAÇÃO: Ajuste de Base para Período Recortado ---
+    # Se estamos analisando um recorte (ex: últimos 7 anos), ajustamos o valor investido inicial
+    # para igualar o valor de mercado. Isso garante que o TWR comece de 0% (índice 1.0) na data inicial.
+    if not df_twr.empty:
+        delta_base = df_twr.at[0, 'vlr_mercado'] - df_twr.at[0, 'vlr_investido']
+        if delta_base != 0:
+            df_twr['vlr_investido'] = df_twr['vlr_investido'] + delta_base
+
     # 2. Calcular o fluxo de caixa (aportes/retiradas) em cada período
     # O fluxo de caixa é a variação do capital investido MENOS os proventos recebidos no período.
     # Proventos são parte do retorno, não do aporte, e são tratados como retirada de caixa.
@@ -1221,6 +1229,21 @@ def main():
 
     if df_historico is not None:
         logger.info("Dados capturados com sucesso!")
+        
+        # --- FILTRO DE PERÍODO (--historico) ---
+        # Se o usuário definiu um histórico (ex: 7 anos), filtramos os dados antes de qualquer cálculo.
+        if args.historico and 'date' in df_historico.columns:
+            df_historico['date'] = pd.to_datetime(df_historico['date'])
+            end_dt = pd.Timestamp.today().normalize()
+            start_dt = (end_dt - pd.DateOffset(years=args.historico) + pd.Timedelta(days=1)).normalize()
+            
+            logger.info(f"Filtrando histórico para os últimos {args.historico} anos (início: {start_dt.date()}).")
+            df_historico = df_historico[df_historico['date'] >= start_dt].copy()
+            
+            if df_historico.empty:
+                logger.warning(f"O filtro de {args.historico} anos resultou em dados vazios. Verifique o período.")
+                return
+
         logger.debug(f"Cabeçalho do DataFrame de histórico:\n{df_historico.head().to_string()}")
 
         # Salva o histórico completo em um arquivo .csv (formato para Excel brasileiro)
