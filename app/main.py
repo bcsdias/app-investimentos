@@ -728,7 +728,11 @@ def gerar_twr_historico(benchmarks_data: dict, years: int, nome_grafico: str, en
 
     # Gera gráfico (usando fig/ax para permitir tabela abaixo)
     # Aumentado para melhorar a visualização da tabela e colunas (horizontal e vertical)
-    fig, ax = plt.subplots(figsize=(18, 10))
+    # Ajuste dinâmico da largura: 18 base + extra por ano acima de 10
+    fig_width = 18
+    if years > 10:
+        fig_width += (years - 10) * 0.8
+    fig, ax = plt.subplots(figsize=(fig_width, 10))
 
     # Captura cores para colorir os rótulos da tabela
     color_map = {}
@@ -846,14 +850,21 @@ def gerar_twr_historico(benchmarks_data: dict, years: int, nome_grafico: str, en
         # Calcula largura das colunas baseada no conteúdo
         all_rows = [col_labels_display] + cell_text
         cols_data = list(zip(*all_rows))
-        col_widths_raw = [max(len(str(x)) for x in col) + 2 for col in cols_data]
+        col_widths_raw = [max(len(str(x)) for x in col) + 3 for col in cols_data]
         total_width = sum(col_widths_raw)
         col_widths = [w / total_width for w in col_widths_raw]
 
         tabela = ax.table(cellText=cell_text, colLabels=col_labels_display, colWidths=col_widths,
                           loc='bottom', cellLoc='center', bbox=[0, -0.65, 1, 0.45])
         tabela.auto_set_font_size(False)
-        tabela.set_fontsize(9)
+        
+        # Ajusta tamanho da fonte se houver muitos anos
+        font_size = 9
+        if years > 12:
+            font_size = 8
+        if years > 18:
+            font_size = 7
+        tabela.set_fontsize(font_size)
         # Aumenta a altura das linhas (1.6) para não espremer o texto
         tabela.scale(1, 1.6)
 
