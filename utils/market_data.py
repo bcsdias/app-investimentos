@@ -237,50 +237,120 @@ def buscar_dados_bcb(codigo_bcb: int, start_date: str, end_date: str, logger) ->
         cache_file = _get_cache_path(f"BCB_{codigo_bcb}.csv")
         df = None
 
-        if _is_cache_valid(cache_file):
-            logger.info(f"Usando cache local para série BCB: {codigo_bcb}")
+        # 1. Tenta carregar o cache existente (independente da validade temporal do arquivo)
+        if os.path.exists(cache_file):
             try:
                 df = pd.read_csv(cache_file, index_col=0, parse_dates=True, date_format='%Y-%m-%d')
-                # Garante índice único e ordenado
-                df = df[~df.index.duplicated(keep='last')]
-                df = df.sort_index()
+                df = df[~df.index.duplicated(keep='last')].sort_index()
             except Exception:
-                pass
+                logger.warning(f"Arquivo de cache {cache_file} corrompido. Será baixado novamente.")
+                df = None
 
-        if df is None:
+        # 2. Verifica a necessidade de atualização (Incremental)
+        today = pd.Timestamp.today().normalize()
+        update_needed = False
+        start_download = pd.to_datetime(CACHE_START_DATE)
+
+        if df is not None and not df.empty:
+            last_date = df.index[-1]
+            # Se a última data for anterior a (hoje - 5 dias), tenta atualizar.
+            if last_date < (today - pd.Timedelta(days=5)):
+                update_needed = True
+                start_download = last_date + pd.Timedelta(days=1)
+                logger.info(f"Cache BCB {codigo_bcb} desatualizado (último dado: {last_date.date()}). Buscando atualizações...")
+            else:
+                logger.info(f"Usando cache local para série BCB: {codigo_bcb} (atualizado até {last_date.date()})")
+        else:
+            update_needed = True
             logger.info(f"Buscando dados da série {codigo_bcb} do BCB (Histórico Completo)...")
+            df = pd.DataFrame()
+
+        # 3. Realiza o download incremental se necessário
+        if update_needed:
+            dfs_new = []
+            current_start = start_download
             
-            # --- CORREÇÃO: Baixar em pedaços para evitar limite de 10 anos da API ---
-            dfs = []
-            current_start = pd.to_datetime(CACHE_START_DATE)
-            end_loop_date = pd.Timestamp.today()
-            
-            while current_start < end_loop_date:
-                current_end = current_start + pd.DateOffset(years=9)
-                if current_end > end_loop_date:
-                    current_end = end_loop_date
+            while current_start < today:
+                current_end = current_start + pd.DateOffset(years=5)
+                if current_end > today:
+                    current_end = today
                 
                 logger.debug(f"Buscando BCB {codigo_bcb} de {current_start.date()} a {current_end.date()}")
                 try:
                     chunk_df = sgs.get({str(codigo_bcb): codigo_bcb}, start=current_start, end=current_end)
                     if chunk_df is not None and not chunk_df.empty:
-                        dfs.append(chunk_df)
+                        chunk_df.index = pd.to_datetime(chunk_df.index)
+                        dfs_new.append(chunk_df)
                 except Exception as e:
-                    # É normal falhar em períodos antigos onde a série ainda não existia (ex: IMA-B em 1995)
-                    logger.debug(f"Sem dados para série {codigo_bcb} no período {current_start.date()} a {current_end.date()}. Erro: {e}")
+                    logger.debug(f"Falha ao buscar chunk {current_start.date()}-{current_end.date()} para BCB {codigo_bcb}: {e}")
 
                 current_start = current_end + pd.DateOffset(days=1)
             
-            df = pd.concat(dfs) if dfs else pd.DataFrame()
-            
-            if df is not None and not df.empty:
-                # Garante índice único e ordenado antes de salvar
+            if dfs_new:
+                df_new = pd.concat(dfs_new)
+                df = pd.concat([df, df_new])
                 df = df[~df.index.duplicated(keep='last')]
                 df = df.sort_index()
                 df.to_csv(cache_file)
-            else:
+                logger.info(f"Cache BCB {codigo_bcb} atualizado com sucesso.")
+            elif df.empty:
                 logger.warning(f"Nenhum dado encontrado para a série {codigo_bcb} do BCB.")
                 return None
+            else:
+                # Se não achou dados novos mas já tinha antigos, apenas atualiza mtime do arquivo
+                if os.path.exists(cache_file):
+                    os.utime(cache_file, None)
+
+            # --- FALLBACK: Extensão via Proxy (ETFs) para índices descontinuados no BCB ---
+            # A ANBIMA parou de fornecer dados públicos ao BCB em meados de 2023.
+            # Usamos ETFs equivalentes para projetar a variação do índice no período faltante.
+            if df is not None and not df.empty:
+                last_date = df.index[-1]
+                if last_date < (today - pd.Timedelta(days=5)):
+                    BCB_PROXIES = {
+                        12466: 'IMAB11.SA',  # IMA-B
+                        12461: 'IRFM11.SA',  # IRF-M
+                        12467: 'B5P211.SA',  # IMA-B 5
+                        12468: 'IB5M11.SA',  # IMA-B 5+ (Usando IB5M11 como proxy aproximado)
+                        12469: 'LFTS11.SA',  # IMA-S
+                    }
+                    proxy_ticker = BCB_PROXIES.get(codigo_bcb)
+                    
+                    if proxy_ticker:
+                        logger.info(f"Série BCB {codigo_bcb} estagnada em {last_date.date()}. Tentando estender com proxy {proxy_ticker} via YFinance...")
+                        try:
+                            # Baixa dados do proxy a partir da última data válida
+                            proxy_data = yf.download(proxy_ticker, start=last_date, progress=False, auto_adjust=True)
+                            
+                            if not proxy_data.empty and 'Close' in proxy_data:
+                                # Trata colunas MultiIndex se existirem (comum em versões novas do yfinance)
+                                if isinstance(proxy_data.columns, pd.MultiIndex):
+                                    proxy_close = proxy_data['Close'].iloc[:, 0]
+                                else:
+                                    proxy_close = proxy_data['Close']
+                                
+                                proxy_close = proxy_close.sort_index()
+                                
+                                # O primeiro valor do proxy é a base (data de corte). Projetamos a variação a partir dele.
+                                if not proxy_close.empty:
+                                    base_price = proxy_close.iloc[0]
+                                    last_bcb_value = df.iloc[-1, 0]
+                                    
+                                    # Projeção: Valor_Indice = Valor_BCB_Ultimo * (Preco_ETF / Preco_ETF_Base)
+                                    # Removemos o primeiro dia (base) para não duplicar no concat
+                                    extended_values = last_bcb_value * (proxy_close.iloc[1:] / base_price)
+                                    
+                                    df_extension = pd.DataFrame(extended_values)
+                                    df_extension.columns = df.columns
+                                    
+                                    df = pd.concat([df, df_extension])
+                                    df = df[~df.index.duplicated(keep='last')].sort_index()
+                                    
+                                    # Salva o cache estendido
+                                    df.to_csv(cache_file)
+                                    logger.info(f"Série BCB {codigo_bcb} estendida via proxy até {df.index[-1].date()}.")
+                        except Exception as e:
+                            logger.warning(f"Falha ao estender série {codigo_bcb} com proxy {proxy_ticker}: {e}")
 
         # Filtra pelo período solicitado antes de processar (para o cálculo de acumulado bater com o período)
         df = df.loc[start_date:end_date]
