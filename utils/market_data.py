@@ -1,6 +1,7 @@
 import os
 import time
 import requests
+import re
 import pandas as pd
 import numpy as np
 import yfinance as yf
@@ -270,7 +271,61 @@ def run_b3_downloader(indices_anos: dict, logger):
         driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
 
         for index, years in indices_anos.items():
-            for year in years:
+            # --- INTELIGÊNCIA: Verificar anos disponíveis (Dropdown + Texto) ---
+            years_to_download = set(years)
+            
+            try:
+                url = f'https://sistemaswebb3-listados.b3.com.br/indexStatisticsPage/daily-evolution/{index}?language=pt-br'
+                logger.info(f"Acessando página do índice '{index}' para verificar histórico disponível...")
+                driver.get(url)
+                
+                wait = WebDriverWait(driver, 30)
+                
+                # 1. Validação pelo Dropdown (O que é tecnicamente possível baixar)
+                try:
+                    select_element = wait.until(lambda x: x.find_element(By.ID, 'selectYear'))
+                    year_select = Select(select_element)
+                    dropdown_years = set()
+                    for option in year_select.options:
+                        val = option.get_attribute('value')
+                        if val and val.isdigit():
+                            dropdown_years.add(int(val))
+                    
+                    # Interseção: Só tentamos baixar o que está no dropdown
+                    years_to_download = years_to_download.intersection(dropdown_years)
+                except Exception as e:
+                    logger.warning(f"Não foi possível ler o dropdown de anos para '{index}': {e}")
+
+                # 2. Validação pelo Texto (O que realmente tem dados)
+                try:
+                    # Busca no texto visível da página inteira para ser mais robusto
+                    body_element = driver.find_element(By.TAG_NAME, "body")
+                    text_content = body_element.text
+                    
+                    # Regex para capturar o ano após "desde" (com ou sem mês)
+                    match = re.search(r'desde\s+(?:[A-Za-zç]+\s+de\s+)?(\d{4})', text_content, re.IGNORECASE)
+                    
+                    if match:
+                        start_year = int(match.group(1))
+                        logger.info(f"Ano de início identificado via texto para '{index}': {start_year}")
+                        years_to_download = {y for y in years_to_download if y >= start_year}
+                    else:
+                        logger.warning(f"Texto 'desde' não encontrado para refinar ano inicial.")
+                        
+                except Exception as e:
+                    logger.warning(f"Erro ao tentar validar ano pelo texto para '{index}': {e}")
+
+                # Log do que foi filtrado
+                final_years = sorted(list(years_to_download))
+                skipped = sorted(list(set(years) - set(final_years)))
+                if skipped:
+                    logger.warning(f"Anos ignorados para '{index}' (indisponíveis ou fora do período): {skipped}")
+
+            except Exception as e:
+                logger.error(f"Erro crítico ao verificar disponibilidade para '{index}': {e}")
+                final_years = years # Fallback
+
+            for year in final_years:
                 try:
                     download_b3_index_year(driver, index, year, download_folder, destination_folder, logger)
                 except Exception as e:
@@ -329,8 +384,29 @@ def buscar_dados_b3(indice: str, start_date: str, end_date: str, logger) -> pd.S
             continue
         
         logger.debug(f"Processando arquivo: {caminho_arquivo}")
-        # Lê o CSV, pulando a primeira linha de título e tratando o formato brasileiro
-        df_ano = pd.read_csv(caminho_arquivo, sep=';', decimal=',', skiprows=1, encoding='latin-1')
+        
+        # Verifica se o arquivo está vazio antes de ler
+        if os.path.getsize(caminho_arquivo) == 0:
+            logger.warning(f"Arquivo '{caminho_arquivo}' está vazio. Removendo e pulando ano {ano}.")
+            try:
+                os.remove(caminho_arquivo)
+            except OSError:
+                pass
+            continue
+
+        try:
+            # Lê o CSV, pulando a primeira linha de título e tratando o formato brasileiro
+            df_ano = pd.read_csv(caminho_arquivo, sep=';', decimal=',', skiprows=1, encoding='latin-1')
+        except pd.errors.EmptyDataError:
+            logger.warning(f"Arquivo '{caminho_arquivo}' não contém dados válidos (EmptyDataError). Removendo e pulando ano {ano}.")
+            try:
+                os.remove(caminho_arquivo)
+            except OSError:
+                pass
+            continue
+        except Exception as e:
+            logger.error(f"Erro ao ler arquivo '{caminho_arquivo}': {e}")
+            continue
         
         # Remove linhas de rodapé como 'MÍNIMO'
         df_ano = df_ano[pd.to_numeric(df_ano['Dia'], errors='coerce').notna()]
