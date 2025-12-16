@@ -584,15 +584,26 @@ def gerar_grafico_comparativo_twr(df_twr: pd.DataFrame, benchmarks_data: dict, n
         # Reordena a tabela pela ordem do ranking
         if ordered_labels:
             df_resumo = df_resumo.reindex(ordered_labels)
-        cell_text = df_resumo.values
-        row_labels = list(df_resumo.index)
-        col_labels = list(df_resumo.columns)
+        
+        # Ajuste: Incluir rótulos como primeira coluna para alinhar largura com o gráfico
+        cell_text = []
+        for idx, row in zip(df_resumo.index, df_resumo.values):
+            cell_text.append([idx] + list(row))
+            
+        col_labels = ['Ativo'] + list(df_resumo.columns)
 
         # Ajusta os rótulos das colunas para indicar que entre parênteses está o acumulado
-        col_labels_display = [f"{c} (acc)" if str(c).lower() != 'total' else 'Total' for c in col_labels]
+        col_labels_display = [c if c == 'Ativo' or str(c).lower() == 'total' else f"{c} (acc)" for c in col_labels]
+
+        # Calcula largura das colunas baseada no conteúdo
+        all_rows = [col_labels_display] + cell_text
+        cols_data = list(zip(*all_rows))
+        col_widths_raw = [max(len(str(x)) for x in col) for col in cols_data]
+        total_width = sum(col_widths_raw)
+        col_widths = [w / total_width for w in col_widths_raw]
 
         # Adiciona a tabela na parte de baixo do gráfico
-        tabela = ax.table(cellText=cell_text, rowLabels=row_labels, colLabels=col_labels_display,
+        tabela = ax.table(cellText=cell_text, colLabels=col_labels_display, colWidths=col_widths,
                   loc='bottom', cellLoc='center', bbox=[0, -0.4, 1, 0.3])
         tabela.auto_set_font_size(False)
         tabela.set_fontsize(10)
@@ -619,11 +630,11 @@ def gerar_grafico_comparativo_twr(df_twr: pd.DataFrame, benchmarks_data: dict, n
                 return None
 
             for (r, c), cell in celld.items():
-                # coluna dos rótulos de linha no objeto table costuma ser -1
-                if c == -1:
-                    # nas células da tabela o header ocupa row 0, dados começam em row 1
-                    if 1 <= r <= len(row_labels):
-                        nome_linha = row_labels[r-1]
+                # Header é row 0. Dados começam em row 1. Coluna 0 agora é o nome do ativo.
+                if c == 0 and r > 0:
+                    # Recupera o nome da linha a partir do texto da célula
+                    nome_linha = cell.get_text().get_text()
+                    if nome_linha:
                         cor = _find_color_for(nome_linha)
                         if cor:
                             cell.get_text().set_color(cor)
@@ -826,12 +837,21 @@ def gerar_twr_historico(benchmarks_data: dict, years: int, nome_grafico: str, en
                 df_formatted.at[idx, 'Total'] = f'{float(total_val):.1%}' if pd.notna(total_val) else '-'
 
         # Adiciona a tabela abaixo do gráfico
-        cell_text = df_formatted.values
-        row_labels = list(df_formatted.index)
-        col_labels = list(df_formatted.columns)
-        col_labels_display = [f"{c} (acc)" if str(c).lower() != 'total' else 'Total' for c in col_labels]
+        cell_text = []
+        for idx, row in zip(df_formatted.index, df_formatted.values):
+            cell_text.append([idx] + list(row))
+            
+        col_labels = ['Ativo'] + list(df_formatted.columns)
+        col_labels_display = [c if c == 'Ativo' or str(c).lower() == 'total' else f"{c} (acc)" for c in col_labels]
 
-        tabela = ax.table(cellText=cell_text, rowLabels=row_labels, colLabels=col_labels_display,
+        # Calcula largura das colunas baseada no conteúdo
+        all_rows = [col_labels_display] + cell_text
+        cols_data = list(zip(*all_rows))
+        col_widths_raw = [max(len(str(x)) for x in col) for col in cols_data]
+        total_width = sum(col_widths_raw)
+        col_widths = [w / total_width for w in col_widths_raw]
+
+        tabela = ax.table(cellText=cell_text, colLabels=col_labels_display, colWidths=col_widths,
                           loc='bottom', cellLoc='center', bbox=[0, -0.65, 1, 0.45])
         tabela.auto_set_font_size(False)
         tabela.set_fontsize(9)
@@ -856,9 +876,9 @@ def gerar_twr_historico(benchmarks_data: dict, years: int, nome_grafico: str, en
                 return None
 
             for (r, c), cell in celld.items():
-                if c == -1:
-                    if 1 <= r <= len(row_labels):
-                        nome_linha = row_labels[r-1]
+                if c == 0 and r > 0:
+                    nome_linha = cell.get_text().get_text()
+                    if nome_linha:
                         cor = _find_color_for(nome_linha)
                         if cor:
                             cell.get_text().set_color(cor)
