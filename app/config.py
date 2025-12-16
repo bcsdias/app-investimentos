@@ -83,6 +83,13 @@ CARTEIRAS_SINTETICAS = {
     'IMID BRL 70 + IMA-B 25 + BTC 5': {'IMID BRL': 0.7, 'IMA-B': 0.25, 'Bitcoin BRL': 0.05},
     'IMID BRL 57 + IMA-B 38 + BTC 5': {'IMID BRL': 0.57, 'IMA-B': 0.38, 'Bitcoin BRL': 0.05},
     'IMID BRL 38 + IMA-B 57 + BTC 5': {'IMID BRL': 0.38, 'IMA-B': 0.57, 'Bitcoin BRL': 0.05},
+
+    'IMID BRL 47.5 + IMA-B5 47.5 + BTC 5': {'IMID BRL': 0.475, 'IMA-B 5': 0.475, 'Bitcoin BRL': 0.05},
+    'IMID BRL 23.75 + IMA-B5 71.25 + BTC 5': {'IMID BRL': 0.2375, 'IMA-B 5': 0.7125, 'Bitcoin BRL': 0.05},
+    'IMID BRL 71.25 + IMA-B5 23.75 + BTC 5': {'IMID BRL': 0.7125, 'IMA-B 5': 0.2375, 'Bitcoin BRL': 0.05},
+    'IMID BRL 70 + IMA-B5 25 + BTC 5': {'IMID BRL': 0.7, 'IMA-B 5': 0.25, 'Bitcoin BRL': 0.05},
+    'IMID BRL 57 + IMA-B5 38 + BTC 5': {'IMID BRL': 0.57, 'IMA-B 5': 0.38, 'Bitcoin BRL': 0.05},
+    'IMID BRL 38 + IMA-B5 57 + BTC 5': {'IMID BRL': 0.38, 'IMA-B 5': 0.57, 'Bitcoin BRL': 0.05},
     
     #'IMID BRL/(IPCA+6%)': {'IMID BRL': 0.50, 'IDIV': 0.25, 'IPCA + 6%': 0.25},
 }
@@ -118,4 +125,10 @@ BENCHMARKS_EXIBIR = [
     'IMID BRL 70 + IMA-B 25 + BTC 5',
     'IMID BRL 57 + IMA-B 38 + BTC 5',
     'IMID BRL 38 + IMA-B 57 + BTC 5',
+    'IMID BRL 47.5 + IMA-B5 47.5 + BTC 5',
+    'IMID BRL 23.75 + IMA-B5 71.25 + BTC 5',
+    'IMID BRL 71.25 + IMA-B5 23.75 + BTC 5',
+    'IMID BRL 70 + IMA-B5 25 + BTC 5',
+    'IMID BRL 57 + IMA-B5 38 + BTC 5',
+    'IMID BRL 38 + IMA-B5 57 + BTC 5',
 ]
