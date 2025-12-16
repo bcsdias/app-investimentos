@@ -19,6 +19,19 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_RAW_DIR = os.path.join(BASE_DIR, "data", "raw")
 DATA_DOWNLOADS_DIR = os.path.join(BASE_DIR, "data", "downloads")
 
+# Configurações de Cache
+CACHE_EXPIRY = 86400  # 24 horas em segundos
+CACHE_START_DATE = '1995-01-01'  # Data inicial padrão para popular o cache com histórico longo
+
+def _get_cache_path(filename):
+    return os.path.join(DATA_RAW_DIR, filename)
+
+def _is_cache_valid(filepath):
+    if os.path.exists(filepath):
+        if (time.time() - os.path.getmtime(filepath)) < CACHE_EXPIRY:
+            return True
+    return False
+
 def _ensure_series(x) -> pd.Series | None:
     """Garante que x seja uma pd.Series 1D com valores numéricos quando possível.
     Retorna None se não for possível converter.
@@ -85,12 +98,32 @@ def buscar_dados_benchmark(ticker: str, start_date: str, end_date: str, logger) 
     Busca dados históricos de fechamento para um ticker de benchmark.
     """
     try:
-        logger.info(f"Buscando dados para o benchmark: {ticker}...")
-        dados = yf.download(ticker, start=start_date, end=end_date, progress=False, auto_adjust=True)
-        if dados.empty:
-            logger.warning(f"Nenhum dado encontrado para o benchmark {ticker} no período especificado.")
-            return None
-        return dados['Close']
+        # Sanitiza o ticker para nome de arquivo
+        safe_ticker = ticker.replace('^', '').replace('.', '_')
+        cache_file = _get_cache_path(f"YF_{safe_ticker}.csv")
+        
+        df = None
+        if _is_cache_valid(cache_file):
+            logger.info(f"Usando cache local para benchmark YF: {ticker}")
+            try:
+                df = pd.read_csv(cache_file, index_col=0, parse_dates=True)
+            except Exception:
+                pass # Se falhar ao ler, baixa novamente
+        
+        if df is None:
+            logger.info(f"Baixando dados YF para: {ticker} (Histórico Completo)...")
+            # Baixa histórico longo para popular o cache
+            dados = yf.download(ticker, start=CACHE_START_DATE, progress=False, auto_adjust=True)
+            if not dados.empty:
+                df = dados[['Close']]
+                df.to_csv(cache_file)
+            else:
+                logger.warning(f"Nenhum dado encontrado para o benchmark {ticker}.")
+                return None
+
+        # Filtra pelo período solicitado
+        return df.loc[start_date:end_date, 'Close']
+
     except Exception as e:
         logger.error(f"Erro ao buscar dados do benchmark {ticker}: {e}")
         logger.debug(f"Traceback YFinance {ticker}:", exc_info=True)
@@ -107,13 +140,25 @@ def buscar_dados_tesouro(titulo_nome: str, vencimento_str: str, start_date: str,
     arquivo_csv = os.path.join(DATA_RAW_DIR, "PrecoTaxaTesouroDireto.csv")
     url_tesouro = "https://www.tesourotransparente.gov.br/ckan/dataset/df56aa42-484a-4a59-8184-7676580c81e3/resource/796d2059-14e9-44e3-80c9-2d9e30b405c1/download/precotaxatesourodireto.csv"
 
+    # --- CACHE NÍVEL 2: Série Processada ---
+    # Verifica se já temos o arquivo processado deste título específico (muito mais rápido)
+    safe_title = titulo_nome.replace(' ', '_').replace('+', 'mais')
+    safe_venc = vencimento_str.replace('/', '-')
+    cache_series_file = _get_cache_path(f"TD_{safe_title}_{safe_venc}.csv")
+
+    if _is_cache_valid(cache_series_file):
+        logger.info(f"Usando cache processado para Tesouro: {titulo_nome} {vencimento_str}")
+        try:
+            s = pd.read_csv(cache_series_file, index_col=0, parse_dates=True, sep=';', decimal=',')
+            if not s.empty:
+                return s.iloc[:, 0].loc[start_date:end_date]
+        except Exception:
+            pass
+
     # Verifica se precisa baixar (se não existe ou se é mais antigo que 24h)
-    precisa_baixar = True
-    if os.path.exists(arquivo_csv):
-        tempo_arquivo = os.path.getmtime(arquivo_csv)
-        if (time.time() - tempo_arquivo) < 86400: # 24 horas
-            precisa_baixar = False
-            logger.info("Usando cache local dos dados do Tesouro Direto.")
+    precisa_baixar = not _is_cache_valid(arquivo_csv)
+    if not precisa_baixar:
+        logger.info("Usando cache local do arquivo mestre do Tesouro Direto.")
 
     if precisa_baixar:
         logger.info("Baixando dados históricos do Tesouro Direto (pode demorar um pouco)...")
@@ -150,8 +195,12 @@ def buscar_dados_tesouro(titulo_nome: str, vencimento_str: str, start_date: str,
         mask = (df['Tipo Titulo'] == titulo_nome) & (df['Data Vencimento'] == vencimento_dt)
         df_filtrado = df[mask].set_index('Data Base').sort_index()
         
+        # Salva o cache processado para a próxima vez
+        full_series = df_filtrado['PU Base Manha']
+        full_series.to_csv(cache_series_file, sep=';', decimal=',')
+
         # Retorna a série no período solicitado (PU Base Manha é o preço de referência)
-        return df_filtrado.loc[start_date:end_date, 'PU Base Manha']
+        return full_series.loc[start_date:end_date]
         
     except Exception as e:
         logger.error(f"Erro ao processar dados do Tesouro Direto: {e}")
@@ -163,21 +212,31 @@ def buscar_dados_bcb(codigo_bcb: int, start_date: str, end_date: str, logger) ->
     Busca uma série temporal do Banco Central do Brasil (BCB) e calcula o retorno acumulado.
     """
     try:
-        logger.info(f"Buscando dados da série {codigo_bcb} do BCB...")
-        logger.debug(f"Chamada sgs.get: codigo={codigo_bcb}, start={start_date}, end={end_date}")
-        
-        # O nome da coluna será o próprio código
-        df = sgs.get({str(codigo_bcb): codigo_bcb}, start=start_date, end=end_date)
-        
+        cache_file = _get_cache_path(f"BCB_{codigo_bcb}.csv")
+        df = None
+
+        if _is_cache_valid(cache_file):
+            logger.info(f"Usando cache local para série BCB: {codigo_bcb}")
+            try:
+                df = pd.read_csv(cache_file, index_col=0, parse_dates=True)
+            except Exception:
+                pass
+
         if df is None:
-            logger.warning(f"A função sgs.get retornou None para a série {codigo_bcb}.")
-            return None
+            logger.info(f"Buscando dados da série {codigo_bcb} do BCB (Histórico Completo)...")
+            # Baixa histórico longo para popular o cache
+            df = sgs.get({str(codigo_bcb): codigo_bcb}, start=CACHE_START_DATE)
             
+            if df is not None and not df.empty:
+                df.to_csv(cache_file)
+            else:
+                logger.warning(f"Nenhum dado encontrado para a série {codigo_bcb} do BCB.")
+                return None
+
+        # Filtra pelo período solicitado antes de processar (para o cálculo de acumulado bater com o período)
+        df = df.loc[start_date:end_date]
         if df.empty:
-            logger.warning(f"Nenhum dado encontrado para a série {codigo_bcb} do BCB no período.")
-            return None
-            
-        logger.debug(f"Dados brutos recebidos do BCB (head):\n{df.head().to_string()}")
+             return None
 
         # Lista de códigos que retornam Número Índice (já acumulado) e não Taxa %
         # IMA-B (12466, 12467, 12468), IRF-M (12461, 12463, 12464), IMA-S (12469), IMA-Geral (12462)
