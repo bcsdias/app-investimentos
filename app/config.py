@@ -77,12 +77,12 @@ CARTEIRAS_SINTETICAS = {
     #'IMID BRL 57 + TD 2045 38 + BTC 5': {'IMID BRL': 0.57, 'TD IPCA 2045': 0.38, 'Bitcoin BRL': 0.05},
     #'IMID BRL 38 + TD 2045 57 + BTC 5': {'IMID BRL': 0.38, 'TD IPCA 2045': 0.57, 'Bitcoin BRL': 0.05},
 
-    'IMID BRL 47.5 + IMA-B 47.5 + BTC 5': {'IMID BRL': 0.475, 'IMA-B': 0.475, 'Bitcoin BRL': 0.05},
-    'IMID BRL 23.75 + IMA-B 71.25 + BTC 5': {'IMID BRL': 0.2375, 'IMA-B': 0.7125, 'Bitcoin BRL': 0.05},
-    'IMID BRL 71.25 + IMA-B 23.75 + BTC 5': {'IMID BRL': 0.7125, 'IMA-B': 0.2375, 'Bitcoin BRL': 0.05},
-    'IMID BRL 70 + IMA-B 25 + BTC 5': {'IMID BRL': 0.7, 'IMA-B': 0.25, 'Bitcoin BRL': 0.05},
-    'IMID BRL 57 + IMA-B 38 + BTC 5': {'IMID BRL': 0.57, 'IMA-B': 0.38, 'Bitcoin BRL': 0.05},
-    'IMID BRL 38 + IMA-B 57 + BTC 5': {'IMID BRL': 0.38, 'IMA-B': 0.57, 'Bitcoin BRL': 0.05},
+    #'IMID BRL 47.5 + IMA-B 47.5 + BTC 5': {'IMID BRL': 0.475, 'IMA-B': 0.475, 'Bitcoin BRL': 0.05},
+    #'IMID BRL 23.75 + IMA-B 71.25 + BTC 5': {'IMID BRL': 0.2375, 'IMA-B': 0.7125, 'Bitcoin BRL': 0.05},
+    #'IMID BRL 71.25 + IMA-B 23.75 + BTC 5': {'IMID BRL': 0.7125, 'IMA-B': 0.2375, 'Bitcoin BRL': 0.05},
+    #'IMID BRL 70 + IMA-B 25 + BTC 5': {'IMID BRL': 0.7, 'IMA-B': 0.25, 'Bitcoin BRL': 0.05},
+    #'IMID BRL 57 + IMA-B 38 + BTC 5': {'IMID BRL': 0.57, 'IMA-B': 0.38, 'Bitcoin BRL': 0.05},
+    #'IMID BRL 38 + IMA-B 57 + BTC 5': {'IMID BRL': 0.38, 'IMA-B': 0.57, 'Bitcoin BRL': 0.05},
 
     'IMID BRL 47.5 + IMA-B5 47.5 + BTC 5': {'IMID BRL': 0.475, 'IMA-B 5': 0.475, 'Bitcoin BRL': 0.05},
     'IMID BRL 23.75 + IMA-B5 71.25 + BTC 5': {'IMID BRL': 0.2375, 'IMA-B 5': 0.7125, 'Bitcoin BRL': 0.05},
@@ -90,6 +90,12 @@ CARTEIRAS_SINTETICAS = {
     'IMID BRL 70 + IMA-B5 25 + BTC 5': {'IMID BRL': 0.7, 'IMA-B 5': 0.25, 'Bitcoin BRL': 0.05},
     'IMID BRL 57 + IMA-B5 38 + BTC 5': {'IMID BRL': 0.57, 'IMA-B 5': 0.38, 'Bitcoin BRL': 0.05},
     'IMID BRL 38 + IMA-B5 57 + BTC 5': {'IMID BRL': 0.38, 'IMA-B 5': 0.57, 'Bitcoin BRL': 0.05},
+    
+    'IMID BRL 50 + IMA-B5 50': {'IMID BRL': 0.5, 'IMA-B 5': 0.5},
+    'IMID BRL 25 + IMA-B5 75': {'IMID BRL': 0.25, 'IMA-B 5': 0.75},
+    'IMID BRL 75 + IMA-B5 25': {'IMID BRL': 0.75, 'IMA-B 5': 0.25},
+    'IMID BRL 60 + IMA-B5 40': {'IMID BRL': 0.6, 'IMA-B 5': 0.4},
+    'IMID BRL 40 + IMA-B5 60': {'IMID BRL': 0.4, 'IMA-B 5': 0.6},
     
     #'IMID BRL/(IPCA+6%)': {'IMID BRL': 0.50, 'IDIV': 0.25, 'IPCA + 6%': 0.25},
 }
@@ -131,4 +137,9 @@ BENCHMARKS_EXIBIR = [
     'IMID BRL 70 + IMA-B5 25 + BTC 5',
     'IMID BRL 57 + IMA-B5 38 + BTC 5',
     'IMID BRL 38 + IMA-B5 57 + BTC 5',
+    'IMID BRL 50 + IMA-B5 50',
+    'IMID BRL 25 + IMA-B5 75',
+    'IMID BRL 75 + IMA-B5 25',
+    'IMID BRL 60 + IMA-B5 40',
+    'IMID BRL 40 + IMA-B5 60',
 ]
