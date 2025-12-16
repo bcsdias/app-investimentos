@@ -106,7 +106,14 @@ def buscar_dados_benchmark(ticker: str, start_date: str, end_date: str, logger) 
         if _is_cache_valid(cache_file):
             logger.info(f"Usando cache local para benchmark YF: {ticker}")
             try:
-                df = pd.read_csv(cache_file, index_col=0, parse_dates=True)
+                df = pd.read_csv(cache_file, index_col=0, parse_dates=True, date_format='%Y-%m-%d')
+                # Se o CSV tiver cabeçalhos extras do yfinance (Price, Ticker), o índice pode ficar sujo.
+                # Tenta limpar convertendo o índice para datetime e removendo o que falhar.
+                df.index = pd.to_datetime(df.index, errors='coerce')
+                df = df.dropna(how='all') # Remove linhas onde o índice virou NaT
+                # Garante índice único e ordenado
+                df = df[~df.index.duplicated(keep='last')]
+                df = df.sort_index()
             except Exception:
                 pass # Se falhar ao ler, baixa novamente
         
@@ -115,6 +122,9 @@ def buscar_dados_benchmark(ticker: str, start_date: str, end_date: str, logger) 
             # Baixa histórico longo para popular o cache
             dados = yf.download(ticker, start=CACHE_START_DATE, progress=False, auto_adjust=True)
             if not dados.empty:
+                # Garante índice único e ordenado antes de salvar
+                dados = dados[~dados.index.duplicated(keep='last')]
+                dados = dados.sort_index()
                 df = dados[['Close']]
                 df.to_csv(cache_file)
             else:
@@ -122,7 +132,13 @@ def buscar_dados_benchmark(ticker: str, start_date: str, end_date: str, logger) 
                 return None
 
         # Filtra pelo período solicitado
-        return df.loc[start_date:end_date, 'Close']
+        # Garante que o índice é datetime para o slice funcionar
+        df.index = pd.to_datetime(df.index)
+        # Ordena novamente para garantir slice correto
+        df = df.sort_index()
+        # Slice seguro usando máscara booleana
+        mask = (df.index >= start_date) & (df.index <= end_date)
+        return df.loc[mask, 'Close'].dropna()
 
     except Exception as e:
         logger.error(f"Erro ao buscar dados do benchmark {ticker}: {e}")
@@ -149,7 +165,10 @@ def buscar_dados_tesouro(titulo_nome: str, vencimento_str: str, start_date: str,
     if _is_cache_valid(cache_series_file):
         logger.info(f"Usando cache processado para Tesouro: {titulo_nome} {vencimento_str}")
         try:
-            s = pd.read_csv(cache_series_file, index_col=0, parse_dates=True, sep=';', decimal=',')
+            s = pd.read_csv(cache_series_file, index_col=0, parse_dates=True, sep=';', decimal=',', date_format='%Y-%m-%d %H:%M:%S')
+            # Garante índice único e ordenado
+            s = s[~s.index.duplicated(keep='last')]
+            s = s.sort_index()
             if not s.empty:
                 return s.iloc[:, 0].loc[start_date:end_date]
         except Exception:
@@ -195,6 +214,9 @@ def buscar_dados_tesouro(titulo_nome: str, vencimento_str: str, start_date: str,
         mask = (df['Tipo Titulo'] == titulo_nome) & (df['Data Vencimento'] == vencimento_dt)
         df_filtrado = df[mask].set_index('Data Base').sort_index()
         
+        # Remove duplicatas se houver
+        df_filtrado = df_filtrado[~df_filtrado.index.duplicated(keep='last')]
+
         # Salva o cache processado para a próxima vez
         full_series = df_filtrado['PU Base Manha']
         full_series.to_csv(cache_series_file, sep=';', decimal=',')
@@ -218,16 +240,43 @@ def buscar_dados_bcb(codigo_bcb: int, start_date: str, end_date: str, logger) ->
         if _is_cache_valid(cache_file):
             logger.info(f"Usando cache local para série BCB: {codigo_bcb}")
             try:
-                df = pd.read_csv(cache_file, index_col=0, parse_dates=True)
+                df = pd.read_csv(cache_file, index_col=0, parse_dates=True, date_format='%Y-%m-%d')
+                # Garante índice único e ordenado
+                df = df[~df.index.duplicated(keep='last')]
+                df = df.sort_index()
             except Exception:
                 pass
 
         if df is None:
             logger.info(f"Buscando dados da série {codigo_bcb} do BCB (Histórico Completo)...")
-            # Baixa histórico longo para popular o cache
-            df = sgs.get({str(codigo_bcb): codigo_bcb}, start=CACHE_START_DATE)
+            
+            # --- CORREÇÃO: Baixar em pedaços para evitar limite de 10 anos da API ---
+            dfs = []
+            current_start = pd.to_datetime(CACHE_START_DATE)
+            end_loop_date = pd.Timestamp.today()
+            
+            while current_start < end_loop_date:
+                current_end = current_start + pd.DateOffset(years=9)
+                if current_end > end_loop_date:
+                    current_end = end_loop_date
+                
+                logger.debug(f"Buscando BCB {codigo_bcb} de {current_start.date()} a {current_end.date()}")
+                try:
+                    chunk_df = sgs.get({str(codigo_bcb): codigo_bcb}, start=current_start, end=current_end)
+                    if chunk_df is not None and not chunk_df.empty:
+                        dfs.append(chunk_df)
+                except Exception as e:
+                    # É normal falhar em períodos antigos onde a série ainda não existia (ex: IMA-B em 1995)
+                    logger.debug(f"Sem dados para série {codigo_bcb} no período {current_start.date()} a {current_end.date()}. Erro: {e}")
+
+                current_start = current_end + pd.DateOffset(days=1)
+            
+            df = pd.concat(dfs) if dfs else pd.DataFrame()
             
             if df is not None and not df.empty:
+                # Garante índice único e ordenado antes de salvar
+                df = df[~df.index.duplicated(keep='last')]
+                df = df.sort_index()
                 df.to_csv(cache_file)
             else:
                 logger.warning(f"Nenhum dado encontrado para a série {codigo_bcb} do BCB.")
@@ -237,6 +286,10 @@ def buscar_dados_bcb(codigo_bcb: int, start_date: str, end_date: str, logger) ->
         df = df.loc[start_date:end_date]
         if df.empty:
              return None
+        
+        # Garante ordenação e unicidade para o processamento subsequente
+        df = df[~df.index.duplicated(keep='last')]
+        df = df.sort_index()
 
         # Lista de códigos que retornam Número Índice (já acumulado) e não Taxa %
         # IMA-B (12466, 12467, 12468), IRF-M (12461, 12463, 12464), IMA-S (12469), IMA-Geral (12462)

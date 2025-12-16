@@ -660,7 +660,13 @@ def gerar_twr_historico(benchmarks_data: dict, years: int, nome_grafico: str, en
 
         # Ensina selecção do período: tenta usar start_candidate, senão usa o primeiro disponível
         try:
-            s_period = s.loc[start_candidate:end_date]
+            # Garante índice datetime, ordenado e único
+            if not isinstance(s.index, pd.DatetimeIndex):
+                s.index = pd.to_datetime(s.index, errors='coerce')
+            s = s.sort_index()
+            s = s[~s.index.duplicated(keep='last')]
+            
+            s_period = s.loc[(s.index >= start_candidate) & (s.index <= end_date)]
         except Exception:
             # índices não compatíveis, tenta converter index para DatetimeIndex
             s = s.copy()
@@ -669,7 +675,9 @@ def gerar_twr_historico(benchmarks_data: dict, years: int, nome_grafico: str, en
             if s.empty:
                 logger.debug(f"Ignorando benchmark '{nome}': índice de datas inválido")
                 continue
-            s_period = s.loc[start_candidate:end_date]
+            s = s.sort_index()
+            s = s[~s.index.duplicated(keep='last')]
+            s_period = s.loc[(s.index >= start_candidate) & (s.index <= end_date)]
 
         if s_period.empty:
             # plot a partir da primeira data disponível até end_date
@@ -728,7 +736,7 @@ def gerar_twr_historico(benchmarks_data: dict, years: int, nome_grafico: str, en
         # recupera fator anual no final do ano
         try:
             anual = s.resample('YE').last()
-            retornos = anual.pct_change().fillna(anual.iloc[0] - 1) if not anual.empty else pd.Series(dtype=float)
+            retornos = anual.pct_change(fill_method=None).fillna(anual.iloc[0] - 1) if not anual.empty else pd.Series(dtype=float)
         except Exception:
             # tenta converter index para DatetimeIndex e repetir
             temp = s.copy()
@@ -738,7 +746,7 @@ def gerar_twr_historico(benchmarks_data: dict, years: int, nome_grafico: str, en
                 retornos = pd.Series(dtype=float)
             else:
                 anual = temp.resample('YE').last()
-                retornos = anual.pct_change().fillna(anual.iloc[0] - 1) if not anual.empty else pd.Series(dtype=float)
+                retornos = anual.pct_change(fill_method=None).fillna(anual.iloc[0] - 1) if not anual.empty else pd.Series(dtype=float)
 
         # Armazena retornos (index são timestamps de fim de ano)
         anos_dict[nome] = retornos
@@ -1171,8 +1179,8 @@ def main():
     # geramos somente o TWR histórico dos benchmarks e encerramos o script.
     if args.historico and not (args.ativo or args.classe):
         years = args.historico
-        end_dt = pd.Timestamp.today()
-        start_dt = (end_dt - pd.DateOffset(years=years) + pd.Timedelta(days=1))
+        end_dt = pd.Timestamp.today().normalize()
+        start_dt = (end_dt - pd.DateOffset(years=years) + pd.Timedelta(days=1)).normalize()
         start_date = start_dt.strftime('%Y-%m-%d')
         end_date = end_dt.strftime('%Y-%m-%d')
 
