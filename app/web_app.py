@@ -33,7 +33,9 @@ from app.config import (
     BENCHMARKS_YF,
     BENCHMARKS_B3,
     BENCHMARKS_BCB,
-    BENCHMARKS_TD
+    BENCHMARKS_TD,
+    CARTEIRAS_SINTETICAS,
+    BENCHMARKS_EXIBIR
 )
 
 # Configuração da Página
@@ -143,16 +145,19 @@ if modo_analise == "Carteira/Ativo":
                                 start_date, end_date, 
                                 benchmarks_yf_config, benchmarks_b3_config, 
                                 benchmarks_bcb_config, benchmarks_td_config, 
-                                {}, logger # Sem carteiras sintéticas aqui por enquanto
+                                CARTEIRAS_SINTETICAS, logger
                             )
                             
-                            fig_comp = gerar_grafico_comparativo_twr(df_twr, benchmarks_data, nome_analise, logger)
+                            # Filtra apenas os benchmarks que devem ser exibidos
+                            benchmarks_data_exibir = {k: v for k, v in benchmarks_data.items() if k in BENCHMARKS_EXIBIR}
+                            
+                            fig_comp = gerar_grafico_comparativo_twr(df_twr, benchmarks_data_exibir, nome_analise, logger)
                             st.pyplot(fig_comp)
 
                     # --- TAB 2: Risco ---
                     with tab2:
                         if df_twr is not None:
-                            dados_comparativo = benchmarks_data.copy()
+                            dados_comparativo = benchmarks_data_exibir.copy()
                             dados_comparativo[f'Carteira - {nome_analise}'] = df_twr.set_index('date')['twr_acc'] + 1
                             selic_series = benchmarks_data.get('SELIC')
                             
@@ -172,14 +177,17 @@ if modo_analise == "Carteira/Ativo":
                             start_dt_macro.strftime('%Y-%m-%d'), end_dt.strftime('%Y-%m-%d'),
                             benchmarks_yf_config, benchmarks_b3_config, 
                             benchmarks_bcb_config, benchmarks_td_config, 
-                            {}, logger
+                            CARTEIRAS_SINTETICAS, logger
                         )
+                        
+                        # Filtra apenas os benchmarks que devem ser exibidos
+                        benchmarks_macro_exibir = {k: v for k, v in benchmarks_macro.items() if k in BENCHMARKS_EXIBIR}
                         
                         # Adiciona a carteira atual no contexto histórico (se houver dados)
                         if df_twr is not None:
-                            benchmarks_macro[f'Carteira - {nome_analise}'] = df_twr.set_index('date')['twr_acc'] + 1
+                            benchmarks_macro_exibir[f'Carteira - {nome_analise}'] = df_twr.set_index('date')['twr_acc'] + 1
 
-                        fig_hist = gerar_twr_historico(benchmarks_macro, anos_historico, nome_analise, end_dt, logger)
+                        fig_hist = gerar_twr_historico(benchmarks_macro_exibir, anos_historico, nome_analise, end_dt, logger)
                         if fig_hist:
                             st.pyplot(fig_hist)
 
@@ -209,6 +217,8 @@ elif modo_analise == "Simulação & Histórico Macro":
     # Lista de ativos disponíveis para compor carteira
     ativos_disponiveis = list(benchmarks_yf_config.keys()) + \
                          list(benchmarks_td_config.keys()) + \
+                         list(benchmarks_b3_config.keys()) + \
+                         list(benchmarks_bcb_config.keys()) + \
                          ['IPCA + 6%'] # Sintético hardcoded no market_data
     
     # Interface dinâmica para pesos
@@ -248,13 +258,10 @@ elif modo_analise == "Simulação & Histórico Macro":
             start_dt = (end_dt - pd.DateOffset(years=anos) + pd.Timedelta(days=1))
             
             # Configura carteiras para simulação
-            carteiras_simulacao = {}
+            carteiras_simulacao = CARTEIRAS_SINTETICAS.copy()
             # Adiciona a customizada se válida
             if st.session_state.carteira_custom and abs(sum(st.session_state.carteira_custom.values()) - 1.0) < 0.01:
                 carteiras_simulacao['Minha Carteira'] = st.session_state.carteira_custom
-            
-            # Adiciona algumas padrão para comparação
-            carteiras_simulacao['IMID BRL 60/40'] = {'IMID BRL': 0.6, 'IPCA + 6%': 0.4}
             
             # Busca dados
             benchmarks_data = processar_benchmarks(
@@ -266,9 +273,12 @@ elif modo_analise == "Simulação & Histórico Macro":
 
             # 1. Gráfico Histórico (TWR)
             st.subheader("Performance Histórica (Base 100)")
-            # Filtra o que mostrar
-            benchmarks_exibir = list(carteiras_simulacao.keys()) + ['IMID BRL', 'TD IPCA 2035', 'S&P 500 BRL']
-            dados_plot = {k: v for k, v in benchmarks_data.items() if k in benchmarks_exibir}
+            # Filtra o que mostrar usando BENCHMARKS_EXIBIR
+            benchmarks_exibir_sim = BENCHMARKS_EXIBIR.copy()
+            if 'Minha Carteira' in carteiras_simulacao:
+                benchmarks_exibir_sim.append('Minha Carteira')
+            
+            dados_plot = {k: v for k, v in benchmarks_data.items() if k in benchmarks_exibir_sim}
             
             fig_hist = gerar_twr_historico(dados_plot, anos, "Simulacao", end_dt, logger)
             if fig_hist:
@@ -284,8 +294,11 @@ elif modo_analise == "Simulação & Histórico Macro":
             # 3. Simulação de Aportes
             if aporte > 0:
                 st.subheader(f"Simulação de Aportes (R${aporte}/mês)")
+                # Filtra carteiras para simular apenas as que estão na lista de exibição
+                carteiras_para_simular = {k: v for k, v in carteiras_simulacao.items() if k in benchmarks_exibir_sim}
+                
                 figs_simulacao = simular_evolucao_patrimonio(
-                    benchmarks_data, carteiras_simulacao, aporte, rebal, logger
+                    benchmarks_data, carteiras_para_simular, aporte, rebal, logger
                 )
                 
                 # Exibe consolidado primeiro
