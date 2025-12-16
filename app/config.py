@@ -4,6 +4,7 @@ BENCHMARKS_YF = {
     'S&P 500': 'SPY',
     'S&P 500 BRL': 'SPY.BA',
     'IVVB11': 'IVVB11.SA', # Disponível em ambos agora
+    'BOVA11': 'BOVA11.SA',
     'IMID': 'IMID.L',
     'Bitcoin': 'BTC-USD',
     'Ibovespa (YF)': '^BVSP' # Índice teórico via Yahoo (histórico mais longo que ETFs)
@@ -102,7 +103,7 @@ CARTEIRAS_SINTETICAS = {
 
 # Lista de benchmarks que serão EXIBIDOS nos gráficos e tabelas.
 BENCHMARKS_EXIBIR = [
-    'IBOV',
+    'BOVA11',
     #'S&P 500',
     #'IVVB11',
     #'IMID',
