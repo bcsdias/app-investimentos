@@ -456,7 +456,6 @@ def calcular_rentabilidades_resumo(df_twr: pd.DataFrame, benchmarks_data: dict, 
 def gerar_grafico_comparativo_twr(df_twr: pd.DataFrame, benchmarks_data: dict, nome_grafico: str, logger) -> plt.Figure:
     """
     Gera um gráfico comparando o TWR da carteira com outros benchmarks.
-                logger.debug(f"Tipo de dados para o benchmark '{nome}': {type(retornos_anuais_bench)}")
     Args:
         df_twr (pd.DataFrame): DataFrame com a coluna 'twr_acc' e 'date'.
         benchmarks_data (dict): Dicionário onde a chave é o nome do benchmark (ex: 'IBOV')

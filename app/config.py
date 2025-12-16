@@ -102,6 +102,7 @@ CARTEIRAS_SINTETICAS = {
 
 # Lista de benchmarks que serão EXIBIDOS nos gráficos e tabelas.
 BENCHMARKS_EXIBIR = [
+    'IBOV',
     #'S&P 500',
     #'IVVB11',
     #'IMID',
