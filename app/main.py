@@ -598,7 +598,7 @@ def gerar_grafico_comparativo_twr(df_twr: pd.DataFrame, benchmarks_data: dict, n
         # Calcula largura das colunas baseada no conteúdo
         all_rows = [col_labels_display] + cell_text
         cols_data = list(zip(*all_rows))
-        col_widths_raw = [max(len(str(x)) for x in col) for col in cols_data]
+        col_widths_raw = [max(len(str(x)) for x in col) + 2 for col in cols_data]
         total_width = sum(col_widths_raw)
         col_widths = [w / total_width for w in col_widths_raw]
 
@@ -607,7 +607,7 @@ def gerar_grafico_comparativo_twr(df_twr: pd.DataFrame, benchmarks_data: dict, n
                   loc='bottom', cellLoc='center', bbox=[0, -0.4, 1, 0.3])
         tabela.auto_set_font_size(False)
         tabela.set_fontsize(10)
-        tabela.scale(1, 1.5) # Ajusta a altura das células
+        tabela.scale(1, 1.6) # Ajusta a altura das células
 
         # Colorir a célula do rótulo da linha com a cor da linha do gráfico, quando disponível
         try:
@@ -847,7 +847,7 @@ def gerar_twr_historico(benchmarks_data: dict, years: int, nome_grafico: str, en
         # Calcula largura das colunas baseada no conteúdo
         all_rows = [col_labels_display] + cell_text
         cols_data = list(zip(*all_rows))
-        col_widths_raw = [max(len(str(x)) for x in col) for col in cols_data]
+        col_widths_raw = [max(len(str(x)) for x in col) + 2 for col in cols_data]
         total_width = sum(col_widths_raw)
         col_widths = [w / total_width for w in col_widths_raw]
 
