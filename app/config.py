@@ -2,14 +2,15 @@
 
 BENCHMARKS_YF = {
     'S&P 500': 'SPY',
-    #'S&P 500 BRL': 'SPY.BA',
+    'S&P 500 BRL': 'SPY.BA',
     'IVVB11': 'IVVB11.SA', # Disponível em ambos agora
     'IMID': 'IMID.L',
-    'Bitcoin': 'BTC-USD'
+    'Bitcoin': 'BTC-USD',
+    'Ibovespa (YF)': '^BVSP' # Índice teórico via Yahoo (histórico mais longo que ETFs)
 }
 
 BENCHMARKS_B3 = {
-    'IBSD': 'IBSD', # Índice Brasil Setorial Dividendos
+    #'IBSD': 'IBSD', # Índice Brasil Setorial Dividendos
     'IDIV': 'IDIV', # Índice Dividendos
     'IBLV': 'IBLV', # Índice Baixa Volatilidade
     'IBOV': 'IBOV', # Ibovespa (Benchmark Principal)

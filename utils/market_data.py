@@ -340,12 +340,16 @@ def buscar_dados_b3(indice: str, start_date: str, end_date: str, logger) -> pd.S
         df_unpivoted = df_ano.melt(id_vars=['Dia'], var_name='Mes', value_name='Close')
         df_unpivoted.dropna(subset=['Close'], inplace=True)
 
-        # **CORREÇÃO APLICADA AQUI**
-        # A coluna 'Close' é lida como string (ex: '3.320,47').
-        # 1. Removemos o separador de milhar ('.').
-        # 2. Substituímos o separador decimal (',') por um ponto ('.').
-        # 3. Convertemos para float.
-        df_unpivoted['Close'] = df_unpivoted['Close'].str.replace('.', '', regex=False).str.replace(',', '.', regex=False).astype(float)
+        # Verifica se a coluna é do tipo object (string) antes de tentar limpar
+        if df_unpivoted['Close'].dtype == 'object':
+            # A coluna 'Close' é lida como string (ex: '3.320,47').
+            # 1. Removemos o separador de milhar ('.').
+            # 2. Substituímos o separador decimal (',') por um ponto ('.').
+            # 3. Convertemos para float.
+            df_unpivoted['Close'] = df_unpivoted['Close'].str.replace('.', '', regex=False).str.replace(',', '.', regex=False).astype(float)
+        else:
+            # Se já for numérico, garante que é float
+            df_unpivoted['Close'] = df_unpivoted['Close'].astype(float)
 
         # Monta a data completa
         df_unpivoted['Mes_Num'] = df_unpivoted['Mes'].map(mapa_meses)
