@@ -71,6 +71,7 @@ def gerar_grafico_twr(df: pd.DataFrame, nome_grafico: str, logger) -> tuple[pd.D
 
     # 1. Preparar e consolidar os dados por data
     logger.info("Iniciando cálculo de TWR...")
+    logger.debug(f"DataFrame de entrada TWR: {df.shape[0]} linhas. Colunas: {list(df.columns)}")
     # Se a análise for de uma classe de ativos, haverá múltiplas linhas por data (uma para cada ativo).
     # Precisamos agrupar por data e somar os valores para ter a visão consolidada da carteira.
     df_consolidado = df.copy()
@@ -286,6 +287,7 @@ def calcular_rentabilidades_resumo(df_twr: pd.DataFrame, benchmarks_data: dict, 
         pd.DataFrame: DataFrame formatado com as rentabilidades para a tabela.
     """
     logger.debug("Iniciando cálculo de rentabilidades para a tabela de resumo.")
+    logger.debug(f"Benchmarks recebidos para resumo: {list(benchmarks_data.keys())}")
     resumo_data = {}
 
     # 1. Processar a carteira
@@ -300,7 +302,9 @@ def calcular_rentabilidades_resumo(df_twr: pd.DataFrame, benchmarks_data: dict, 
     # Calcula o retorno anual
     retornos_anuais_carteira = anual_carteira.pct_change().fillna(anual_carteira.iloc[0] - 1)
     logger.debug(f"Tipo de dados para 'Carteira': {type(retornos_anuais_carteira)}")
-    resumo_data[f'Carteira - {nome_carteira}'] = retornos_anuais_carteira
+    
+    chave_carteira = 'Carteira'
+    resumo_data[chave_carteira] = retornos_anuais_carteira
 
     # 2. Processar cada benchmark
     def _ensure_series(dados):
@@ -366,9 +370,9 @@ def calcular_rentabilidades_resumo(df_twr: pd.DataFrame, benchmarks_data: dict, 
     rentabilidades_totais = {}
     # Calcula para a carteira (garante float)
     try:
-        rentabilidades_totais[f'Carteira - {nome_carteira}'] = float(fator_carteira.iloc[-1] - 1)
+        rentabilidades_totais[chave_carteira] = float(fator_carteira.iloc[-1] - 1)
     except Exception:
-        rentabilidades_totais[f'Carteira - {nome_carteira}'] = np.nan
+        rentabilidades_totais[chave_carteira] = np.nan
 
     # Calcula para cada benchmark usando _ensure_series
     for nome, dados in benchmarks_data.items():
@@ -469,6 +473,7 @@ def gerar_grafico_comparativo_twr(df_twr: pd.DataFrame, benchmarks_data: dict, n
     # Use 1 para exibir todos, 6 para exibir a cada semestre, 12 para anual, etc.
     intervalo_meses_rotulo = 6
 
+    logger.debug(f"Iniciando geração do gráfico comparativo. Benchmarks disponíveis: {list(benchmarks_data.keys())}")
     fig, ax = plt.subplots(figsize=(15, 10))
 
     # Lista para armazenar todos os objetos de texto que serão ajustados
@@ -501,15 +506,22 @@ def gerar_grafico_comparativo_twr(df_twr: pd.DataFrame, benchmarks_data: dict, n
             [(idx, _parse_percent(df_resumo.at[idx, 'Total'])) for idx in df_resumo.index],
             key=lambda x: x[1], reverse=True)
         ordered_labels = [x[0] for x in total_ranking]
+        logger.debug(f"Ranking de rentabilidade: {ordered_labels}")
     else:
         ordered_labels = None
+        logger.debug("Não foi possível gerar ranking de rentabilidade (df_resumo vazio ou sem Total).")
 
     # 1. Plotar o TWR da carteira (normalizado em base 100)
     # (twr_acc + 1) transforma o percentual de retorno em um fator de crescimento
     carteira_normalizada = (df_twr['twr_acc'] + 1) * 100
+    logger.debug(f"Dados TWR Carteira para plot: {len(df_twr)} registros.")
+
     # --- ORDEM DE PLOTAGEM ---
     # Monta lista de nomes para plotar, na ordem do ranking
-    all_labels = [f'Carteira - {nome_grafico}'] + list(benchmarks_data.keys())
+    carteira_label = 'Carteira'
+    all_labels = [carteira_label] + list(benchmarks_data.keys())
+    logger.debug(f"Labels candidatos para plotagem: {all_labels}")
+
     if ordered_labels:
         # Garante que todos os labels estejam presentes
         plot_labels = [lbl for lbl in ordered_labels if lbl in all_labels]
@@ -518,26 +530,47 @@ def gerar_grafico_comparativo_twr(df_twr: pd.DataFrame, benchmarks_data: dict, n
     else:
         plot_labels = all_labels
 
+    # Safety check: Garante que a carteira está na lista de plotagem
+    if carteira_label not in plot_labels:
+        logger.warning(f"Carteira '{carteira_label}' não encontrada na lista de plotagem. Adicionando manualmente.")
+        plot_labels.insert(0, carteira_label)
+
+    logger.debug(f"Ordem final de plotagem: {plot_labels}")
+
     # Plotagem na ordem do ranking
     for nome in plot_labels:
-        if nome == f'Carteira - {nome_grafico}':
-            linha_carteira, = ax.plot(df_twr['date'], carteira_normalizada, label=nome, color='red', linewidth=2.5)
-            color_map[nome] = linha_carteira.get_color()
+        if nome == carteira_label:
+            logger.debug(f"Plotando série da Carteira: {nome}")
+            # Trunca o nome se for muito longo para não quebrar a legenda
+            label_plot = f'Carteira - {nome_grafico}'
+            if len(label_plot) > 40:
+                label_plot = f'Carteira - {nome_grafico[:37]}...'
+            
+            try:
+                # zorder=10 garante que a carteira fique sempre por cima das outras linhas
+                linha_carteira, = ax.plot(df_twr['date'].values, list(carteira_normalizada), label=label_plot, color='blue', linewidth=5, zorder=10)
+                color_map[nome] = linha_carteira.get_color()
+            except Exception as e:
+                logger.error(f"Erro ao plotar a carteira: {e}")
+                logger.debug(f"Dados carteira: date head {df_twr['date'].head()}, twr_acc head {df_twr['twr_acc'].head()}")
         elif nome in benchmarks_data:
-            dados_benchmark = benchmarks_data[nome]
-            if dados_benchmark is not None and not getattr(dados_benchmark, 'empty', False):
+            logger.debug(f"Plotando benchmark: {nome}")
+            dados_benchmark = _ensure_series(benchmarks_data[nome])
+            if dados_benchmark is not None and not dados_benchmark.empty:
                 benchmark_normalizado = (dados_benchmark / dados_benchmark.iloc[0]) * 100
-                linha_bench, = ax.plot(benchmark_normalizado.index, benchmark_normalizado, label=nome, linestyle='--')
+                linha_bench, = ax.plot(benchmark_normalizado.index, benchmark_normalizado, label=nome, linestyle='--', color='red')
                 color_map[nome] = linha_bench.get_color()
+            else:
+                logger.warning(f"Benchmark '{nome}' vazio ou inválido ao tentar plotar.")
 
     # 2. Plotar cada benchmark (normalizado em base 100)
     # Adiciona rótulos nos pontos mensais correspondentes ao df_twr para cada benchmark (na ordem de plotagem)
     for nome in plot_labels:
-        if nome == f'Carteira - {nome_grafico}':
+        if nome == carteira_label:
             continue  # já rotulado abaixo
         if nome in benchmarks_data:
-            dados_benchmark = benchmarks_data[nome]
-            if dados_benchmark is not None and not getattr(dados_benchmark, 'empty', False):
+            dados_benchmark = _ensure_series(benchmarks_data[nome])
+            if dados_benchmark is not None and not dados_benchmark.empty:
                 benchmark_normalizado = (dados_benchmark / dados_benchmark.iloc[0]) * 100
                 benchmark_mensal = benchmark_normalizado.reindex(df_twr['date'], method='ffill')
                 if isinstance(benchmark_mensal, pd.DataFrame):
@@ -562,14 +595,9 @@ def gerar_grafico_comparativo_twr(df_twr: pd.DataFrame, benchmarks_data: dict, n
     ax.set_ylabel('Performance (Base 100)', fontsize=12)
     ax.set_xlabel('Data', fontsize=12)
     # Ordena a legenda pela ordem de plotagem
-    handles, labels = ax.get_legend_handles_labels()
-    if ordered_labels:
-        # Garante que todos os labels estejam presentes
-        legend_labels = [lbl for lbl in plot_labels if lbl in labels]
-        legend_handles = [handles[labels.index(lbl)] for lbl in legend_labels]
-        ax.legend(legend_handles, legend_labels, fontsize=10, loc='upper left')
-    else:
-        ax.legend(fontsize=10, loc='upper left')
+    # Como já plotamos na ordem do ranking (plot_labels), a legenda automática
+    # já respeitará essa ordem, sem necessidade de reordenação manual complexa.
+    ax.legend(fontsize=10, loc='upper left')
     ax.grid(True, which='both', linestyle='--', linewidth=0.5)
     fig.autofmt_xdate()
 
@@ -645,6 +673,7 @@ def gerar_grafico_comparativo_twr(df_twr: pd.DataFrame, benchmarks_data: dict, n
         fig.subplots_adjust(bottom=0.3)
 
     # 6. Salvar o gráfico
+    fig.canvas.draw()
     caminho_arquivo = os.path.join(pasta_graficos, f'comparativo_twr_{nome_grafico}.png')
     plt.savefig(caminho_arquivo, bbox_inches='tight')
     logger.info(f"Gráfico comparativo de TWR salvo com sucesso em: {caminho_arquivo}")
@@ -665,6 +694,7 @@ def gerar_twr_historico(benchmarks_data: dict, years: int, nome_grafico: str, en
     pasta_graficos = get_report_path("twr")
 
     start_candidate = end_date - pd.DateOffset(years=years) + pd.Timedelta(days=1)
+    logger.debug(f"Gerando TWR Histórico. Janela alvo: {start_candidate.date()} até {end_date.date()}")
 
     # Prepara um DataFrame para armazenar as séries normalizadas (base 100)
     normalized = []
@@ -673,7 +703,7 @@ def gerar_twr_historico(benchmarks_data: dict, years: int, nome_grafico: str, en
     for nome, série in benchmarks_data.items():
         s = _ensure_series(série)
         if s is None:
-            logger.debug(f"Ignorando benchmark '{nome}': série inválida")
+            logger.debug(f"Ignorando benchmark '{nome}' no histórico: série inválida ou vazia.")
             continue
 
         # Ensina selecção do período: tenta usar start_candidate, senão usa o primeiro disponível
@@ -910,6 +940,7 @@ def gerar_twr_historico(benchmarks_data: dict, years: int, nome_grafico: str, en
     caminho_csv = os.path.join(pasta_graficos, f'twr_historico_{years}y_{nome_grafico}.csv')
 
     df_plot.to_csv(caminho_csv, sep=';', decimal=',')
+    fig.canvas.draw()
     plt.savefig(caminho_png, bbox_inches='tight')
     logger.info(f'TWR histórico salvo em: {caminho_png} e dados em {caminho_csv}')
     return fig
@@ -919,6 +950,7 @@ def gerar_analise_risco(benchmarks_data: dict, risk_free_series: pd.Series | Non
     Calcula métricas de risco (Volatilidade, Sharpe, Drawdown) e gera gráfico Risk x Return.
     """
     pasta_graficos = get_report_path("risco")
+    logger.debug(f"Iniciando análise de risco para {len(benchmarks_data)} ativos.")
     
     metricas = []
     
@@ -926,10 +958,13 @@ def gerar_analise_risco(benchmarks_data: dict, risk_free_series: pd.Series | Non
     rf_returns = None
     if risk_free_series is not None:
         rf_returns = risk_free_series.pct_change().fillna(0)
+    else:
+        logger.debug("Série livre de risco (SELIC) não fornecida. Sharpe será calculado assumindo RF=0.")
 
     for nome, serie in benchmarks_data.items():
         s = _ensure_series(serie)
         if s is None or s.empty:
+            logger.debug(f"Pulando análise de risco para '{nome}': série vazia.")
             continue
             
         # Retornos diários
@@ -1027,6 +1062,7 @@ def simular_evolucao_patrimonio(benchmarks_data: dict, carteiras_config: dict, a
     pasta_graficos = get_report_path("simulacao")
     
     logger.info(f"Iniciando simulação: Aporte R${aporte_mensal:.2f}/mês, Rebalanceamento a cada {meses_rebalanceamento} meses.")
+    logger.debug(f"Carteiras a simular: {list(carteiras_config.keys())}")
 
     resultados_consolidados = {}
     figuras_geradas = {}
@@ -1038,7 +1074,7 @@ def simular_evolucao_patrimonio(benchmarks_data: dict, carteiras_config: dict, a
         for ativo in pesos.keys():
             s = _ensure_series(benchmarks_data.get(ativo))
             if s is None or s.empty:
-                logger.warning(f"Ativo '{ativo}' não encontrado ou vazio. Pulando simulação da carteira '{nome_carteira}'.")
+                logger.warning(f"Ativo '{ativo}' não encontrado ou vazio. Pulando simulação da carteira '{nome_carteira}'. Verifique se o benchmark foi carregado corretamente.")
                 ativos_validos = False
                 break
             series_ativos[ativo] = s
@@ -1311,7 +1347,7 @@ def main():
                     # Cria uma cópia dos benchmarks e adiciona a carteira atual para comparação histórica
                     dados_historico = benchmarks_data_exibir.copy()
                     # Converte TWR acumulado (0.x) para fator (1.x) para ser comparável com preços
-                    dados_historico[f'Carteira - {nome_analise}'] = df_twr.set_index('date')['twr_acc'] + 1
+                    dados_historico['Carteira'] = df_twr.set_index('date')['twr_acc'] + 1
                     
                     gerar_twr_historico(dados_historico, args.historico, nome_analise, df_twr['date'].max(), logger)
                     # Gera análise de risco histórica
@@ -1328,7 +1364,7 @@ def main():
             
             # Gera análise de risco para o período comparativo (carteira vs benchmarks no período da carteira)
             dados_comparativo = benchmarks_data_exibir.copy()
-            dados_comparativo[f'Carteira - {nome_analise}'] = df_twr.set_index('date')['twr_acc'] + 1
+            dados_comparativo['Carteira'] = df_twr.set_index('date')['twr_acc'] + 1
             gerar_analise_risco(dados_comparativo, selic_series, f'{nome_analise}_comparativo', logger)
 
     else:

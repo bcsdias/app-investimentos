@@ -12,12 +12,12 @@ BENCHMARKS_YF = {
 
 BENCHMARKS_B3 = {
     #'IBSD': 'IBSD', # Índice Brasil Setorial Dividendos
-    'IDIV': 'IDIV', # Índice Dividendos
-    'IBLV': 'IBLV', # Índice Baixa Volatilidade
+    #'IDIV': 'IDIV', # Índice Dividendos
+    #'IBLV': 'IBLV', # Índice Baixa Volatilidade
     'IBOV': 'IBOV', # Ibovespa (Benchmark Principal)
-    'SMLL': 'SMLL', # Small Caps (Empresas de menor capitalização)
-    'IFIX': 'IFIX', # Índice de Fundos Imobiliários
-    'UTIL': 'UTIL', # Índice de Utilidade Pública (Defensivo/Elétricas)
+    #'SMLL': 'SMLL', # Small Caps (Empresas de menor capitalização)
+    #'IFIX': 'IFIX', # Índice de Fundos Imobiliários
+    #'UTIL': 'UTIL', # Índice de Utilidade Pública (Defensivo/Elétricas)
 }
 
 BENCHMARKS_BCB = {
@@ -103,7 +103,9 @@ CARTEIRAS_SINTETICAS = {
 
 # Lista de benchmarks que serão EXIBIDOS nos gráficos e tabelas.
 BENCHMARKS_EXIBIR = [
-    'BOVA11',
+    #'BOVA11',
+    #'Ibovespa (YF)',
+    'CDI',
     #'S&P 500',
     #'IVVB11',
     #'IMID',
@@ -115,33 +117,33 @@ BENCHMARKS_EXIBIR = [
     #'S&P 500 BRL',
     #'IPCA + 6%',
     #'IMA-B',
-    'IMID BRL 47.5 + TD 2035 47.5 + BTC 5',
-    'IMID BRL 23.75 + TD 2035 71.25 + BTC 5',
-    'IMID BRL 71.25 + TD 2035 23.75 + BTC 5',
-    'IMID BRL 70 + TD 2035 25 + BTC 5',
-    'IMID BRL 57 + TD 2035 38 + BTC 5',
-    'IMID BRL 38 + TD 2035 57 + BTC 5',
-    'IMID BRL 47.5 + TD 2045 47.5 + BTC 5',
-    'IMID BRL 23.75 + TD 2045 71.25 + BTC 5',
-    'IMID BRL 71.25 + TD 2045 23.75 + BTC 5',
-    'IMID BRL 70 + TD 2045 25 + BTC 5',
-    'IMID BRL 57 + TD 2045 38 + BTC 5',
-    'IMID BRL 38 + TD 2045 57 + BTC 5',
-    'IMID BRL 47.5 + IMA-B 47.5 + BTC 5',
-    'IMID BRL 23.75 + IMA-B 71.25 + BTC 5',
-    'IMID BRL 71.25 + IMA-B 23.75 + BTC 5',
-    'IMID BRL 70 + IMA-B 25 + BTC 5',
-    'IMID BRL 57 + IMA-B 38 + BTC 5',
-    'IMID BRL 38 + IMA-B 57 + BTC 5',
-    'IMID BRL 47.5 + IMA-B5 47.5 + BTC 5',
-    'IMID BRL 23.75 + IMA-B5 71.25 + BTC 5',
-    'IMID BRL 71.25 + IMA-B5 23.75 + BTC 5',
-    'IMID BRL 70 + IMA-B5 25 + BTC 5',
-    'IMID BRL 57 + IMA-B5 38 + BTC 5',
-    'IMID BRL 38 + IMA-B5 57 + BTC 5',
-    'IMID BRL 50 + IMA-B5 50',
-    'IMID BRL 25 + IMA-B5 75',
-    'IMID BRL 75 + IMA-B5 25',
-    'IMID BRL 60 + IMA-B5 40',
-    'IMID BRL 40 + IMA-B5 60',
+    #'IMID BRL 47.5 + TD 2035 47.5 + BTC 5',
+    #'IMID BRL 23.75 + TD 2035 71.25 + BTC 5',
+    #'IMID BRL 71.25 + TD 2035 23.75 + BTC 5',
+    #'IMID BRL 70 + TD 2035 25 + BTC 5',
+    #'IMID BRL 57 + TD 2035 38 + BTC 5',
+    #'IMID BRL 38 + TD 2035 57 + BTC 5',
+    #'IMID BRL 47.5 + TD 2045 47.5 + BTC 5',
+    #'IMID BRL 23.75 + TD 2045 71.25 + BTC 5',
+    #'IMID BRL 71.25 + TD 2045 23.75 + BTC 5',
+    #'IMID BRL 70 + TD 2045 25 + BTC 5',
+    #'IMID BRL 57 + TD 2045 38 + BTC 5',
+    #'IMID BRL 38 + TD 2045 57 + BTC 5',
+    #'IMID BRL 47.5 + IMA-B 47.5 + BTC 5',
+    #'IMID BRL 23.75 + IMA-B 71.25 + BTC 5',
+    #'IMID BRL 71.25 + IMA-B 23.75 + BTC 5',
+    #'IMID BRL 70 + IMA-B 25 + BTC 5',
+    #'IMID BRL 57 + IMA-B 38 + BTC 5',
+    #'IMID BRL 38 + IMA-B 57 + BTC 5',
+    #'IMID BRL 47.5 + IMA-B5 47.5 + BTC 5',
+    #'IMID BRL 23.75 + IMA-B5 71.25 + BTC 5',
+    #'IMID BRL 71.25 + IMA-B5 23.75 + BTC 5',
+    #'IMID BRL 70 + IMA-B5 25 + BTC 5',
+    #'IMID BRL 57 + IMA-B5 38 + BTC 5',
+    #'IMID BRL 38 + IMA-B5 57 + BTC 5',
+    #'IMID BRL 50 + IMA-B5 50',
+    #'IMID BRL 25 + IMA-B5 75',
+    #'IMID BRL 75 + IMA-B5 25',
+    #'IMID BRL 60 + IMA-B5 40',
+    #'IMID BRL 40 + IMA-B5 60',
 ]
