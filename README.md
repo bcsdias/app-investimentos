@@ -125,3 +125,7 @@ Você pode adicionar novos benchmarks ou criar novas carteiras teóricas editand
 *   **`BENCHMARKS_BCB`**: Adicione códigos de séries do Banco Central.
 *   **`CARTEIRAS_SINTETICAS`**: Defina combinações de ativos e pesos para simulação.
 *   **`BENCHMARKS_EXIBIR`**: Controle quais índices aparecem nos gráficos finais.
+
+## 📝 Créditos
+
+Desenvolvido por **Bruno Dias**.
