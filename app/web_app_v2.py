@@ -29,8 +29,8 @@ class StreamlitLogger:
     """Redireciona logs para a interface do Streamlit (Toast e Sidebar)."""
     def info(self, msg):
         # Mostra mensagens curtas como toast flutuante
-        if len(msg) < 80:
-            st.toast(msg, icon="ℹ️")
+        # if len(msg) < 80:
+        #    st.toast(msg, icon="ℹ️")
         # Mensagens de sistema vão para o console do servidor também
         print(f"[INFO] {msg}")
 
