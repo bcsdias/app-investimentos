@@ -46,6 +46,18 @@ class StreamlitLogger:
         st.error(msg)
         print(f"[ERROR] {msg}")
 
+# --- Função de Cache para Dados da Carteira ---
+@st.cache_data(ttl=600, show_spinner=False)
+def get_wallet_data(token):
+    from utils.market_data import buscar_resumo_carteira
+    # Logger simples para o cache (evita passar o StreamlitLogger que não é serializável)
+    class SimpleLogger:
+        def error(self, msg): print(f"ERROR: {msg}")
+        def info(self, msg): print(f"INFO: {msg}")
+        def debug(self, msg): pass
+        def warning(self, msg): print(f"WARN: {msg}")
+    return buscar_resumo_carteira(token, SimpleLogger())
+
 # --- Função Principal do App ---
 def main():
     st.title("📊 Dashboard de Investimentos V2")
@@ -74,17 +86,51 @@ def main():
     # --- Main Area: Personalização ---
     with st.container(border=True):
         if modo == "Carteira DLP Invest":
-            st.subheader("Filtros da Carteira")
+            # Tenta buscar dados da carteira se o token estiver presente
+            wallet_data = None
+            if token:
+                wallet_data = get_wallet_data(token)
+
+            st.subheader("Seleção de Ativos")
             col1, col2 = st.columns(2)
             
             with col1:
                 tipo_filtro = st.selectbox("Filtrar por", ["Classe de Ativo", "Ativo Específico"])
             
             with col2:
-                if tipo_filtro == "Classe de Ativo":
-                    classe = st.text_input("Nome da Classe", value="AÇÃO").upper()
+                if wallet_data:
+                    # Extrai listas do JSON da API
+                    assets_list = sorted(wallet_data.get('summary', {}).get('operations_values', {}).get('assets', []))
+                    classes_list = sorted(wallet_data.get('summary', {}).get('operations_values', {}).get('classes', []))
+                    
+                    if tipo_filtro == "Classe de Ativo":
+                        # Seleciona AÇÃO por padrão se existir
+                        default_classe = ["AÇÃO"] if "AÇÃO" in classes_list else []
+                        classe = st.multiselect("Selecione a(s) Classe(s)", classes_list, default=default_classe)
+                    else:
+                        # Seleciona PETR4 por padrão se existir
+                        default_ativo = ["PETR4"] if "PETR4" in assets_list else []
+                        ativo = st.multiselect("Selecione o(s) Ativo(s)", assets_list, default=default_ativo)
                 else:
-                    ativo = st.text_input("Código do Ativo", value="PETR4").upper()
+                    # Fallback para texto livre se não carregar dados
+                    if tipo_filtro == "Classe de Ativo":
+                        classe_input = st.text_input("Nome da Classe", value="AÇÃO").upper()
+                        classe = [c.strip() for c in classe_input.split(',') if c.strip()]
+                    else:
+                        ativo_input = st.text_input("Código do Ativo", value="PETR4").upper()
+                        ativo = [a.strip() for a in ativo_input.split(',') if a.strip()]
+            
+            # Exibe detalhes do ativo selecionado (Setor, Preço, etc)
+            if tipo_filtro == "Ativo Específico" and ativo and wallet_data:
+                wallet_items = wallet_data.get('wallet', [])
+                for a in ativo[:5]:
+                    info = next((item for item in wallet_items if item.get('ativo') == a), None)
+                    if info:
+                        st.info(f"ℹ️ **{a}** | Setor: {info.get('setor', '-')} | Subsetor: {info.get('subsetor', '-')} | Preço Atual: R$ {info.get('price', 0)}")
+                    else:
+                        st.caption(f"O ativo **{a}** já foi operado, mas não consta na posição atual da carteira.")
+                if len(ativo) > 5:
+                    st.caption(f"... e mais {len(ativo)-5} ativos selecionados.")
             
             st.markdown("")
             simular_aportes = st.checkbox("Simular Aportes (Shadow Portfolio)", value=True)
@@ -172,9 +218,15 @@ def main():
             nome_analise = ""
             
             if modo == "Carteira DLP Invest":
-                nome_analise = ativo if ativo else classe
+                ativo_str = ",".join(ativo) if ativo else None
+                classe_str = ",".join(classe) if classe else None
+                
+                nome_analise = ativo_str if ativo_str else classe_str
+                if len(nome_analise) > 50:
+                    nome_analise = nome_analise[:47] + "..."
+                
                 status_text.info(f"Buscando dados da carteira: {nome_analise}...")
-                user_series = report.fetch_user_portfolio(token, ativo=ativo, classe=classe)
+                user_series = report.fetch_user_portfolio(token, ativo=ativo_str, classe=classe_str)
                 
                 if user_series is None:
                     st.error("Não foi possível obter dados da carteira. Verifique o Token ou o Ativo/Classe.")
