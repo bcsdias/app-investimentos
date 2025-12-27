@@ -1,4 +1,5 @@
 import os
+import time
 import sys
 import argparse
 import pandas as pd
@@ -40,7 +41,9 @@ class FinancialReport:
         df = buscar_historico(token, self.logger, ativo=ativo, classe=classe)
         
         if df is None or df.empty:
+            self.logger.warning("Nenhum dado retornado pela API ou DataFrame vazio.")
             return None
+        self.logger.debug(f"Dados brutos recebidos da API: {df.shape[0]} linhas. Colunas: {list(df.columns)}")
 
         # --- Cálculo do TWR (Simplificado e Extraído) ---
         df['date'] = pd.to_datetime(df['date'])
@@ -65,7 +68,10 @@ class FinancialReport:
         df_grp['twr_index'] = df_grp['hpr'].cumprod()
         
         # Retorna Série indexada por data
-        return df_grp.set_index('date')['twr_index']
+        result_series = df_grp.set_index('date')['twr_index']
+        self.logger.info(f"Carteira processada: {len(result_series)} dias de histórico ({result_series.index.min().date()} a {result_series.index.max().date()}).")
+        self.logger.debug(f"Amostra TWR Carteira (Head):\n{result_series.head().to_string()}")
+        return result_series
 
     def build_dataset(self, user_series=None, years_history=None):
         """
@@ -120,11 +126,15 @@ class FinancialReport:
         td_filtered = {k: v for k, v in CATALOGO_TD.items() if k in final_needed}
 
         # 3. Busca Benchmarks (Market Data)
+        self.logger.info(f"Solicitando dados de mercado. Fontes filtradas: YF={len(yf_filtered)}, B3={len(b3_filtered)}, BCB={len(bcb_filtered)}, TD={len(td_filtered)}")
         bench_data = processar_benchmarks(
             start_date, end_date,
             yf_filtered, b3_filtered, bcb_filtered,
             td_filtered, carteiras_sinteticas, self.logger
         )
+        
+        loaded_benchmarks = [k for k, v in bench_data.items() if v is not None and not v.empty]
+        self.logger.debug(f"Benchmarks carregados com sucesso ({len(loaded_benchmarks)}): {loaded_benchmarks}")
 
         # 4. Unificação
         data_frames = []
@@ -155,9 +165,22 @@ class FinancialReport:
 
         # Concatena tudo alinhando pelo índice (Data)
         if data_frames:
-            self.df_combined = pd.concat(data_frames, axis=1).sort_index()
+            # Cria temporário para análise de qualidade dos dados
+            df_raw = pd.concat(data_frames, axis=1).sort_index()
+            
+            # Log de diagnóstico de NaNs (Debug)
+            nans = df_raw.isna().sum()
+            if nans.sum() > 0:
+                self.logger.debug(f"Valores ausentes (NaN) antes da limpeza:\n{nans[nans > 0].to_string()}")
+
             # Preenche buracos (feriados locais vs globais) com o valor anterior
-            self.df_combined = self.df_combined.ffill().dropna()
+            self.df_combined = df_raw.ffill().dropna()
+            
+            rows_dropped = len(df_raw) - len(self.df_combined)
+            if rows_dropped > 0:
+                self.logger.warning(f"Foram removidas {rows_dropped} linhas (dias) devido à falta de interseção de dados entre os ativos.")
+            
+            self.logger.info(f"Dataset consolidado: {self.df_combined.shape[0]} linhas x {self.df_combined.shape[1]} colunas. Período comum: {self.df_combined.index.min().date()} a {self.df_combined.index.max().date()}")
             
             # Normaliza tudo para Base 100 no início do período comum
             if not self.df_combined.empty:
@@ -200,7 +223,9 @@ class FinancialReport:
         ax.legend()
         
         # Salva
-        plt.savefig(self._get_path("graficos", f"twr_evolucao_{title_suffix}.png"), bbox_inches='tight')
+        path = self._get_path("graficos", f"twr_evolucao_{title_suffix}.png")
+        self.logger.info(f"Gerando gráfico TWR: {path}")
+        plt.savefig(path, bbox_inches='tight')
         self.export_csv(df, f"twr_evolucao_{title_suffix}")
         plt.close()
 
@@ -214,13 +239,7 @@ class FinancialReport:
 
         fig, ax = plt.subplots(figsize=(12, 6))
         
-        # Plota apenas Carteira e Top 3 Benchmarks para não poluir
-        cols_to_plot = ['Carteira'] if 'Carteira' in drawdown.columns else []
-        cols_to_plot += [c for c in drawdown.columns if c != 'Carteira'][:3]
-        
-        for col in cols_to_plot:
-            if col not in drawdown.columns: continue
-            
+        for col in drawdown.columns:
             if col == 'Carteira':
                 ax.plot(drawdown.index, drawdown[col], label=col, color='red', linewidth=2)
                 ax.fill_between(drawdown.index, drawdown[col], 0, color='red', alpha=0.1)
@@ -232,7 +251,9 @@ class FinancialReport:
         ax.grid(True, linestyle='--', alpha=0.5)
         ax.legend()
 
-        plt.savefig(self._get_path("graficos", f"drawdown_{title_suffix}.png"), bbox_inches='tight')
+        path = self._get_path("graficos", f"drawdown_{title_suffix}.png")
+        self.logger.info(f"Gerando gráfico Drawdown: {path}")
+        plt.savefig(path, bbox_inches='tight')
         self.export_csv(drawdown, f"drawdown_{title_suffix}")
         plt.close()
 
@@ -289,7 +310,9 @@ class FinancialReport:
         ax.axhline(metrics['Retorno (CAGR)'].mean(), color='gray', linestyle=':', alpha=0.5)
         ax.axvline(metrics['Volatilidade'].mean(), color='gray', linestyle=':', alpha=0.5)
 
-        plt.savefig(self._get_path("graficos", f"risco_retorno_{title_suffix}.png"), bbox_inches='tight')
+        path = self._get_path("graficos", f"risco_retorno_{title_suffix}.png")
+        self.logger.info(f"Gerando gráfico Risco x Retorno: {path}")
+        plt.savefig(path, bbox_inches='tight')
         self.export_csv(metrics, f"metricas_risco_{title_suffix}")
         plt.close()
 
@@ -317,7 +340,9 @@ class FinancialReport:
         ax.grid(True, linestyle='--', alpha=0.5)
         ax.legend()
 
-        plt.savefig(self._get_path("graficos", f"volatilidade_movel_{title_suffix}.png"), bbox_inches='tight')
+        path = self._get_path("graficos", f"volatilidade_movel_{title_suffix}.png")
+        self.logger.info(f"Gerando gráfico Volatilidade Móvel: {path}")
+        plt.savefig(path, bbox_inches='tight')
         self.export_csv(rolling_vol, f"volatilidade_movel_{title_suffix}")
         plt.close()
 
@@ -335,9 +360,11 @@ class FinancialReport:
              selic_daily = self.selic_series.pct_change().fillna(0)
              # Alinha com as datas do dataframe
              rf_daily_series = selic_daily.reindex(daily_ret.index).ffill().fillna(0)
+             self.logger.debug("Usando série histórica da SELIC para cálculo do Sharpe.")
         else:
              # Fallback: 10% a.a. convertido para diário
              rf_daily_series[:] = (1.10 ** (1/252)) - 1
+             self.logger.info("Série SELIC não disponível. Usando taxa fixa de 10% a.a. como Risk Free para o Sharpe.")
 
         # Excesso de retorno (Retorno Ativo - Risk Free)
         excess_ret = daily_ret.sub(rf_daily_series, axis=0)
@@ -363,7 +390,9 @@ class FinancialReport:
         ax.legend()
         ax.axhline(0, color='black', linewidth=1)
 
-        plt.savefig(self._get_path("graficos", f"sharpe_movel_{title_suffix}.png"), bbox_inches='tight')
+        path = self._get_path("graficos", f"sharpe_movel_{title_suffix}.png")
+        self.logger.info(f"Gerando gráfico Sharpe Móvel: {path}")
+        plt.savefig(path, bbox_inches='tight')
         self.export_csv(rolling_sharpe, f"sharpe_movel_{title_suffix}")
         plt.close()
 
@@ -391,7 +420,7 @@ class FinancialReport:
         summary['Total Acum.'] = total_ret
         
         # Formatação (apenas para CSV visual, mantemos float para cálculo se precisar)
-        summary_fmt = summary.applymap(lambda x: f"{x:.2%}" if pd.notnull(x) else "-")
+        summary_fmt = summary.map(lambda x: f"{x:.2%}" if pd.notnull(x) else "-")
         
         self.export_csv(summary_fmt, f"resumo_rentabilidade_{title_suffix}")
 
@@ -408,6 +437,7 @@ def main():
     
     args = parser.parse_args()
 
+    start_time = time.time()
     # Setup
     logger = setup_logger(debug=args.debug, log_file='main_v2.log')
     token = os.getenv('DLP_TOKEN')
@@ -460,7 +490,8 @@ def main():
     # Tabela Resumo
     report.generate_summary_table(title_suffix=nome_analise)
 
-    logger.info("Processo concluído com sucesso (V2).")
+    elapsed_time = time.time() - start_time
+    logger.info(f"Processo concluído com sucesso (V2). Tempo total: {elapsed_time:.2f}s")
 
 if __name__ == "__main__":
     main()
