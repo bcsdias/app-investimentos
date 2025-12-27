@@ -109,7 +109,7 @@ def buscar_dados_benchmark(ticker: str, start_date: str, end_date: str, logger) 
                 df = pd.read_csv(cache_file, index_col=0, parse_dates=True, date_format='%Y-%m-%d')
                 # Se o CSV tiver cabeçalhos extras do yfinance (Price, Ticker), o índice pode ficar sujo.
                 # Tenta limpar convertendo o índice para datetime e removendo o que falhar.
-                df.index = pd.to_datetime(df.index, errors='coerce')
+                df.index = pd.to_datetime(df.index, errors='coerce', format='%Y-%m-%d')
                 df = df.dropna(how='all') # Remove linhas onde o índice virou NaT
                 # Garante índice único e ordenado
                 df = df[~df.index.duplicated(keep='last')]
