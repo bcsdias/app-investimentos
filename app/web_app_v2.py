@@ -54,20 +54,20 @@ def main():
     with st.sidebar:
         st.header("Configurações")
         
-        # Token
-        env_token = os.getenv('DLP_TOKEN', '')
-        token = st.text_input("Token API (DLP)", value=env_token, type="password")
-        
-        st.divider()
-        
         # Modo de Operação
         modo = st.radio("Modo de Análise", ["Mercado (Benchmarks)", "Carteira DLP Invest"])
+        
+        st.divider()
         
         ativo = None
         classe = None
         historico = 5
+        token = None
         
         if modo == "Carteira DLP Invest":
+            env_token = os.getenv('DLP_TOKEN', '')
+            token = st.text_input("Token API (DLP)", value=env_token, type="password")
+            
             tipo_filtro = st.selectbox("Filtrar por", ["Classe de Ativo", "Ativo Específico"])
             if tipo_filtro == "Classe de Ativo":
                 classe = st.text_input("Nome da Classe", value="AÇÃO").upper()
