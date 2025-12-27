@@ -58,6 +58,115 @@ def get_wallet_data(token):
         def warning(self, msg): print(f"WARN: {msg}")
     return buscar_resumo_carteira(token, SimpleLogger())
 
+def render_benchmark_section():
+    st.subheader("Seleção de Benchmarks e Carteiras")
+    
+    # 1. Prepara opções padrão baseadas no config
+    default_options_map = {}
+    for item in BENCHMARKS_ATIVOS:
+        if isinstance(item, str):
+            default_options_map[item] = item
+        elif isinstance(item, dict):
+            default_options_map[item['nome']] = item
+    
+    # Layout para alinhar o "Selecionar Todos" próximo à coluna de checkbox
+    col_txt, col_chk = st.columns([3, 1])
+    with col_txt:
+        st.caption("Selecione os benchmarks que deseja incluir na análise:")
+    with col_chk:
+        selecionar_todos = st.checkbox("Selecionar Todos", value=True, key="chk_select_all")
+    
+    # Cria DataFrame para seleção visual
+    df_benchmarks = pd.DataFrame({
+        "Benchmark": list(default_options_map.keys()),
+        "Selecionar": selecionar_todos
+    })
+
+    edited_benchmarks = st.data_editor(
+        df_benchmarks,
+        column_config={
+            "Benchmark": st.column_config.TextColumn("Benchmark", width="large", disabled=True),
+            "Selecionar": st.column_config.CheckboxColumn("Incluir", width="small")
+        },
+        hide_index=True,
+        use_container_width=True,
+        height=200, # Altura fixa para exibir aprox. 5 linhas (com scroll)
+        key="editor_benchmarks"
+    )
+    
+    selected_names = edited_benchmarks[edited_benchmarks["Selecionar"]]["Benchmark"].tolist()
+    
+    # Reconstrói a lista de configuração baseada na seleção
+    active_benchmarks_list = [default_options_map[name] for name in selected_names]
+    
+    st.markdown("#### Criar Carteira Personalizada")
+    
+    custom_name = st.text_input("Nome da Carteira", value="Minha Carteira", key="input_custom_name")
+    
+    # Consolida todos os ativos disponíveis nos catálogos
+    all_assets = []
+    all_assets.extend(CATALOGO_YF.keys())
+    all_assets.extend(CATALOGO_B3.keys())
+    all_assets.extend(CATALOGO_BCB.keys())
+    all_assets.extend(CATALOGO_TD.keys())
+    # Adiciona derivados comuns (Sintéticos suportados pelo market_data.py)
+    all_assets.extend(['IMID BRL', 'Bitcoin BRL', 'IPCA + 6%'])
+    
+    all_assets = sorted(list(set(all_assets)))
+    
+    st.caption("Adicione ativos e defina os pesos (Total deve ser 100%)")
+    
+    # Dados iniciais para o editor
+    default_data = pd.DataFrame([{"Ativo": "IBOV", "Peso": 100}])
+
+    edited_df = st.data_editor(
+        default_data,
+        column_config={
+            "Ativo": st.column_config.SelectboxColumn(
+                "Ativo",
+                help="Selecione o ativo",
+                width="medium",
+                options=all_assets,
+                required=True,
+            ),
+            "Peso": st.column_config.NumberColumn(
+                "Peso (%)",
+                help="Peso do ativo (0 a 100)",
+                min_value=0,
+                max_value=100,
+                step=1,
+                format="%d%%",
+                required=True,
+            )
+        },
+        num_rows="dynamic",
+        use_container_width=True,
+        hide_index=True,
+        key="portfolio_editor"
+    )
+
+    custom_composition = {}
+    total_weight = 0.0
+    
+    if edited_df is not None:
+        for index, row in edited_df.iterrows():
+            asset = row.get("Ativo")
+            weight = row.get("Peso")
+            
+            if asset and pd.notnull(weight) and weight > 0:
+                decimal_weight = weight / 100.0
+                custom_composition[asset] = custom_composition.get(asset, 0.0) + decimal_weight
+                total_weight += decimal_weight
+    
+    if custom_composition:
+        if abs(total_weight - 1.0) < 0.01:
+            st.success(f"Carteira '{custom_name}' válida! ({len(custom_composition)} ativos)")
+            active_benchmarks_list.append({'nome': custom_name, 'composicao': custom_composition})
+        else:
+            st.warning(f"A soma dos pesos é {total_weight*100:.1f}%. Ajuste para 100%.")
+            
+    return active_benchmarks_list
+
 # --- Função Principal do App ---
 def main():
     st.title("📊 Dashboard de Investimentos V2")
@@ -91,6 +200,9 @@ def main():
             wallet_data = None
             if token:
                 wallet_data = get_wallet_data(token)
+
+            # Adiciona a seleção de benchmarks também no modo Carteira
+            active_benchmarks_list = render_benchmark_section()
 
             st.subheader("Seleção de Ativos")
             col1, col2 = st.columns(2)
@@ -133,96 +245,15 @@ def main():
                 if len(ativo) > 5:
                     st.caption(f"... e mais {len(ativo)-5} ativos selecionados.")
             
+            st.markdown("---")
+            # Adiciona a seleção de benchmarks também no modo Carteira
+            # active_benchmarks_list = render_benchmark_section()
+            
             st.markdown("")
             simular_aportes = st.checkbox("Simular Aportes (Shadow Portfolio)", value=True)
             
         else: # Modo Mercado
-            st.subheader("Seleção de Benchmarks e Carteiras")
-            
-            # 1. Prepara opções padrão baseadas no config
-            default_options_map = {}
-            for item in BENCHMARKS_ATIVOS:
-                if isinstance(item, str):
-                    default_options_map[item] = item
-                elif isinstance(item, dict):
-                    default_options_map[item['nome']] = item
-            
-            # Multiselect para escolher quais exibir
-            selected_names = st.multiselect(
-                "Benchmarks Disponíveis", 
-                options=list(default_options_map.keys()),
-                default=list(default_options_map.keys())
-            )
-            
-            # Reconstrói a lista de configuração baseada na seleção
-            active_benchmarks_list = [default_options_map[name] for name in selected_names]
-            
-            st.markdown("#### Criar Carteira Personalizada")
-            
-            custom_name = st.text_input("Nome da Carteira", value="Minha Carteira")
-            
-            # Consolida todos os ativos disponíveis nos catálogos
-            all_assets = []
-            all_assets.extend(CATALOGO_YF.keys())
-            all_assets.extend(CATALOGO_B3.keys())
-            all_assets.extend(CATALOGO_BCB.keys())
-            all_assets.extend(CATALOGO_TD.keys())
-            # Adiciona derivados comuns
-            all_assets.extend([f"{k} BRL" for k in CATALOGO_YF.keys()])
-            all_assets.append("IPCA + 6%")
-            
-            all_assets = sorted(list(set(all_assets)))
-            
-            st.caption("Adicione ativos e defina os pesos (Total deve ser 100%)")
-            
-            # Dados iniciais para o editor
-            default_data = pd.DataFrame([{"Ativo": "IBOV", "Peso": 100}])
-
-            edited_df = st.data_editor(
-                default_data,
-                column_config={
-                    "Ativo": st.column_config.SelectboxColumn(
-                        "Ativo",
-                        help="Selecione o ativo",
-                        width="medium",
-                        options=all_assets,
-                        required=True,
-                    ),
-                    "Peso": st.column_config.NumberColumn(
-                        "Peso (%)",
-                        help="Peso do ativo (0 a 100)",
-                        min_value=0,
-                        max_value=100,
-                        step=1,
-                        format="%d%%",
-                        required=True,
-                    )
-                },
-                num_rows="dynamic",
-                use_container_width=True,
-                hide_index=True,
-                key="portfolio_editor"
-            )
-
-            custom_composition = {}
-            total_weight = 0.0
-            
-            if edited_df is not None:
-                for index, row in edited_df.iterrows():
-                    asset = row.get("Ativo")
-                    weight = row.get("Peso")
-                    
-                    if asset and pd.notnull(weight) and weight > 0:
-                        decimal_weight = weight / 100.0
-                        custom_composition[asset] = custom_composition.get(asset, 0.0) + decimal_weight
-                        total_weight += decimal_weight
-            
-            if custom_composition:
-                if abs(total_weight - 1.0) < 0.01:
-                    st.success(f"Carteira '{custom_name}' válida! ({len(custom_composition)} ativos)")
-                    active_benchmarks_list.append({'nome': custom_name, 'composicao': custom_composition})
-                else:
-                    st.warning(f"A soma dos pesos é {total_weight*100:.1f}%. Ajuste para 100%.")
+            active_benchmarks_list = render_benchmark_section()
 
         st.markdown("")
         btn_processar = st.button("🚀 Gerar Relatório", type="primary")
