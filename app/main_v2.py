@@ -13,10 +13,7 @@ sys.path.append(BASE_DIR)
 
 from utils.logger import setup_logger
 from utils.market_data import processar_benchmarks
-from app.config import (
-    BENCHMARKS_YF, BENCHMARKS_B3, BENCHMARKS_BCB, 
-    BENCHMARKS_TD, CARTEIRAS_SINTETICAS, BENCHMARKS_EXIBIR
-)
+from app.benchmarks_config import CATALOGO_YF, CATALOGO_B3, CATALOGO_BCB, CATALOGO_TD, BENCHMARKS_ATIVOS
 
 # Carrega ambiente
 load_dotenv()
@@ -87,14 +84,49 @@ class FinancialReport:
             end_date = end_dt.strftime('%Y-%m-%d')
             self.logger.info(f"Período definido por histórico ({years_history} anos): {start_date} a {end_date}")
 
-        # 2. Busca Benchmarks (Market Data)
+        # 2. Processa Configuração e Filtra Catálogos
+        # Identifica quais ativos base precisam ser baixados com base na configuração ativa
+        needed_assets = set()
+        carteiras_sinteticas = {}
+        
+        # Sempre tenta baixar SELIC para cálculo de risco (se disponível no catálogo)
+        if 'SELIC' in CATALOGO_BCB:
+            needed_assets.add('SELIC')
+
+        for item in BENCHMARKS_ATIVOS:
+            if isinstance(item, str):
+                needed_assets.add(item)
+            elif isinstance(item, dict):
+                nome = item.get('nome')
+                comps = item.get('composicao')
+                if nome and comps:
+                    carteiras_sinteticas[nome] = comps
+                    # Adiciona componentes da carteira à lista de necessários
+                    for comp_name in comps.keys():
+                        needed_assets.add(comp_name)
+
+        # Resolve dependências implícitas (ex: 'IMID BRL' precisa de 'IMID')
+        final_needed = set(needed_assets)
+        for asset in needed_assets:
+            if isinstance(asset, str) and asset.endswith(' BRL'):
+                final_needed.add(asset.replace(' BRL', ''))
+            if asset == 'IPCA + 6%':
+                final_needed.add('IPCA')
+
+        # Filtra os catálogos para baixar apenas o necessário
+        yf_filtered = {k: v for k, v in CATALOGO_YF.items() if k in final_needed}
+        b3_filtered = {k: v for k, v in CATALOGO_B3.items() if k in final_needed}
+        bcb_filtered = {k: v for k, v in CATALOGO_BCB.items() if k in final_needed}
+        td_filtered = {k: v for k, v in CATALOGO_TD.items() if k in final_needed}
+
+        # 3. Busca Benchmarks (Market Data)
         bench_data = processar_benchmarks(
-            start_date, end_date, 
-            BENCHMARKS_YF, BENCHMARKS_B3, BENCHMARKS_BCB, 
-            BENCHMARKS_TD, CARTEIRAS_SINTETICAS, self.logger
+            start_date, end_date,
+            yf_filtered, b3_filtered, bcb_filtered,
+            td_filtered, carteiras_sinteticas, self.logger
         )
 
-        # 3. Unificação
+        # 4. Unificação
         data_frames = []
         
         # Adiciona Carteira (se houver)
@@ -107,10 +139,16 @@ class FinancialReport:
         if 'SELIC' in bench_data:
             self.selic_series = bench_data['SELIC']
         
-        for nome in BENCHMARKS_EXIBIR:
+        # Adiciona apenas os itens listados explicitamente em BENCHMARKS_ATIVOS
+        # (Isso filtra ativos base que foram baixados apenas como dependência, ex: 'IMID' puro)
+        nomes_para_exibir = []
+        for item in BENCHMARKS_ATIVOS:
+            if isinstance(item, str): nomes_para_exibir.append(item)
+            elif isinstance(item, dict): nomes_para_exibir.append(item.get('nome'))
+
+        for nome in nomes_para_exibir:
             if nome in bench_data and bench_data[nome] is not None:
                 s = bench_data[nome]
-                # Garante que é numérico
                 s = pd.to_numeric(s, errors='coerce')
                 s.name = nome
                 data_frames.append(s)
@@ -271,7 +309,7 @@ class FinancialReport:
         for col in rolling_vol.columns:
             if col == 'Carteira':
                 ax.plot(rolling_vol.index, rolling_vol[col], label=col, color='red', linewidth=2, zorder=10)
-            elif col in BENCHMARKS_EXIBIR or len(rolling_vol.columns) <= 5:
+            else:
                  ax.plot(rolling_vol.index, rolling_vol[col], label=col, linewidth=1.5, alpha=0.7)
 
         ax.set_title(f"Volatilidade Móvel ({window} dias) - {title_suffix}", fontsize=14)
@@ -317,7 +355,7 @@ class FinancialReport:
         for col in rolling_sharpe.columns:
             if col == 'Carteira':
                 ax.plot(rolling_sharpe.index, rolling_sharpe[col], label=col, color='red', linewidth=2, zorder=10)
-            elif col in BENCHMARKS_EXIBIR or len(rolling_sharpe.columns) <= 5:
+            else:
                 ax.plot(rolling_sharpe.index, rolling_sharpe[col], label=col, linewidth=1.5, alpha=0.7)
 
         ax.set_title(f"Sharpe Ratio Móvel ({window} dias) - {title_suffix}", fontsize=14)
