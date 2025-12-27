@@ -80,6 +80,7 @@ def main():
         if modo == "Carteira DLP Invest":
             env_token = os.getenv('DLP_TOKEN', '')
             token = st.text_input("Token API (DLP)", value=env_token, type="password")
+            st.button("Aplicar Token") # Botão para confirmar entrada em dispositivos móveis
         else:
             historico = st.slider("Anos de Histórico", min_value=1, max_value=20, value=5)
 
@@ -256,11 +257,17 @@ def main():
                 df = report.df_combined
                 retorno_total = (df.iloc[-1] / df.iloc[0]) - 1
                 
-                cols = st.columns(len(df.columns))
-                for i, col_name in enumerate(df.columns):
-                    val = retorno_total[col_name]
-                    with cols[i]:
-                        st.metric(label=col_name, value=f"{val:.1%}")
+                # Layout em Grid: Máximo de 5 métricas por linha para não espremer
+                cols_per_row = 5
+                col_names = df.columns
+                
+                for i in range(0, len(col_names), cols_per_row):
+                    batch = col_names[i:i+cols_per_row]
+                    cols = st.columns(cols_per_row)
+                    for j, col_name in enumerate(batch):
+                        val = retorno_total[col_name]
+                        with cols[j]:
+                            st.metric(label=col_name, value=f"{val:.1%}")
 
             # Abas para organização
             tab1, tab2, tab3, tab4 = st.tabs(["📈 Rentabilidade & Risco", "📉 Drawdown & Volatilidade", "💰 Simulação & TIR", "📋 Dados Brutos"])
