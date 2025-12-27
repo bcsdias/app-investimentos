@@ -511,6 +511,98 @@ class FinancialReport:
         self.export_csv(series_irr, f"tir_evolucao_{title_suffix}")
         plt.close()
 
+    def simulate_shadow_portfolios(self, title_suffix=""):
+        """
+        Simula o patrimônio se os mesmos aportes/resgates da carteira tivessem sido
+        feitos nos benchmarks (Shadow Portfolio).
+        """
+        if self.df_combined.empty or not hasattr(self, 'portfolio_df') or self.portfolio_df is None:
+            return
+
+        # 1. Prepara os dados de Fluxo da Carteira Real
+        # Garante que o índice é datetime
+        df_flows = self.portfolio_df.set_index('date')[['fluxo', 'vlr_mercado', 'vlr_investido']].copy()
+        df_flows.index = pd.to_datetime(df_flows.index)
+        
+        # 2. Prepara os Benchmarks (Preços/Índices)
+        # Usa o df_combined que já tem os benchmarks alinhados e limpos
+        # (Não importa que esteja em base 100, pois a variação relativa é o que conta)
+        df_prices = self.df_combined.copy()
+        
+        # 3. Alinha Fluxos com Preços (Reindexa para garantir mesmas datas)
+        # Mantém apenas datas onde temos preços de benchmark (intersecção)
+        common_index = df_prices.index
+        
+        # Cria série de fluxos alinhada (preenche dias sem aporte com 0)
+        # Agrupa fluxos por dia (caso haja duplicidade) e reindexa
+        flows_aligned = df_flows['fluxo'].groupby(df_flows.index).sum().reindex(common_index, fill_value=0.0)
+        
+        # DataFrame para guardar os resultados (Patrimônio em R$)
+        shadow_wealth = pd.DataFrame(index=common_index)
+        
+        # Adiciona a Carteira Real (Valor de Mercado original)
+        # Reindexa e preenche buracos (forward fill para dias sem cotação na carteira mas com cotação no mercado)
+        shadow_wealth['Carteira Real'] = df_flows['vlr_mercado'].reindex(common_index).ffill()
+        
+        # Adiciona linha de "Total Investido" (Acumulado dos fluxos)
+        shadow_wealth['Total Investido'] = flows_aligned.cumsum() + (df_flows['vlr_investido'].iloc[0] if not df_flows.empty else 0)
+
+        # 4. Simulação para cada Benchmark
+        for col in df_prices.columns:
+            if col == 'Carteira': continue # Pula a própria carteira (já tratada acima)
+            
+            price_series = df_prices[col]
+            
+            # Quantidade de cotas compradas/vendidas = Fluxo / Preço do Dia
+            # Se preço for 0 ou NaN, não compra nada
+            shares_flow = flows_aligned.div(price_series).fillna(0)
+            
+            # Acumula quantidade de cotas (Posição Custódia)
+            cum_shares = shares_flow.cumsum()
+            
+            # Valor Patrimonial = Cotas Acumuladas * Preço Atual
+            # Adiciona valor inicial investido (se houver saldo inicial na carteira real antes do periodo)
+            initial_balance = df_flows['vlr_mercado'].iloc[0] if not df_flows.empty else 0
+            # Ajuste simples: assume que o saldo inicial compraria cotas no dia 0
+            initial_shares = initial_balance / price_series.iloc[0]
+            
+            shadow_wealth[col] = (cum_shares + initial_shares) * price_series
+
+        # 5. Plotagem
+        fig, ax = plt.subplots(figsize=(12, 7))
+        
+        # Plota Total Investido (Referência)
+        ax.plot(shadow_wealth.index, shadow_wealth['Total Investido'], label='Total Investido (Caixa)', 
+                color='gray', linestyle=':', linewidth=1.5, alpha=0.8)
+        
+        # Plota Carteira Real
+        if 'Carteira Real' in shadow_wealth.columns:
+            ax.plot(shadow_wealth.index, shadow_wealth['Carteira Real'], label='Carteira Real', 
+                    color='blue', linewidth=3, zorder=10)
+            # Preenche área da carteira real
+            ax.fill_between(shadow_wealth.index, shadow_wealth['Carteira Real'], 0, color='blue', alpha=0.05)
+
+        # Plota Benchmarks Simulados
+        for col in shadow_wealth.columns:
+            if col in ['Total Investido', 'Carteira Real']: continue
+            
+            # Pega o valor final para a legenda
+            final_val = shadow_wealth[col].iloc[-1]
+            ax.plot(shadow_wealth.index, shadow_wealth[col], label=f"{col} (R$ {final_val:,.0f})", 
+                    linestyle='--', linewidth=1.5, alpha=0.8)
+
+        ax.set_title(f"Simulação de Aportes: Carteira Real vs Benchmarks - {title_suffix}", fontsize=14)
+        ax.set_ylabel("Patrimônio (R$)")
+        ax.yaxis.set_major_formatter(mticker.StrMethodFormatter('R${x:,.0f}'))
+        ax.grid(True, linestyle='--', alpha=0.5)
+        ax.legend()
+
+        path = self._get_path("graficos", f"simulacao_aportes_{title_suffix}.png")
+        self.logger.info(f"Gerando gráfico Simulação de Aportes: {path}")
+        plt.savefig(path, bbox_inches='tight')
+        self.export_csv(shadow_wealth, f"simulacao_aportes_{title_suffix}")
+        plt.close()
+
     def generate_summary_table(self, title_suffix=""):
         """Gera tabela resumo com Rentabilidade Total, Ano a Ano e Volatilidade."""
         if self.df_combined.empty: return
@@ -549,6 +641,7 @@ def main():
     group.add_argument('--historico', type=int, help='Anos de histórico para análise de mercado (sem carteira).')
     group.add_argument('--ativo', type=str, help='Código do ativo na carteira do usuário.')
     group.add_argument('--classe', type=str, help='Classe de ativos na carteira do usuário.')
+    parser.add_argument('--simular-aportes', action='store_true', help='Simula o desempenho se os aportes fossem feitos nos benchmarks.')
     
     args = parser.parse_args()
 
@@ -604,6 +697,10 @@ def main():
     
     # TIR (Evolução da Rentabilidade Real)
     report.plot_irr_evolution(title_suffix=nome_analise)
+    
+    # Simulação de Aportes (Shadow Portfolio)
+    if args.simular_aportes and (args.ativo or args.classe):
+        report.simulate_shadow_portfolios(title_suffix=nome_analise)
     
     # Tabela Resumo
     report.generate_summary_table(title_suffix=nome_analise)
