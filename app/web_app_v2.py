@@ -173,28 +173,56 @@ def main():
             
             all_assets = sorted(list(set(all_assets)))
             
-            selected_assets = st.multiselect("Selecione os Ativos para Composição", options=all_assets)
+            st.caption("Adicione ativos e defina os pesos (Total deve ser 100%)")
             
+            # Dados iniciais para o editor
+            default_data = pd.DataFrame([{"Ativo": "IBOV", "Peso": 100}])
+
+            edited_df = st.data_editor(
+                default_data,
+                column_config={
+                    "Ativo": st.column_config.SelectboxColumn(
+                        "Ativo",
+                        help="Selecione o ativo",
+                        width="medium",
+                        options=all_assets,
+                        required=True,
+                    ),
+                    "Peso": st.column_config.NumberColumn(
+                        "Peso (%)",
+                        help="Peso do ativo (0 a 100)",
+                        min_value=0,
+                        max_value=100,
+                        step=1,
+                        format="%d%%",
+                        required=True,
+                    )
+                },
+                num_rows="dynamic",
+                use_container_width=True,
+                hide_index=True,
+                key="portfolio_editor"
+            )
+
             custom_composition = {}
-            if selected_assets:
-                st.caption("Defina os pesos (soma deve ser 1.0):")
-                cols = st.columns(min(len(selected_assets), 4))
-                
-                total_weight = 0.0
-                for i, asset in enumerate(selected_assets):
-                    col_idx = i % 4
-                    with cols[col_idx]:
-                        # Peso padrão igualitário
-                        default_w = 1.0 / len(selected_assets)
-                        w = st.number_input(f"{asset}", min_value=0.0, max_value=1.0, value=default_w, step=0.05, format="%.2f", key=f"w_{asset}")
-                        custom_composition[asset] = w
-                        total_weight += w
-                
+            total_weight = 0.0
+            
+            if edited_df is not None:
+                for index, row in edited_df.iterrows():
+                    asset = row.get("Ativo")
+                    weight = row.get("Peso")
+                    
+                    if asset and pd.notnull(weight) and weight > 0:
+                        decimal_weight = weight / 100.0
+                        custom_composition[asset] = custom_composition.get(asset, 0.0) + decimal_weight
+                        total_weight += decimal_weight
+            
+            if custom_composition:
                 if abs(total_weight - 1.0) < 0.01:
-                    st.success("Carteira válida! Será adicionada à análise.")
+                    st.success(f"Carteira '{custom_name}' válida! ({len(custom_composition)} ativos)")
                     active_benchmarks_list.append({'nome': custom_name, 'composicao': custom_composition})
                 else:
-                    st.warning(f"A soma dos pesos é {total_weight:.2f}. Ajuste para 1.00.")
+                    st.warning(f"A soma dos pesos é {total_weight*100:.1f}%. Ajuste para 100%.")
 
         st.markdown("")
         btn_processar = st.button("🚀 Gerar Relatório", type="primary")
