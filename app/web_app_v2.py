@@ -61,13 +61,13 @@ def main():
         st.divider()
         
         # Modo de Operação
-        modo = st.radio("Modo de Análise", ["Carteira Real", "Mercado (Benchmarks)"])
+        modo = st.radio("Modo de Análise", ["Mercado (Benchmarks)", "Carteira DLP Invest"])
         
         ativo = None
         classe = None
         historico = 5
         
-        if modo == "Carteira Real":
+        if modo == "Carteira DLP Invest":
             tipo_filtro = st.selectbox("Filtrar por", ["Classe de Ativo", "Ativo Específico"])
             if tipo_filtro == "Classe de Ativo":
                 classe = st.text_input("Nome da Classe", value="AÇÃO").upper()
@@ -85,7 +85,7 @@ def main():
 
     # --- Processamento ---
     if btn_processar:
-        if not token and modo == "Carteira Real":
+        if not token and modo == "Carteira DLP Invest":
             st.error("Por favor, informe o Token da API.")
             return
 
@@ -102,7 +102,7 @@ def main():
             user_series = None
             nome_analise = ""
             
-            if modo == "Carteira Real":
+            if modo == "Carteira DLP Invest":
                 nome_analise = ativo if ativo else classe
                 status_text.info(f"Buscando dados da carteira: {nome_analise}...")
                 user_series = report.fetch_user_portfolio(token, ativo=ativo, classe=classe)
@@ -116,7 +116,7 @@ def main():
 
             # 2. Constrói Dataset
             status_text.info("Consolidando benchmarks e calculando indicadores...")
-            report.build_dataset(user_series=user_series, years_history=historico if modo != "Carteira Real" else None)
+            report.build_dataset(user_series=user_series, years_history=historico if modo != "Carteira DLP Invest" else None)
 
             if report.df_combined.empty:
                 st.error("Nenhum dado disponível para gerar gráficos.")
@@ -166,7 +166,7 @@ def main():
                 if fig_sharpe: st.pyplot(fig_sharpe)
 
             with tab3:
-                if modo == "Carteira Real":
+                if modo == "Carteira DLP Invest":
                     col_tir, col_sim = st.columns(2)
                     
                     with col_tir:
@@ -185,7 +185,7 @@ def main():
                         else:
                             st.info("Simulação de aportes desativada.")
                 else:
-                    st.info("Análises de TIR e Simulação de Aportes disponíveis apenas no modo 'Carteira Real'.")
+                    st.info("Análises de TIR e Simulação de Aportes disponíveis apenas no modo 'Carteira DLP Invest'.")
 
             with tab4:
                 st.subheader("Tabela Resumo de Rentabilidade")
