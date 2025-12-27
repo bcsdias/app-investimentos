@@ -201,7 +201,7 @@ class FinancialReport:
     # MÉTODOS DE ANÁLISE E PLOTAGEM
     # ==========================================
 
-    def plot_twr_evolution(self, title_suffix=""):
+    def plot_twr_evolution(self, title_suffix="", return_fig=False):
         """Gera gráfico de linha comparativo (TWR)."""
         if self.df_combined.empty: return
 
@@ -228,11 +228,15 @@ class FinancialReport:
         # Salva
         path = self._get_path("graficos", f"twr_evolucao_{title_suffix}.png")
         self.logger.info(f"Gerando gráfico TWR: {path}")
-        plt.savefig(path, bbox_inches='tight')
         self.export_csv(df, f"twr_evolucao_{title_suffix}")
+        
+        if return_fig:
+            return fig
+            
+        plt.savefig(path, bbox_inches='tight')
         plt.close()
 
-    def plot_drawdown(self, title_suffix=""):
+    def plot_drawdown(self, title_suffix="", return_fig=False):
         """Calcula e plota o Drawdown (Queda do topo)."""
         if self.df_combined.empty: return
 
@@ -256,11 +260,15 @@ class FinancialReport:
 
         path = self._get_path("graficos", f"drawdown_{title_suffix}.png")
         self.logger.info(f"Gerando gráfico Drawdown: {path}")
-        plt.savefig(path, bbox_inches='tight')
         self.export_csv(drawdown, f"drawdown_{title_suffix}")
+        
+        if return_fig:
+            return fig
+            
+        plt.savefig(path, bbox_inches='tight')
         plt.close()
 
-    def plot_risk_return_scatter(self, title_suffix=""):
+    def plot_risk_return_scatter(self, title_suffix="", return_fig=False):
         """Gera gráfico de dispersão Risco (Volatilidade) x Retorno (CAGR)."""
         if self.df_combined.empty: return
 
@@ -315,11 +323,15 @@ class FinancialReport:
 
         path = self._get_path("graficos", f"risco_retorno_{title_suffix}.png")
         self.logger.info(f"Gerando gráfico Risco x Retorno: {path}")
-        plt.savefig(path, bbox_inches='tight')
         self.export_csv(metrics, f"metricas_risco_{title_suffix}")
+        
+        if return_fig:
+            return fig
+            
+        plt.savefig(path, bbox_inches='tight')
         plt.close()
 
-    def plot_rolling_volatility(self, window=252, title_suffix=""):
+    def plot_rolling_volatility(self, window=252, title_suffix="", return_fig=False):
         """Gera gráfico de Volatilidade Móvel (anualizada)."""
         if self.df_combined.empty: return
         
@@ -345,11 +357,15 @@ class FinancialReport:
 
         path = self._get_path("graficos", f"volatilidade_movel_{title_suffix}.png")
         self.logger.info(f"Gerando gráfico Volatilidade Móvel: {path}")
-        plt.savefig(path, bbox_inches='tight')
         self.export_csv(rolling_vol, f"volatilidade_movel_{title_suffix}")
+        
+        if return_fig:
+            return fig
+            
+        plt.savefig(path, bbox_inches='tight')
         plt.close()
 
-    def plot_rolling_sharpe(self, window=252, title_suffix=""):
+    def plot_rolling_sharpe(self, window=252, title_suffix="", return_fig=False):
         """Gera gráfico de Sharpe Ratio Móvel."""
         if self.df_combined.empty: return
         
@@ -395,8 +411,12 @@ class FinancialReport:
 
         path = self._get_path("graficos", f"sharpe_movel_{title_suffix}.png")
         self.logger.info(f"Gerando gráfico Sharpe Móvel: {path}")
-        plt.savefig(path, bbox_inches='tight')
         self.export_csv(rolling_sharpe, f"sharpe_movel_{title_suffix}")
+        
+        if return_fig:
+            return fig
+            
+        plt.savefig(path, bbox_inches='tight')
         plt.close()
 
     def _calculate_xirr(self, cash_flows, dates):
@@ -440,7 +460,7 @@ class FinancialReport:
             
         return r if abs(npv) < 0.1 else None
 
-    def plot_irr_evolution(self, title_suffix=""):
+    def plot_irr_evolution(self, title_suffix="", return_fig=False):
         """Gera gráfico da evolução da TIR (Taxa Interna de Retorno)."""
         if not hasattr(self, 'portfolio_df') or self.portfolio_df is None or self.portfolio_df.empty:
             return
@@ -507,11 +527,15 @@ class FinancialReport:
 
         path = self._get_path("graficos", f"tir_evolucao_{title_suffix}.png")
         self.logger.info(f"Gerando gráfico TIR: {path}")
-        plt.savefig(path, bbox_inches='tight')
         self.export_csv(series_irr, f"tir_evolucao_{title_suffix}")
+        
+        if return_fig:
+            return fig
+            
+        plt.savefig(path, bbox_inches='tight')
         plt.close()
 
-    def simulate_shadow_portfolios(self, title_suffix=""):
+    def simulate_shadow_portfolios(self, title_suffix="", return_fig=False):
         """
         Simula o patrimônio se os mesmos aportes/resgates da carteira tivessem sido
         feitos nos benchmarks (Shadow Portfolio).
@@ -601,8 +625,12 @@ class FinancialReport:
 
         path = self._get_path("graficos", f"simulacao_aportes_{title_suffix}.png")
         self.logger.info(f"Gerando gráfico Simulação de Aportes: {path}")
-        plt.savefig(path, bbox_inches='tight')
         self.export_csv(shadow_wealth, f"simulacao_aportes_{title_suffix}")
+        
+        if return_fig:
+            return fig
+            
+        plt.savefig(path, bbox_inches='tight')
         plt.close()
 
     def generate_summary_table(self, title_suffix=""):
