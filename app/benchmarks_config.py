@@ -90,12 +90,12 @@ BENCHMARKS_ATIVOS = [
     # {'nome': 'IMID BRL 38 + TD 2045 57 + BTC 5', 'composicao': {'IMID BRL': 0.38, 'TD IPCA 2045': 0.57, 'Bitcoin BRL': 0.05}},
 
     # --- Carteiras Sintéticas (IMID BRL + IMA-B + BTC) ---
-    # {'nome': 'IMID BRL 47.5 + IMA-B 47.5 + BTC 5', 'composicao': {'IMID BRL': 0.475, 'IMA-B': 0.475, 'Bitcoin BRL': 0.05}},
-    # {'nome': 'IMID BRL 23.75 + IMA-B 71.25 + BTC 5', 'composicao': {'IMID BRL': 0.2375, 'IMA-B': 0.7125, 'Bitcoin BRL': 0.05}},
-    # {'nome': 'IMID BRL 71.25 + IMA-B 23.75 + BTC 5', 'composicao': {'IMID BRL': 0.7125, 'IMA-B': 0.2375, 'Bitcoin BRL': 0.05}},
-    # {'nome': 'IMID BRL 70 + IMA-B 25 + BTC 5', 'composicao': {'IMID BRL': 0.7, 'IMA-B': 0.25, 'Bitcoin BRL': 0.05}},
-    # {'nome': 'IMID BRL 57 + IMA-B 38 + BTC 5', 'composicao': {'IMID BRL': 0.57, 'IMA-B': 0.38, 'Bitcoin BRL': 0.05}},
-    # {'nome': 'IMID BRL 38 + IMA-B 57 + BTC 5', 'composicao': {'IMID BRL': 0.38, 'IMA-B': 0.57, 'Bitcoin BRL': 0.05}},
+    {'nome': 'IMID BRL 47.5 + IMA-B 47.5 + BTC 5', 'composicao': {'IMID BRL': 0.475, 'IMA-B': 0.475, 'Bitcoin BRL': 0.05}},
+    {'nome': 'IMID BRL 23.75 + IMA-B 71.25 + BTC 5', 'composicao': {'IMID BRL': 0.2375, 'IMA-B': 0.7125, 'Bitcoin BRL': 0.05}},
+    {'nome': 'IMID BRL 71.25 + IMA-B 23.75 + BTC 5', 'composicao': {'IMID BRL': 0.7125, 'IMA-B': 0.2375, 'Bitcoin BRL': 0.05}},
+    {'nome': 'IMID BRL 70 + IMA-B 25 + BTC 5', 'composicao': {'IMID BRL': 0.7, 'IMA-B': 0.25, 'Bitcoin BRL': 0.05}},
+    {'nome': 'IMID BRL 57 + IMA-B 38 + BTC 5', 'composicao': {'IMID BRL': 0.57, 'IMA-B': 0.38, 'Bitcoin BRL': 0.05}},
+    {'nome': 'IMID BRL 38 + IMA-B 57 + BTC 5', 'composicao': {'IMID BRL': 0.38, 'IMA-B': 0.57, 'Bitcoin BRL': 0.05}},
 
     # --- Carteiras Sintéticas (IMID BRL + IMA-B 5 + BTC) ---
     {'nome': 'IMID BRL 47.5 + IMA-B5 47.5 + BTC 5', 'composicao': {'IMID BRL': 0.475, 'IMA-B 5': 0.475, 'Bitcoin BRL': 0.05}},
