@@ -114,4 +114,5 @@ BENCHMARKS_ATIVOS = [
 
     # --- Outros ---
     # {'nome': 'IMID BRL/(IPCA+6%)', 'composicao': {'IMID BRL': 0.50, 'IDIV': 0.25, 'IPCA + 6%': 0.25}},
+    {'nome': 'IDIV', 'composicao': {'IDIV': 1.0}},
 ]

@@ -93,6 +93,22 @@ def buscar_historico(token: str, logger, ativo: str = None, classe: str = None, 
         logger.error("Erro ao processar a resposta da API. Não é um JSON válido.")
         return None
 
+def buscar_resumo_carteira(token: str, logger) -> dict | None:
+    """
+    Busca o resumo da carteira (ativos, classes, wallet) na API.
+    Retorna o JSON completo com listas de ativos operados e posição atual.
+    """
+    url = "https://users.dlombelloplanilhas.com/resumo?summary=true&wallet=true&multiwallet=false&notifications=false"
+    headers = {"Content-Type": "application/json", "Authorization": token}
+    
+    try:
+        response = requests.get(url, headers=headers)
+        response.raise_for_status()
+        return response.json()
+    except Exception as e:
+        logger.error(f"Erro ao buscar resumo da carteira: {e}")
+        return None
+
 def buscar_dados_benchmark(ticker: str, start_date: str, end_date: str, logger) -> pd.Series | None:
     """
     Busca dados históricos de fechamento para um ticker de benchmark.
