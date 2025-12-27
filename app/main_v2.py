@@ -572,12 +572,14 @@ class FinancialReport:
         fig, ax = plt.subplots(figsize=(12, 7))
         
         # Plota Total Investido (Referência)
-        ax.plot(shadow_wealth.index, shadow_wealth['Total Investido'], label='Total Investido (Caixa)', 
+        final_investido = shadow_wealth['Total Investido'].iloc[-1]
+        ax.plot(shadow_wealth.index, shadow_wealth['Total Investido'], label=f'Total Investido (Caixa) (R$ {final_investido:,.0f})', 
                 color='gray', linestyle=':', linewidth=1.5, alpha=0.8)
         
         # Plota Carteira Real
         if 'Carteira Real' in shadow_wealth.columns:
-            ax.plot(shadow_wealth.index, shadow_wealth['Carteira Real'], label='Carteira Real', 
+            final_real = shadow_wealth['Carteira Real'].iloc[-1]
+            ax.plot(shadow_wealth.index, shadow_wealth['Carteira Real'], label=f'Carteira Real (R$ {final_real:,.0f})', 
                     color='blue', linewidth=3, zorder=10)
             # Preenche área da carteira real
             ax.fill_between(shadow_wealth.index, shadow_wealth['Carteira Real'], 0, color='blue', alpha=0.05)
