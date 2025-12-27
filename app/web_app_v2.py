@@ -19,6 +19,7 @@ sys.path.append(BASE_DIR)
 
 # Importa a classe de lógica do main_v2
 from app.main_v2 import FinancialReport
+from app.benchmarks_config import BENCHMARKS_ATIVOS, CATALOGO_YF, CATALOGO_B3, CATALOGO_BCB, CATALOGO_TD
 
 # Carrega variáveis de ambiente
 load_dotenv()
@@ -50,38 +51,106 @@ def main():
     st.title("📊 Dashboard de Investimentos V2")
     st.markdown("---")
 
-    # --- Sidebar: Configurações ---
+    # Inicializa variáveis
+    ativo = None
+    classe = None
+    historico = 5
+    token = None
+    active_benchmarks_list = None # Lista final a ser passada para o report
+    simular_aportes = False
+
+    # --- Sidebar: Configurações Gerais ---
     with st.sidebar:
         st.header("Configurações")
-        
-        # Modo de Operação
-        modo = st.radio("Modo de Análise", ["Mercado (Benchmarks)", "Carteira DLP Invest"])
-        
+        modo = st.radio("Modo de Operação", ["Mercado (Benchmarks)", "Carteira DLP Invest"])
         st.divider()
-        
-        ativo = None
-        classe = None
-        historico = 5
-        token = None
-        
+
         if modo == "Carteira DLP Invest":
             env_token = os.getenv('DLP_TOKEN', '')
             token = st.text_input("Token API (DLP)", value=env_token, type="password")
+        else:
+            historico = st.slider("Anos de Histórico", min_value=1, max_value=20, value=5)
+
+    # --- Main Area: Personalização ---
+    with st.container(border=True):
+        if modo == "Carteira DLP Invest":
+            st.subheader("Filtros da Carteira")
+            col1, col2 = st.columns(2)
             
-            tipo_filtro = st.selectbox("Filtrar por", ["Classe de Ativo", "Ativo Específico"])
-            if tipo_filtro == "Classe de Ativo":
-                classe = st.text_input("Nome da Classe", value="AÇÃO").upper()
-            else:
-                ativo = st.text_input("Código do Ativo", value="PETR4").upper()
-                
+            with col1:
+                tipo_filtro = st.selectbox("Filtrar por", ["Classe de Ativo", "Ativo Específico"])
+            
+            with col2:
+                if tipo_filtro == "Classe de Ativo":
+                    classe = st.text_input("Nome da Classe", value="AÇÃO").upper()
+                else:
+                    ativo = st.text_input("Código do Ativo", value="PETR4").upper()
+            
+            st.markdown("")
             simular_aportes = st.checkbox("Simular Aportes (Shadow Portfolio)", value=True)
             
         else: # Modo Mercado
-            historico = st.slider("Anos de Histórico", min_value=1, max_value=20, value=5)
-            simular_aportes = False
+            st.subheader("Seleção de Benchmarks e Carteiras")
+            
+            # 1. Prepara opções padrão baseadas no config
+            default_options_map = {}
+            for item in BENCHMARKS_ATIVOS:
+                if isinstance(item, str):
+                    default_options_map[item] = item
+                elif isinstance(item, dict):
+                    default_options_map[item['nome']] = item
+            
+            # Multiselect para escolher quais exibir
+            selected_names = st.multiselect(
+                "Benchmarks Disponíveis", 
+                options=list(default_options_map.keys()),
+                default=list(default_options_map.keys())
+            )
+            
+            # Reconstrói a lista de configuração baseada na seleção
+            active_benchmarks_list = [default_options_map[name] for name in selected_names]
+            
+            st.markdown("#### Criar Carteira Personalizada")
+            
+            custom_name = st.text_input("Nome da Carteira", value="Minha Carteira")
+            
+            # Consolida todos os ativos disponíveis nos catálogos
+            all_assets = []
+            all_assets.extend(CATALOGO_YF.keys())
+            all_assets.extend(CATALOGO_B3.keys())
+            all_assets.extend(CATALOGO_BCB.keys())
+            all_assets.extend(CATALOGO_TD.keys())
+            # Adiciona derivados comuns
+            all_assets.extend([f"{k} BRL" for k in CATALOGO_YF.keys()])
+            all_assets.append("IPCA + 6%")
+            
+            all_assets = sorted(list(set(all_assets)))
+            
+            selected_assets = st.multiselect("Selecione os Ativos para Composição", options=all_assets)
+            
+            custom_composition = {}
+            if selected_assets:
+                st.caption("Defina os pesos (soma deve ser 1.0):")
+                cols = st.columns(min(len(selected_assets), 4))
+                
+                total_weight = 0.0
+                for i, asset in enumerate(selected_assets):
+                    col_idx = i % 4
+                    with cols[col_idx]:
+                        # Peso padrão igualitário
+                        default_w = 1.0 / len(selected_assets)
+                        w = st.number_input(f"{asset}", min_value=0.0, max_value=1.0, value=default_w, step=0.05, format="%.2f", key=f"w_{asset}")
+                        custom_composition[asset] = w
+                        total_weight += w
+                
+                if abs(total_weight - 1.0) < 0.01:
+                    st.success("Carteira válida! Será adicionada à análise.")
+                    active_benchmarks_list.append({'nome': custom_name, 'composicao': custom_composition})
+                else:
+                    st.warning(f"A soma dos pesos é {total_weight:.2f}. Ajuste para 1.00.")
 
-        st.divider()
-        btn_processar = st.button("🚀 Gerar Relatório", type="primary", use_container_width=True)
+        st.markdown("")
+        btn_processar = st.button("🚀 Gerar Relatório", type="primary")
 
     # --- Processamento ---
     if btn_processar:
@@ -116,7 +185,11 @@ def main():
 
             # 2. Constrói Dataset
             status_text.info("Consolidando benchmarks e calculando indicadores...")
-            report.build_dataset(user_series=user_series, years_history=historico if modo != "Carteira DLP Invest" else None)
+            report.build_dataset(
+                user_series=user_series, 
+                years_history=historico if modo != "Carteira DLP Invest" else None,
+                active_benchmarks=active_benchmarks_list
+            )
 
             if report.df_combined.empty:
                 st.error("Nenhum dado disponível para gerar gráficos.")

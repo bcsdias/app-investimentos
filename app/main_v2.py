@@ -76,10 +76,11 @@ class FinancialReport:
         self.portfolio_df = df_grp.copy()
         return result_series
 
-    def build_dataset(self, user_series=None, years_history=None):
+    def build_dataset(self, user_series=None, years_history=None, active_benchmarks=None):
         """
         Constrói o DataFrame unificado (Carteira + Benchmarks).
         Se user_series existir, usa as datas dela. Se não, usa years_history.
+        Se active_benchmarks for fornecido, usa essa lista em vez da configuração padrão.
         """
         # 1. Definição de Datas
         if user_series is not None:
@@ -102,7 +103,10 @@ class FinancialReport:
         if 'SELIC' in CATALOGO_BCB:
             needed_assets.add('SELIC')
 
-        for item in BENCHMARKS_ATIVOS:
+        # Usa a lista passada ou a padrão do arquivo de config
+        benchmarks_to_use = active_benchmarks if active_benchmarks is not None else BENCHMARKS_ATIVOS
+
+        for item in benchmarks_to_use:
             if isinstance(item, str):
                 needed_assets.add(item)
             elif isinstance(item, dict):
@@ -155,7 +159,7 @@ class FinancialReport:
         # Adiciona apenas os itens listados explicitamente em BENCHMARKS_ATIVOS
         # (Isso filtra ativos base que foram baixados apenas como dependência, ex: 'IMID' puro)
         nomes_para_exibir = []
-        for item in BENCHMARKS_ATIVOS:
+        for item in benchmarks_to_use:
             if isinstance(item, str): nomes_para_exibir.append(item)
             elif isinstance(item, dict): nomes_para_exibir.append(item.get('nome'))
 
