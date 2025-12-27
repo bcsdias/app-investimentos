@@ -71,6 +71,9 @@ class FinancialReport:
         result_series = df_grp.set_index('date')['twr_index']
         self.logger.info(f"Carteira processada: {len(result_series)} dias de histórico ({result_series.index.min().date()} a {result_series.index.max().date()}).")
         self.logger.debug(f"Amostra TWR Carteira (Head):\n{result_series.head().to_string()}")
+        
+        # Armazena DataFrame processado para cálculo de TIR (fluxos)
+        self.portfolio_df = df_grp.copy()
         return result_series
 
     def build_dataset(self, user_series=None, years_history=None):
@@ -396,6 +399,118 @@ class FinancialReport:
         self.export_csv(rolling_sharpe, f"sharpe_movel_{title_suffix}")
         plt.close()
 
+    def _calculate_xirr(self, cash_flows, dates):
+        """Calcula a TIR (XIRR) usando Newton-Raphson."""
+        if len(cash_flows) < 2: return None
+        
+        # Garante tipos numpy/pandas
+        cash_flows = np.array(cash_flows)
+        dates = pd.to_datetime(dates)
+        
+        # Datas relativas em anos
+        start_date = dates[0]
+        days = (dates - start_date).days.values
+        years = days / 365.0
+        
+        # Chute inicial (10%)
+        r = 0.1
+        
+        for _ in range(50): # Max iterações
+            if r <= -1.0: r = -0.99
+            
+            # NPV = sum(Flow / (1+r)^Year)
+            factor = (1 + r) ** years
+            npv = np.sum(cash_flows / factor)
+            
+            # Derivada: d/dr [ C * (1+r)^-y ] = C * -y * (1+r)^(-y-1)
+            d_npv = np.sum(-years * cash_flows / ((1 + r) ** (years + 1)))
+            
+            if abs(npv) < 1e-5:
+                return r
+            
+            if d_npv == 0:
+                return None
+                
+            new_r = r - npv / d_npv
+            
+            if abs(new_r - r) < 1e-5:
+                return new_r
+                
+            r = new_r
+            
+        return r if abs(npv) < 0.1 else None
+
+    def plot_irr_evolution(self, title_suffix=""):
+        """Gera gráfico da evolução da TIR (Taxa Interna de Retorno)."""
+        if not hasattr(self, 'portfolio_df') or self.portfolio_df is None or self.portfolio_df.empty:
+            return
+
+        df = self.portfolio_df.sort_values('date')
+        
+        # Amostragem mensal para performance (calcular dia a dia é muito pesado)
+        dates_to_calc = df.set_index('date').resample('ME').last().index
+        # Garante inclusão da última data real
+        if df['date'].iloc[-1] not in dates_to_calc:
+            dates_to_calc = dates_to_calc.union([df['date'].iloc[-1]])
+        dates_to_calc = dates_to_calc[dates_to_calc >= df['date'].iloc[0]]
+        
+        irr_history = []
+        valid_dates = []
+        
+        all_dates = df['date'].values
+        # Fluxo para TIR: Investimento é negativo (-fluxo), Resgate é positivo
+        # Na nossa lógica: fluxo = investido.diff - proventos. 
+        # Se investi 1000, fluxo=1000. Para TIR deve ser -1000.
+        all_flows = -1 * df['fluxo'].values 
+        all_markets = df['vlr_mercado'].values
+        
+        for target_date in dates_to_calc:
+            # Filtra dados até a data alvo
+            mask = all_dates <= target_date
+            if not np.any(mask): continue
+            
+            current_flows = all_flows[mask]
+            current_dates = all_dates[mask]
+            
+            # Adiciona Valor de Mercado atual como fluxo positivo (resgate fictício)
+            last_idx = np.where(mask)[0][-1]
+            current_market_val = all_markets[last_idx]
+            
+            # Se valor de mercado é zero e não há fluxos relevantes, pula
+            if current_market_val == 0 and np.sum(np.abs(current_flows)) == 0: continue
+
+            # Monta arrays finais para cálculo
+            calc_flows = np.append(current_flows, current_market_val)
+            calc_dates = np.append(current_dates, all_dates[last_idx])
+            
+            try:
+                res = self._calculate_xirr(calc_flows, pd.to_datetime(calc_dates))
+                if res is not None and -0.99 < res < 10.0: # Filtra outliers extremos
+                    irr_history.append(res)
+                    valid_dates.append(target_date)
+            except Exception:
+                pass
+
+        if not irr_history:
+            return
+
+        series_irr = pd.Series(irr_history, index=valid_dates) * 100
+        
+        fig, ax = plt.subplots(figsize=(12, 6))
+        ax.plot(series_irr.index, series_irr.values, label='TIR (Carteira)', color='purple', linewidth=2)
+        
+        ax.set_title(f"Evolução da TIR (Taxa Interna de Retorno) - {title_suffix}", fontsize=14)
+        ax.yaxis.set_major_formatter(mticker.PercentFormatter())
+        ax.grid(True, linestyle='--', alpha=0.5)
+        ax.legend()
+        ax.axhline(0, color='black', linewidth=1)
+
+        path = self._get_path("graficos", f"tir_evolucao_{title_suffix}.png")
+        self.logger.info(f"Gerando gráfico TIR: {path}")
+        plt.savefig(path, bbox_inches='tight')
+        self.export_csv(series_irr, f"tir_evolucao_{title_suffix}")
+        plt.close()
+
     def generate_summary_table(self, title_suffix=""):
         """Gera tabela resumo com Rentabilidade Total, Ano a Ano e Volatilidade."""
         if self.df_combined.empty: return
@@ -486,6 +601,9 @@ def main():
 
     # Sharpe Móvel (Evolução da Eficiência)
     report.plot_rolling_sharpe(title_suffix=nome_analise)
+    
+    # TIR (Evolução da Rentabilidade Real)
+    report.plot_irr_evolution(title_suffix=nome_analise)
     
     # Tabela Resumo
     report.generate_summary_table(title_suffix=nome_analise)
