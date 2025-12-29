@@ -33,7 +33,7 @@ class FinancialReport:
         os.makedirs(folder, exist_ok=True)
         return os.path.join(folder, filename)
 
-    def fetch_user_portfolio(self, token, ativo=None, classe=None):
+    def fetch_user_portfolio(self, token, ativo=None, classe=None, start_date=None, end_date=None):
         """Busca dados da API e calcula o TWR da carteira."""
         from utils.market_data import buscar_historico # Import local para evitar ciclo se houver
         
@@ -67,6 +67,23 @@ class FinancialReport:
         # TWR Acumulado (Base 1.0 para facilitar comparação com benchmarks)
         df_grp['twr_index'] = df_grp['hpr'].cumprod()
         
+        # --- Filtro de Período ---
+        if start_date:
+            df_grp = df_grp[df_grp['date'] >= pd.to_datetime(start_date)]
+        if end_date:
+            df_grp = df_grp[df_grp['date'] <= pd.to_datetime(end_date)]
+            
+        if df_grp.empty:
+            self.logger.warning("Nenhum dado restante após filtro de datas.")
+            return None
+
+        # Ajuste de Base para Simulações (Shadow Portfolio)
+        # Se estamos olhando um recorte, assumimos que o valor investido inicial 
+        # é o valor de mercado no início do período (Mark-to-Market).
+        if start_date:
+            gap = df_grp['vlr_mercado'].iloc[0] - df_grp['vlr_investido'].iloc[0]
+            df_grp['vlr_investido'] = df_grp['vlr_investido'] + gap
+
         # Retorna Série indexada por data
         result_series = df_grp.set_index('date')['twr_index']
         self.logger.info(f"Carteira processada: {len(result_series)} dias de histórico ({result_series.index.min().date()} a {result_series.index.max().date()}).")

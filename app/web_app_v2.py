@@ -246,8 +246,22 @@ def main():
                     st.caption(f"... e mais {len(ativo)-5} ativos selecionados.")
             
             st.markdown("---")
-            # Adiciona a seleção de benchmarks também no modo Carteira
-            # active_benchmarks_list = render_benchmark_section()
+            
+            st.subheader("Período de Análise")
+            use_full_period = st.checkbox("Usar todo o histórico disponível", value=True)
+            
+            data_inicio = None
+            data_fim = None
+            
+            if not use_full_period:
+                col_d1, col_d2 = st.columns(2)
+                with col_d1:
+                    default_start = pd.Timestamp.today() - pd.DateOffset(years=1)
+                    data_inicio = st.date_input("Data Início", value=default_start)
+                with col_d2:
+                    data_fim = st.date_input("Data Fim", value="today")
+            
+            st.markdown("---")
             
             st.markdown("")
             simular_aportes = st.checkbox("Simular Aportes (Shadow Portfolio)", value=True)
@@ -286,7 +300,13 @@ def main():
                     nome_analise = nome_analise[:47] + "..."
                 
                 status_text.info(f"Buscando dados da carteira: {nome_analise}...")
-                user_series = report.fetch_user_portfolio(token, ativo=ativo_str, classe=classe_str)
+                user_series = report.fetch_user_portfolio(
+                    token, 
+                    ativo=ativo_str, 
+                    classe=classe_str,
+                    start_date=data_inicio if not use_full_period else None,
+                    end_date=data_fim if not use_full_period else None
+                )
                 
                 if user_series is None:
                     st.error("Não foi possível obter dados da carteira. Verifique o Token ou o Ativo/Classe.")
