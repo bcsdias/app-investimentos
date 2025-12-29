@@ -1,0 +1,710 @@
+{
+	"user_config": {
+		"moeda_base": "BRL",
+		"calc_por_corretora": true,
+		"dia_liq_ptax": 2,
+		"dt_vd20k": true,
+		"outros_vd20k": true,
+		"opcoes_vd20k": true,
+		"vsub_FII": true,
+		"vsub_isento": false,
+		"bdr_like_acao": false,
+		"darf_inicio": 2010,
+		"tributavel_normal": 0,
+		"tributavel_daytrade": 0,
+		"tributavel_fii": 0,
+		"darf_total": 0,
+		"usar_saldo_vd20k": true
+	},
+	"outros_config": [
+		{
+			"ativo": "01-TDIPCA35",
+			"classe": "R.FIXA",
+			"setor": "OUTROS",
+			"subsetor": "IPCA",
+			"in_auto_update": false
+		},
+		{
+			"ativo": "02-TDIPCA45",
+			"classe": "R.FIXA",
+			"setor": "OUTROS",
+			"subsetor": "IPCA",
+			"in_auto_update": false
+		},
+		{
+			"ativo": "03-CDB 100%",
+			"classe": "R.FIXA",
+			"setor": "CDB",
+			"subsetor": "CDI",
+			"in_auto_update": false
+		},
+		{
+			"ativo": "04-LCI 96%",
+			"classe": "R.FIXA",
+			"setor": "LCI",
+			"subsetor": "CDI",
+			"in_auto_update": false
+		},
+		{
+			"ativo": "05-LCA 97%",
+			"classe": "R.FIXA",
+			"setor": "LCA",
+			"subsetor": "CDI",
+			"in_auto_update": false
+		},
+		{
+			"ativo": "06-CDB 107%",
+			"classe": "R.FIXA",
+			"setor": "CDB",
+			"subsetor": "CDI",
+			"in_auto_update": false
+		},
+		{
+			"ativo": "07-CDB 110%",
+			"classe": "R.FIXA",
+			"setor": "CDB",
+			"subsetor": "CDI",
+			"in_auto_update": false
+		},
+		{
+			"ativo": "09-CDB 115%",
+			"classe": "R.FIXA",
+			"setor": "CDB",
+			"subsetor": "CDI",
+			"in_auto_update": false
+		},
+		{
+			"ativo": "CDB LIMITE CREDITO",
+			"classe": "R.FIXA",
+			"setor": "CDB",
+			"subsetor": "CDI",
+			"in_auto_update": false
+		},
+		{
+			"ativo": "LCA+ 6,65",
+			"classe": "R.FIXA",
+			"setor": "LCA",
+			"subsetor": "IPCA",
+			"in_auto_update": false
+		},
+		{
+			"ativo": "LCA+ 6,65% DAYCOVAL",
+			"classe": "R.FIXA",
+			"setor": "LCA",
+			"subsetor": "IPCA",
+			"in_auto_update": false
+		},
+		{
+			"ativo": "CDB 110% LIQUIDEZ",
+			"classe": "R.FIXA",
+			"setor": "CDB",
+			"subsetor": "CDI",
+			"in_auto_update": false
+		},
+		{
+			"ativo": "LCI IPCA + 4,49%",
+			"classe": "R.FIXA",
+			"setor": "LCI",
+			"subsetor": "IPCA",
+			"in_auto_update": false
+		},
+		{
+			"ativo": "LCI IPCA + 5,07%",
+			"classe": "R.FIXA",
+			"setor": "LCI",
+			"subsetor": "IPCA",
+			"in_auto_update": false
+		},
+		{
+			"ativo": "LIG IPCA +5.81%",
+			"classe": "R.FIXA",
+			"setor": "LIG",
+			"subsetor": "IPCA",
+			"in_auto_update": false
+		},
+		{
+			"ativo": "LIG IPCA +6,03%",
+			"classe": "R.FIXA",
+			"setor": "LIG",
+			"subsetor": "IPCA",
+			"in_auto_update": false
+		},
+		{
+			"ativo": "LCI 97%",
+			"classe": "R.FIXA",
+			"setor": "LCI",
+			"subsetor": "CDI",
+			"in_auto_update": false
+		},
+		{
+			"ativo": "LCA 104,5% CDI",
+			"classe": "R.FIXA",
+			"setor": "LCA",
+			"subsetor": "CDI",
+			"in_auto_update": false
+		},
+		{
+			"ativo": "LCI 100%",
+			"classe": "R.FIXA",
+			"setor": "LCI",
+			"subsetor": "CDI",
+			"in_auto_update": false
+		},
+		{
+			"ativo": "LCA 100%",
+			"classe": "R.FIXA",
+			"setor": "LCA",
+			"subsetor": "CDI",
+			"in_auto_update": false
+		},
+		{
+			"ativo": "LCA PRÉ 12%",
+			"classe": "R.FIXA",
+			"setor": "LCI",
+			"subsetor": "PRE",
+			"in_auto_update": false
+		},
+		{
+			"ativo": "LIG IPCA +6.03%",
+			"classe": "R.FIXA",
+			"setor": "LIG",
+			"subsetor": "IPCA",
+			"in_auto_update": false
+		},
+		{
+			"ativo": "CDB 100% LIQUIDEZ",
+			"classe": "R.FIXA",
+			"setor": "CDB",
+			"subsetor": "CDI",
+			"in_auto_update": false
+		},
+		{
+			"ativo": "CDB 100% LIQ DAY",
+			"classe": "R.FIXA",
+			"setor": "CDB",
+			"subsetor": "CDI",
+			"in_auto_update": false
+		},
+		{
+			"ativo": "LCI DI 720",
+			"classe": "R.FIXA",
+			"setor": "LCI",
+			"subsetor": "CDI",
+			"in_auto_update": false
+		},
+		{
+			"ativo": "LCI INTER IPCA 4.49",
+			"classe": "R.FIXA",
+			"setor": "LCI",
+			"subsetor": "IPCA",
+			"annual_additional_percentage": 4.49,
+			"in_auto_update": true
+		},
+		{
+			"ativo": "LCI INTER IPCA 5.07",
+			"classe": "R.FIXA",
+			"setor": "LCI",
+			"subsetor": "IPCA",
+			"annual_additional_percentage": 5.07,
+			"in_auto_update": true
+		},
+		{
+			"ativo": "LCI INTER 100 CDI",
+			"classe": "R.FIXA",
+			"setor": "LCI",
+			"subsetor": "CDI",
+			"index_percentage": 100,
+			"in_auto_update": true
+		},
+		{
+			"ativo": "CDB SOFISA 110 CDI",
+			"classe": "R.FIXA",
+			"setor": "CDB",
+			"subsetor": "CDI",
+			"index_percentage": 110,
+			"in_auto_update": true
+		},
+		{
+			"ativo": "CDB SOFISA 100 CDI",
+			"classe": "R.FIXA",
+			"setor": "CDB",
+			"subsetor": "CDI",
+			"index_percentage": 100,
+			"in_auto_update": true
+		},
+		{
+			"ativo": "CDB DAYCOVAL 110 CDI",
+			"classe": "R.FIXA",
+			"setor": "CDB",
+			"subsetor": "CDI",
+			"index_percentage": 110,
+			"in_auto_update": true
+		},
+		{
+			"ativo": "LIG BRADESCO 5.81",
+			"classe": "R.FIXA",
+			"setor": "LCI",
+			"subsetor": "IPCA",
+			"annual_additional_percentage": 5.81,
+			"in_auto_update": true
+		},
+		{
+			"ativo": "LIG BRADESCO 6.03",
+			"classe": "R.FIXA",
+			"setor": "LCI",
+			"subsetor": "IPCA",
+			"annual_additional_percentage": 6.03,
+			"in_auto_update": true
+		},
+		{
+			"ativo": "LCI INTER 99 CDI",
+			"classe": "R.FIXA",
+			"setor": "LCI",
+			"subsetor": "CDI",
+			"index_percentage": 99,
+			"in_auto_update": true
+		},
+		{
+			"ativo": "LCA PINE DI - 95.50",
+			"classe": "R.FIXA",
+			"setor": "LCA",
+			"subsetor": "CDI",
+			"index_percentage": 95.5,
+			"in_auto_update": true
+		},
+		{
+			"ativo": "ADSENSE",
+			"classe": "OUTROS",
+			"setor": "OUTROS",
+			"subsetor": "DOLAR",
+			"in_auto_update": false
+		},
+		{
+			"ativo": "LCI INTER 95 CDI 9M",
+			"classe": "R.FIXA",
+			"setor": "LCI",
+			"subsetor": "CDI",
+			"index_percentage": 95,
+			"in_auto_update": true
+		},
+		{
+			"ativo": "CDB SOFISA 105 CDI",
+			"classe": "R.FIXA",
+			"setor": "CDB",
+			"subsetor": "CDI",
+			"index_percentage": 105,
+			"in_auto_update": true
+		}
+	],
+	"operacoes": [
+		{
+			"ativo": "03-CDB 100%",
+			"date": "2016-08-31",
+			"evento": "C",
+			"qtd": 1,
+			"preco": 1632,
+			"corretora": "SOFISA",
+			"taxas": 0,
+			"moeda": "BRL",
+			"irrf": 0,
+			"observacao": "",
+			"daytrade": false
+		},
+		{
+			"ativo": "03-CDB 100%",
+			"date": "2016-08-31",
+			"evento": "SALDO",
+			"qtd": 1,
+			"preco": 1641.32,
+			"corretora": "SOFISA",
+			"taxas": 0,
+			"moeda": "BRL",
+			"irrf": 0,
+			"observacao": "",
+			"daytrade": false
+		},
+		{
+			"ativo": "B3SA3",
+			"date": "2025-07-01",
+			"evento": "V",
+			"qtd": -230,
+			"preco": 14.47,
+			"corretora": "BTG",
+			"taxas": 0.99,
+			"moeda": "BRL",
+			"irrf": 0,
+			"observacao": "",
+			"daytrade": false
+		},
+		{
+			"ativo": "BBAS3",
+			"date": "2025-07-01",
+			"evento": "C",
+			"qtd": 70,
+			"preco": 22.03,
+			"corretora": "BTG",
+			"taxas": 0.46,
+			"moeda": "BRL",
+			"irrf": 0,
+			"observacao": "",
+			"daytrade": false
+		},
+		{
+			"ativo": "BBSE3",
+			"date": "2025-07-02",
+			"evento": "C",
+			"qtd": 50,
+			"preco": 36.1,
+			"corretora": "BTG",
+			"taxas": 0.54,
+			"moeda": "BRL",
+			"irrf": 0,
+			"observacao": "",
+			"daytrade": false
+		},
+		{
+			"ativo": "BBAS3",
+			"date": "2025-08-19",
+			"evento": "C",
+			"qtd": 10,
+			"preco": 19.95,
+			"corretora": "BTG",
+			"taxas": 0.04,
+			"moeda": "BRL",
+			"irrf": 0,
+			"observacao": "",
+			"daytrade": false
+		},
+		{
+			"ativo": "LCI INTER 95 CDI 9M",
+			"date": "2025-10-16",
+			"evento": "C",
+			"qtd": 1,
+			"preco": 7000,
+			"corretora": "INTER",
+			"taxas": 0,
+			"moeda": "BRL",
+			"irrf": 0,
+			"observacao": "LIQUIDEZ 9 MESES",
+			"daytrade": false
+		},
+		{
+			"ativo": "CDB SOFISA 105 CDI",
+			"date": "2025-11-17",
+			"evento": "C",
+			"qtd": 1,
+			"preco": 3300,
+			"corretora": "SOFISA",
+			"taxas": 0,
+			"moeda": "BRL",
+			"irrf": 0,
+			"observacao": "Vencimento 17/11/2028",
+			"daytrade": false
+		}
+	],
+	"proventos": [
+		{
+			"ativo": "KNRI11",
+			"date": "2019-05-15",
+			"evento": "RENDIMENTO",
+			"valor": 2.22,
+			"irrf": 0,
+			"moeda": "BRL",
+			"corretora": "BTG",
+			"date_com": "2019-05-15",
+			"observacao": ""
+		},
+		{
+			"ativo": "KNRI11",
+			"date": "2019-06-14",
+			"evento": "RENDIMENTO",
+			"valor": 2.22,
+			"irrf": 0,
+			"moeda": "BRL",
+			"corretora": "BTG",
+			"date_com": "2019-06-14",
+			"observacao": ""
+		},
+		{
+			"ativo": "ITSA4",
+			"date": "2019-07-01",
+			"evento": "DIVIDENDO",
+			"valor": 2,
+			"irrf": 0,
+			"moeda": "BRL",
+			"corretora": "BTG",
+			"date_com": "2019-07-01",
+			"observacao": ""
+		},
+		{
+			"ativo": "KNRI11",
+			"date": "2019-07-12",
+			"evento": "RENDIMENTO",
+			"valor": 2.22,
+			"irrf": 0,
+			"moeda": "BRL",
+			"corretora": "BTG",
+			"date_com": "2019-07-12",
+			"observacao": ""
+		},
+		{
+			"ativo": "MXRF11",
+			"date": "2019-07-15",
+			"evento": "RENDIMENTO",
+			"valor": 3.5,
+			"irrf": 0,
+			"moeda": "BRL",
+			"corretora": "CLEAR",
+			"date_com": "2019-07-15",
+			"observacao": ""
+		},
+		{
+			"ativo": "ALZR11",
+			"date": "2019-07-25",
+			"evento": "RENDIMENTO",
+			"valor": 4.38,
+			"irrf": 0,
+			"moeda": "BRL",
+			"corretora": "BTG",
+			"date_com": "2019-07-25",
+			"observacao": ""
+		},
+		{
+			"ativo": "HGBS11",
+			"date": "2019-08-14",
+			"evento": "RENDIMENTO",
+			"valor": 1.4,
+			"irrf": 0,
+			"moeda": "BRL",
+			"corretora": "BTG",
+			"date_com": "2019-08-14",
+			"observacao": ""
+		},
+		{
+			"ativo": "VALE3",
+			"date": "2025-03-14",
+			"evento": "JSCP",
+			"valor": 36.43,
+			"irrf": 5.46,
+			"moeda": "BRL",
+			"corretora": "BTG",
+			"date_com": "2025-03-14",
+			"observacao": ""
+		}
+	],
+	"carteiras_config": [
+		{
+			"numero_carteira": 1,
+			"nome_carteira": "Ações",
+			"peso_carteira": 0.5,
+			"ativos": [
+				{
+					"ativo": "ITSA4",
+					"peso_ativo": 0.07,
+					"preco_teto": 9.5,
+					"aporte_resgate": 0
+				},
+				{
+					"ativo": "BBDC4",
+					"peso_ativo": 0.06,
+					"preco_teto": 0,
+					"aporte_resgate": 0
+				},
+				{
+					"ativo": "B3SA3",
+					"peso_ativo": 0.06,
+					"preco_teto": 12,
+					"aporte_resgate": 0
+				},
+				{
+					"ativo": "BBAS3",
+					"peso_ativo": 0.07,
+					"preco_teto": 50,
+					"aporte_resgate": 0
+				},
+				{
+					"ativo": "ISAE4",
+					"peso_ativo": 0.06,
+					"preco_teto": 0,
+					"aporte_resgate": 0
+				},
+				{
+					"ativo": "ALUP11",
+					"peso_ativo": 0.06,
+					"preco_teto": 27,
+					"aporte_resgate": 0
+				},
+				{
+					"ativo": "TAEE11",
+					"peso_ativo": 0.06,
+					"preco_teto": 35,
+					"aporte_resgate": 0
+				},
+				{
+					"ativo": "EGIE3",
+					"peso_ativo": 0.07,
+					"preco_teto": 50,
+					"aporte_resgate": 0
+				},
+				{
+					"ativo": "PSSA3",
+					"peso_ativo": 0.07,
+					"preco_teto": 22,
+					"aporte_resgate": 0
+				},
+				{
+					"ativo": "BBSE3",
+					"peso_ativo": 0.07,
+					"preco_teto": 33,
+					"aporte_resgate": 0
+				},
+				{
+					"ativo": "FLRY3",
+					"peso_ativo": 0.07,
+					"preco_teto": 0,
+					"aporte_resgate": 0
+				},
+				{
+					"ativo": "SAPR11",
+					"peso_ativo": 0.07,
+					"preco_teto": 0,
+					"aporte_resgate": 0
+				},
+				{
+					"ativo": "PRIO3",
+					"peso_ativo": 0.07,
+					"preco_teto": 79,
+					"aporte_resgate": 0
+				},
+				{
+					"ativo": "VALE3",
+					"peso_ativo": 0.07,
+					"preco_teto": 90,
+					"aporte_resgate": 0
+				},
+				{
+					"ativo": "KLBN11",
+					"peso_ativo": 0.07,
+					"preco_teto": 28,
+					"aporte_resgate": 0
+				}
+			],
+			"aporte_resgate": 0
+		},
+		{
+			"numero_carteira": 3,
+			"nome_carteira": "RENDA FIXA IPCA",
+			"peso_carteira": 0.13,
+			"ativos": [
+				{
+					"ativo": "LIG BRADESCO 5.81",
+					"peso_ativo": 0.0769,
+					"preco_teto": 0,
+					"aporte_resgate": 0
+				},
+				{
+					"ativo": "LIG BRADESCO 6.03",
+					"peso_ativo": 0.0769,
+					"preco_teto": 0,
+					"aporte_resgate": 0
+				},
+				{
+					"ativo": "TD:IPCA2045",
+					"peso_ativo": 0.0769,
+					"preco_teto": 0,
+					"aporte_resgate": 0
+				},
+				{
+					"ativo": "LCI INTER IPCA 5.07",
+					"peso_ativo": 0.0769,
+					"preco_teto": 0,
+					"aporte_resgate": 0
+				}
+			],
+			"aporte_resgate": 0
+		},
+		{
+			"numero_carteira": 6,
+			"nome_carteira": "Reserva Emergencia",
+			"peso_carteira": 0,
+			"ativos": [
+				{
+					"ativo": "CDB SOFISA 110 CDI",
+					"peso_ativo": 0.5,
+					"preco_teto": 0,
+					"aporte_resgate": 0
+				},
+				{
+					"ativo": "CDB SOFISA 105 CDI",
+					"peso_ativo": 0.5,
+					"preco_teto": 0,
+					"aporte_resgate": 0
+				}
+			],
+			"aporte_resgate": 0
+		},
+		{
+			"numero_carteira": 4,
+			"nome_carteira": "RENDA FIXA CDI",
+			"peso_carteira": 0.13,
+			"ativos": [
+				{
+					"ativo": "LCI INTER 100 CDI",
+					"peso_ativo": 0.25,
+					"preco_teto": 0,
+					"aporte_resgate": 0
+				},
+				{
+					"ativo": "LCI INTER 99 CDI",
+					"peso_ativo": 0.25,
+					"preco_teto": 0,
+					"aporte_resgate": 0
+				},
+				{
+					"ativo": "LCI INTER 95 CDI 9M",
+					"peso_ativo": 0.25,
+					"preco_teto": 0,
+					"aporte_resgate": 0
+				},
+				{
+					"ativo": "LCA PINE DI - 95.50",
+					"peso_ativo": 0.25,
+					"preco_teto": 0,
+					"aporte_resgate": 0
+				}
+			],
+			"aporte_resgate": 0
+		},
+		{
+			"numero_carteira": 2,
+			"nome_carteira": "INTERNACIONAL",
+			"peso_carteira": 0.25,
+			"ativos": [
+				{
+					"ativo": "LON:IMID",
+					"preco_teto": 0,
+					"aporte_resgate": 0
+				}
+			],
+			"aporte_resgate": 0
+		},
+		{
+			"numero_carteira": 7,
+			"nome_carteira": "CRIPTO",
+			"peso_carteira": 0,
+			"ativos": [
+				{
+					"rank": 1,
+					"ativo": "BTCUSD",
+					"preco_teto": 0,
+					"aporte_resgate": 0
+				}
+			],
+			"aporte_resgate": 0
+		}
+	],
+	"darf_payments": [],
+	"darf_values": [],
+	"nome_investidor": "Bruno",
+	"investidor": "Bruno"
+}
