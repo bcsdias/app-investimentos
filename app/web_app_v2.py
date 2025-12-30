@@ -172,6 +172,14 @@ def render_benchmark_section():
 def render_altair_line(df, title, y_format=".0%", y_title="Valor"):
     if df is None or df.empty: return
     
+    # --- Ordenação por Rentabilidade Final (Maior para Menor) ---
+    # Garante que a tabela e o tooltip mostrem os ativos mais rentáveis primeiro
+    if not df.empty:
+        # Pega a última linha válida para ordenar
+        last_vals = df.ffill().iloc[-1]
+        sorted_cols = last_vals.sort_values(ascending=False).index
+        df = df[sorted_cols]
+
     # Preserva dataframe original para exibição na tabela
     df_display = df.copy()
     
@@ -200,6 +208,9 @@ def render_altair_line(df, title, y_format=".0%", y_title="Valor"):
     df.columns = safe_cols
     x_col = safe_cols[0] # Primeira coluna é a Data
     
+    # Lista ordenada para forçar a legenda a seguir a ordem de rentabilidade (Maior -> Menor)
+    legend_sort = [c for c in safe_cols if c != x_col]
+    
     # Transformação para formato longo (Tidy Data)
     df_melt = df.melt(id_vars=[x_col], var_name='Ativo', value_name='Valor')
     
@@ -216,7 +227,7 @@ def render_altair_line(df, title, y_format=".0%", y_title="Valor"):
     lines = alt.Chart(df_melt).mark_line(point=False).encode(
         x=alt.X(f'{x_col}:T', title='Data'),
         y=alt.Y('Valor:Q', title=y_title, axis=alt.Axis(format=y_format)),
-        color='Ativo:N'
+        color=alt.Color('Ativo:N', sort=legend_sort, legend=alt.Legend(title="Ativo"))
     )
 
     points = lines.mark_circle().encode(
@@ -437,6 +448,7 @@ def main():
                 _, df_risk = report.plot_risk_return_scatter(title_suffix=nome_analise, return_fig=True)
                 
                 if df_risk is not None:
+                    df_risk = df_risk.sort_values('Retorno (CAGR)', ascending=False)
                     df_risk = df_risk.reset_index().rename(columns={'index': 'Ativo'})
                     chart_risk = alt.Chart(df_risk).mark_circle(size=100).encode(
                         x=alt.X('Volatilidade', axis=alt.Axis(format='%')),
