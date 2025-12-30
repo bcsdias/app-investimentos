@@ -176,6 +176,21 @@ def render_altair_line(df, title, y_format=".0%", y_title="Valor"):
     df_display = df.copy()
     
     df = df.copy()
+    
+    # --- OTIMIZAÇÃO DE PERFORMANCE: Downsampling ---
+    # Se houver muitos pontos (ex: > 800), reduz a granularidade visual para não travar o navegador.
+    # Isso mantém a tendência visual mas reduz drasticamente o peso do JSON/HTML gerado.
+    MAX_POINTS = 800
+    if len(df) > MAX_POINTS:
+        step = len(df) // MAX_POINTS
+        # Fatia o dataframe (ex: pega a cada 2, 3, 4... dias)
+        df_resampled = df.iloc[::step]
+        # Garante que o último ponto (data mais recente) seja incluído para não parecer desatualizado
+        if df.index[-1] != df_resampled.index[-1]:
+            df_resampled = pd.concat([df_resampled, df.iloc[[-1]]])
+        df = df_resampled
+    # -----------------------------------------------
+
     # Garante que o índice é uma coluna para o Altair
     if df.index.name is None: df.index.name = 'Data'
     df = df.reset_index()
