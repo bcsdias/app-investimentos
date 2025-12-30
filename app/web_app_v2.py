@@ -3,6 +3,7 @@ import os
 import sys
 import pandas as pd
 import matplotlib.pyplot as plt
+import altair as alt
 from dotenv import load_dotenv
 
 # Configuração da Página (Deve ser o primeiro comando Streamlit)
@@ -166,6 +167,33 @@ def render_benchmark_section():
             st.warning(f"A soma dos pesos é {total_weight*100:.1f}%. Ajuste para 100%.")
             
     return active_benchmarks_list
+
+# --- Helper para Gráficos Altair ---
+def render_altair_line(df, title, y_format=".0%", y_title="Valor"):
+    if df is None or df.empty: return
+    df = df.copy()
+    # Garante que o índice é uma coluna para o Altair
+    if df.index.name is None: df.index.name = 'Data'
+    df = df.reset_index()
+    x_col = df.columns[0]
+    
+    # Transformação para formato longo (Tidy Data)
+    df_melt = df.melt(id_vars=[x_col], var_name='Ativo', value_name='Valor')
+    
+    chart = alt.Chart(df_melt).mark_line(point=False).encode(
+        x=alt.X(f'{x_col}:T', title='Data'),
+        y=alt.Y('Valor:Q', title=y_title, axis=alt.Axis(format=y_format)),
+        color='Ativo:N',
+        tooltip=[
+            alt.Tooltip(f'{x_col}:T', format='%d/%m/%Y'), 
+            'Ativo', 
+            alt.Tooltip('Valor:Q', format=y_format)
+        ]
+    ).properties(title=title, height=400).interactive()
+    
+    st.altair_chart(chart, use_container_width=True)
+    with st.expander(f"🔍 Ver dados: {title}"):
+        st.dataframe(df, use_container_width=True)
 
 # --- Função Principal do App ---
 def main():
@@ -360,28 +388,42 @@ def main():
 
             with tab1:
                 st.subheader("Evolução TWR (Time-Weighted Return)")
-                fig_twr = report.plot_twr_evolution(title_suffix=nome_analise, return_fig=True)
-                if fig_twr: st.pyplot(fig_twr)
+                # O df_twr vem em Base 100 (ex: 105.0). Usamos formato float (.1f)
+                _, df_twr = report.plot_twr_evolution(title_suffix=nome_analise, return_fig=True)
+                render_altair_line(df_twr, "Evolução TWR (Base 100)", y_format=".1f", y_title="Base 100")
 
                 st.subheader("Risco x Retorno")
-                fig_risk = report.plot_risk_return_scatter(title_suffix=nome_analise, return_fig=True)
-                if fig_risk: st.pyplot(fig_risk)
+                _, df_risk = report.plot_risk_return_scatter(title_suffix=nome_analise, return_fig=True)
+                
+                if df_risk is not None:
+                    df_risk = df_risk.reset_index().rename(columns={'index': 'Ativo'})
+                    chart_risk = alt.Chart(df_risk).mark_circle(size=100).encode(
+                        x=alt.X('Volatilidade', axis=alt.Axis(format='%')),
+                        y=alt.Y('Retorno (CAGR)', axis=alt.Axis(format='%')),
+                        color='Ativo',
+                        tooltip=['Ativo', alt.Tooltip('Volatilidade', format='.2%'), alt.Tooltip('Retorno (CAGR)', format='.2%'), alt.Tooltip('Sharpe', format='.2f')]
+                    ).properties(height=400, title="Risco (Vol) x Retorno (CAGR)").interactive()
+                    
+                    st.altair_chart(chart_risk, use_container_width=True)
+                    with st.expander("🔍 Ver dados: Risco x Retorno"):
+                        st.dataframe(df_risk, use_container_width=True)
 
             with tab2:
                 col1, col2 = st.columns(2)
                 with col1:
                     st.subheader("Drawdown (Queda Máxima)")
-                    fig_dd = report.plot_drawdown(title_suffix=nome_analise, return_fig=True)
-                    if fig_dd: st.pyplot(fig_dd)
+                    _, df_dd = report.plot_drawdown(title_suffix=nome_analise, return_fig=True)
+                    # Drawdown é negativo (ex: -0.05), formato % funciona bem
+                    render_altair_line(df_dd, "Drawdown", y_format=".1%")
                 
                 with col2:
                     st.subheader("Volatilidade Móvel (Risco)")
-                    fig_vol = report.plot_rolling_volatility(title_suffix=nome_analise, return_fig=True)
-                    if fig_vol: st.pyplot(fig_vol)
+                    _, df_vol = report.plot_rolling_volatility(title_suffix=nome_analise, return_fig=True)
+                    render_altair_line(df_vol, "Volatilidade Anualizada", y_format=".1%")
 
                 st.subheader("Sharpe Ratio Móvel (Eficiência)")
-                fig_sharpe = report.plot_rolling_sharpe(title_suffix=nome_analise, return_fig=True)
-                if fig_sharpe: st.pyplot(fig_sharpe)
+                _, df_sharpe = report.plot_rolling_sharpe(title_suffix=nome_analise, return_fig=True)
+                render_altair_line(df_sharpe, "Sharpe Ratio", y_format=".2f", y_title="Sharpe")
 
             with tab3:
                 if modo == "Carteira DLP Invest":
@@ -389,17 +431,22 @@ def main():
                     
                     with col_tir:
                         st.subheader("Evolução da TIR (Rentabilidade Real)")
-                        fig_tir = report.plot_irr_evolution(title_suffix=nome_analise, return_fig=True)
-                        if fig_tir: 
-                            st.pyplot(fig_tir)
+                        _, series_tir = report.plot_irr_evolution(title_suffix=nome_analise, return_fig=True)
+                        if series_tir is not None and not series_tir.empty:
+                            # TIR vem multiplicada por 100 no main_v2 (ex: 10.5). 
+                            # Altair espera decimal para %, ou usamos 'f' com sufixo.
+                            # Vamos converter de volta para decimal para usar formatação % padrão
+                            df_tir = (series_tir / 100).to_frame(name="TIR")
+                            render_altair_line(df_tir, "TIR Histórica", y_format=".2%")
                         else:
                             st.info("Dados insuficientes para cálculo da TIR.")
 
                     with col_sim:
                         if simular_aportes:
                             st.subheader("Simulação de Aportes (Shadow Portfolio)")
-                            fig_sim = report.simulate_shadow_portfolios(title_suffix=nome_analise, return_fig=True)
-                            if fig_sim: st.pyplot(fig_sim)
+                            _, df_sim = report.simulate_shadow_portfolios(title_suffix=nome_analise, return_fig=True)
+                            # Valores monetários
+                            render_altair_line(df_sim, "Patrimônio Simulado (R$)", y_format=",.0f", y_title="R$")
                         else:
                             st.info("Simulação de aportes desativada.")
                 else:
