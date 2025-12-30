@@ -171,29 +171,55 @@ def render_benchmark_section():
 # --- Helper para Gráficos Altair ---
 def render_altair_line(df, title, y_format=".0%", y_title="Valor"):
     if df is None or df.empty: return
+    
+    # Preserva dataframe original para exibição na tabela
+    df_display = df.copy()
+    
     df = df.copy()
     # Garante que o índice é uma coluna para o Altair
     if df.index.name is None: df.index.name = 'Data'
     df = df.reset_index()
-    x_col = df.columns[0]
+    
+    # Sanitiza nomes de colunas para evitar erros no Altair (ex: pontos em tickers)
+    safe_cols = [str(c).replace('.', '_') for c in df.columns]
+    df.columns = safe_cols
+    x_col = safe_cols[0] # Primeira coluna é a Data
     
     # Transformação para formato longo (Tidy Data)
     df_melt = df.melt(id_vars=[x_col], var_name='Ativo', value_name='Valor')
     
-    chart = alt.Chart(df_melt).mark_line(point=False).encode(
+    # 1. Configuração do Tooltip Unificado (usando dados Wide)
+    tooltip_list = [alt.Tooltip(x_col, type='temporal', title='Data', format='%d/%m/%Y')]
+    for col in df.columns:
+        if col == x_col: continue
+        tooltip_list.append(alt.Tooltip(col, type='quantitative', format=y_format))
+
+    # 2. Seletor de Interação (Nearest X)
+    nearest = alt.selection_point(nearest=True, on='mouseover', fields=[x_col], empty=False)
+
+    # 3. Camadas do Gráfico
+    lines = alt.Chart(df_melt).mark_line(point=False).encode(
         x=alt.X(f'{x_col}:T', title='Data'),
         y=alt.Y('Valor:Q', title=y_title, axis=alt.Axis(format=y_format)),
-        color='Ativo:N',
-        tooltip=[
-            alt.Tooltip(f'{x_col}:T', format='%d/%m/%Y'), 
-            'Ativo', 
-            alt.Tooltip('Valor:Q', format=y_format)
-        ]
-    ).properties(title=title, height=400).interactive()
+        color='Ativo:N'
+    )
+
+    points = lines.mark_circle().encode(
+        opacity=alt.condition(nearest, alt.value(1), alt.value(0))
+    )
+
+    # Camada invisível (Regra) que captura o mouse e mostra o tooltip com TODOS os dados
+    rule = alt.Chart(df).mark_rule(color='gray').encode(
+        x=f'{x_col}:T',
+        opacity=alt.condition(nearest, alt.value(0.5), alt.value(0)),
+        tooltip=tooltip_list
+    ).add_params(nearest)
+    
+    chart = alt.layer(lines, points, rule).properties(title=title, height=400).interactive()
     
     st.altair_chart(chart, use_container_width=True)
     with st.expander(f"🔍 Ver dados: {title}"):
-        st.dataframe(df, use_container_width=True)
+        st.dataframe(df_display, use_container_width=True)
 
 # --- Função Principal do App ---
 def main():
