@@ -347,6 +347,13 @@ def main():
                         val = retorno_total[col_name]
                         with cols[j]:
                             st.metric(label=col_name, value=f"{val:.1%}")
+                        #with cols[j]:
+                        #    st.metric(
+                        #    label=col_name, 
+                        #    value=f"{val:.1%}", 
+                        #    delta=f"{val:.1%}", # Mostra a variação
+                        #    delta_color="normal" # Verde para positivo, Vermelho para negativo
+                        #)
 
             # Abas para organização
             tab1, tab2, tab3, tab4 = st.tabs(["📈 Rentabilidade & Risco", "📉 Drawdown & Volatilidade", "💰 Simulação & TIR", "📋 Dados Brutos"])

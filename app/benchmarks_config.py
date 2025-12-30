@@ -57,6 +57,7 @@ BENCHMARKS_ATIVOS = [
     # 'IBOV',
     # 'IPCA + 6%',
     # 'Bitcoin BRL',
+    'IMA-B 5+',
     
     # --- Carteiras Sintéticas (IMID BRL + IPCA+6%) ---
     # {'nome': 'IMID BRL 50 + (IPCA+6%) 50', 'composicao': {'IMID BRL': 0.5, 'IPCA + 6%': 0.5}},
@@ -105,14 +106,22 @@ BENCHMARKS_ATIVOS = [
     {'nome': 'IMID BRL 57 + IMA-B5 38 + BTC 5', 'composicao': {'IMID BRL': 0.57, 'IMA-B 5': 0.38, 'Bitcoin BRL': 0.05}},
     {'nome': 'IMID BRL 38 + IMA-B5 57 + BTC 5', 'composicao': {'IMID BRL': 0.38, 'IMA-B 5': 0.57, 'Bitcoin BRL': 0.05}},
 
+    # --- Carteiras Sintéticas (IMID BRL + 'IMA-B 5+' + BTC) ---
+    {'nome': 'IMID BRL 47.5 + IMA-B5+ 47.5 + BTC 5', 'composicao': {'IMID BRL': 0.475, 'IMA-B 5+': 0.475, 'Bitcoin BRL': 0.05}},
+    {'nome': 'IMID BRL 23.75 + IMA-B5+ 71.25 + BTC 5', 'composicao': {'IMID BRL': 0.2375, 'IMA-B 5+': 0.7125, 'Bitcoin BRL': 0.05}},
+    {'nome': 'IMID BRL 71.25 + IMA-B5+ 23.75 + BTC 5', 'composicao': {'IMID BRL': 0.7125, 'IMA-B 5+': 0.2375, 'Bitcoin BRL': 0.05}},
+    {'nome': 'IMID BRL 70 + IMA-B5+ 25 + BTC 5', 'composicao': {'IMID BRL': 0.7, 'IMA-B 5+': 0.25, 'Bitcoin BRL': 0.05}},
+    {'nome': 'IMID BRL 57 + IMA-B5+ 38 + BTC 5', 'composicao': {'IMID BRL': 0.57, 'IMA-B 5+': 0.38, 'Bitcoin BRL': 0.05}},
+    {'nome': 'IMID BRL 38 + IMA-B5+ 57 + BTC 5', 'composicao': {'IMID BRL': 0.38, 'IMA-B 5+': 0.57, 'Bitcoin BRL': 0.05}},
+
     # --- Carteiras Sintéticas (IMID BRL + IMA-B 5) ---
-    {'nome': 'IMID BRL 50 + IMA-B5 50', 'composicao': {'IMID BRL': 0.5, 'IMA-B 5': 0.5}},
-    {'nome': 'IMID BRL 25 + IMA-B5 75', 'composicao': {'IMID BRL': 0.25, 'IMA-B 5': 0.75}},
-    {'nome': 'IMID BRL 75 + IMA-B5 25', 'composicao': {'IMID BRL': 0.75, 'IMA-B 5': 0.25}},
-    {'nome': 'IMID BRL 60 + IMA-B5 40', 'composicao': {'IMID BRL': 0.6, 'IMA-B 5': 0.4}},
-    {'nome': 'IMID BRL 40 + IMA-B5 60', 'composicao': {'IMID BRL': 0.4, 'IMA-B 5': 0.6}},
+    # {'nome': 'IMID BRL 50 + IMA-B5 50', 'composicao': {'IMID BRL': 0.5, 'IMA-B 5': 0.5}},
+    # {'nome': 'IMID BRL 25 + IMA-B5 75', 'composicao': {'IMID BRL': 0.25, 'IMA-B 5': 0.75}},
+    # {'nome': 'IMID BRL 75 + IMA-B5 25', 'composicao': {'IMID BRL': 0.75, 'IMA-B 5': 0.25}},
+    # {'nome': 'IMID BRL 60 + IMA-B5 40', 'composicao': {'IMID BRL': 0.6, 'IMA-B 5': 0.4}},
+    # {'nome': 'IMID BRL 40 + IMA-B5 60', 'composicao': {'IMID BRL': 0.4, 'IMA-B 5': 0.6}},
 
     # --- Outros ---
     # {'nome': 'IMID BRL/(IPCA+6%)', 'composicao': {'IMID BRL': 0.50, 'IDIV': 0.25, 'IPCA + 6%': 0.25}},
-    {'nome': 'IDIV', 'composicao': {'IDIV': 1.0}},
+    # {'nome': 'IDIV', 'composicao': {'IDIV': 1.0}},
 ]
