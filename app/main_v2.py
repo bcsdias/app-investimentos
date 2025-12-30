@@ -251,10 +251,11 @@ class FinancialReport:
         self.logger.info(f"Gerando gráfico TWR: {path}")
         self.export_csv(df, f"twr_evolucao_{title_suffix}")
         
-        if return_fig:
-            return fig
-            
         plt.savefig(path, bbox_inches='tight')
+        
+        if return_fig:
+            return fig, df
+            
         plt.close()
 
     def plot_drawdown(self, title_suffix="", return_fig=False):
@@ -283,10 +284,11 @@ class FinancialReport:
         self.logger.info(f"Gerando gráfico Drawdown: {path}")
         self.export_csv(drawdown, f"drawdown_{title_suffix}")
         
-        if return_fig:
-            return fig
-            
         plt.savefig(path, bbox_inches='tight')
+        
+        if return_fig:
+            return fig, drawdown
+            
         plt.close()
 
     def plot_risk_return_scatter(self, title_suffix="", return_fig=False):
@@ -346,10 +348,11 @@ class FinancialReport:
         self.logger.info(f"Gerando gráfico Risco x Retorno: {path}")
         self.export_csv(metrics, f"metricas_risco_{title_suffix}")
         
-        if return_fig:
-            return fig
-            
         plt.savefig(path, bbox_inches='tight')
+        
+        if return_fig:
+            return fig, metrics
+            
         plt.close()
 
     def plot_rolling_volatility(self, window=252, title_suffix="", return_fig=False):
@@ -380,10 +383,11 @@ class FinancialReport:
         self.logger.info(f"Gerando gráfico Volatilidade Móvel: {path}")
         self.export_csv(rolling_vol, f"volatilidade_movel_{title_suffix}")
         
-        if return_fig:
-            return fig
-            
         plt.savefig(path, bbox_inches='tight')
+        
+        if return_fig:
+            return fig, rolling_vol
+            
         plt.close()
 
     def plot_rolling_sharpe(self, window=252, title_suffix="", return_fig=False):
@@ -434,10 +438,11 @@ class FinancialReport:
         self.logger.info(f"Gerando gráfico Sharpe Móvel: {path}")
         self.export_csv(rolling_sharpe, f"sharpe_movel_{title_suffix}")
         
-        if return_fig:
-            return fig
-            
         plt.savefig(path, bbox_inches='tight')
+        
+        if return_fig:
+            return fig, rolling_sharpe
+            
         plt.close()
 
     def _calculate_xirr(self, cash_flows, dates):
@@ -550,10 +555,11 @@ class FinancialReport:
         self.logger.info(f"Gerando gráfico TIR: {path}")
         self.export_csv(series_irr, f"tir_evolucao_{title_suffix}")
         
-        if return_fig:
-            return fig
-            
         plt.savefig(path, bbox_inches='tight')
+        
+        if return_fig:
+            return fig, series_irr
+            
         plt.close()
 
     def simulate_shadow_portfolios(self, title_suffix="", return_fig=False):
@@ -648,10 +654,11 @@ class FinancialReport:
         self.logger.info(f"Gerando gráfico Simulação de Aportes: {path}")
         self.export_csv(shadow_wealth, f"simulacao_aportes_{title_suffix}")
         
-        if return_fig:
-            return fig
-            
         plt.savefig(path, bbox_inches='tight')
+        
+        if return_fig:
+            return fig, shadow_wealth
+            
         plt.close()
 
     def generate_summary_table(self, title_suffix=""):
