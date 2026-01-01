@@ -59,39 +59,95 @@ def get_wallet_data(token):
         def warning(self, msg): print(f"WARN: {msg}")
     return buscar_resumo_carteira(token, SimpleLogger())
 
+@st.cache_data
+def load_assets_from_csv():
+    """Carrega ativos do CSV local e separa por categoria (Brasil vs Internacional)."""
+    csv_path = os.path.join(BASE_DIR, 'data', 'ativos.csv')
+    if not os.path.exists(csv_path):
+        return {}, {}
+    
+    try:
+        df = pd.read_csv(csv_path, sep=';')
+        
+        br_assets = {}
+        intl_assets = {}
+        
+        # Definição de classes
+        classes_br = ['ACAO', 'ETF', 'ETF RF', 'FI_INFRA', 'FI_SET', 'FIDC', 'FII', 'FIP', 'FIP_IE']
+        classes_intl = ['BDR', 'BDR ETF', 'ETF_GB', 'ETF_US', 'REIT', 'STOCK']
+        
+        for _, row in df.iterrows():
+            classe = str(row['classe']).strip()
+            ticker = str(row['sigla']).strip()
+            market_cod = str(row['market_cod']).strip()
+            
+            # Lógica de Sufixo YF baseada no market_cod
+            yf_ticker = ticker
+            if ':' in market_cod:
+                exchange = market_cod.split(':')[0]
+                if exchange == 'BVMF':
+                    yf_ticker = f"{ticker}.SA"
+                elif exchange == 'LON':
+                    yf_ticker = f"{ticker}.L"
+            
+            if classe in classes_br:
+                br_assets[ticker] = yf_ticker
+            elif classe in classes_intl:
+                intl_assets[ticker] = yf_ticker
+                
+        return br_assets, intl_assets
+    except Exception as e:
+        print(f"[ERROR] Erro ao carregar ativos.csv: {e}")
+        return {}, {}
+
 def get_asset_categories():
     """Organiza os ativos dos catálogos em categorias para exibição."""
+    # Carrega ativos do CSV e atualiza o catálogo YF
+    br_assets, intl_assets = load_assets_from_csv()
+    CATALOGO_YF.update(br_assets)
+    CATALOGO_YF.update(intl_assets)
+    
     categories = {
         "Bolsa Brasil": [],
         "Bolsa Internacional": [],
-        "Índices / Renda Fixa": [],
+        "Indices": [],
         "Tesouro Direto": []
     }
     
     # Helper para identificar internacionais no YF
-    intl_tickers = ['SPY', 'SPY.BA', 'IVVB11.SA', 'IMID.L', 'BTC-USD']
+    intl_tickers_hardcoded = ['SPY', 'SPY.BA', 'IVVB11.SA', 'IMID.L', 'BTC-USD']
     
     # YF
     for name, ticker in CATALOGO_YF.items():
         if name == 'S&P 500 BRL': continue # Oculta versão BRL explícita da sidebar
         
-        if ticker in intl_tickers or name in ['S&P 500', 'IVVB11', 'IMID', 'Bitcoin']:
+        # Prioridade: Categorização vinda do CSV
+        if name in br_assets:
+            categories["Bolsa Brasil"].append(name)
+            continue
+        if name in intl_assets:
+            categories["Bolsa Internacional"].append(name)
+            continue
+        
+        if name in ['S&P 500', 'Ibovespa (YF)']:
+            categories["Indices"].append(name)
+        elif ticker in intl_tickers_hardcoded or name in ['IVVB11', 'IMID', 'Bitcoin']:
             categories["Bolsa Internacional"].append(name)
         else:
             categories["Bolsa Brasil"].append(name)
             
     # B3
-    categories["Bolsa Brasil"].extend(list(CATALOGO_B3.keys()))
+    categories["Indices"].extend(list(CATALOGO_B3.keys()))
     
     # BCB
-    categories["Índices / Renda Fixa"].extend(list(CATALOGO_BCB.keys()))
+    categories["Indices"].extend(list(CATALOGO_BCB.keys()))
     
     # TD
     categories["Tesouro Direto"].extend(list(CATALOGO_TD.keys()))
     
     # Adiciona sintéticos comuns
     # categories["Bolsa Internacional"].extend(["IMID BRL", "Bitcoin BRL"]) # Removido para gerar dinamicamente
-    categories["Índices / Renda Fixa"].append("IPCA + 6%")
+    # categories["Índices / Renda Fixa"].append("IPCA + 6%") # Removido para usar dinâmico
     
     return categories
 
@@ -109,6 +165,41 @@ def render_sidebar_asset_selection():
             sel = st.multiselect(f"Ativos ({cat})", assets, key=f"sel_{cat}")
             selected_assets.extend(sel)
             
+    # --- Índices Personalizados ---
+    st.sidebar.markdown("---")
+    st.sidebar.subheader("Índices Personalizados")
+    
+    if "custom_indices" not in st.session_state:
+        st.session_state.custom_indices = []
+        
+    with st.sidebar.expander("➕ Criar Novo", expanded=False):
+        c_type = st.selectbox("Tipo", ["IPCA +", "CDI +", "% do CDI"], key="idx_type")
+        c_val = st.number_input("Taxa (%)", min_value=0.0, value=0.0, step=0.1, format="%.2f", key="idx_val")
+        
+        if st.button("Adicionar"):
+            if c_val > 0:
+                if c_type == "IPCA +":
+                    new_idx = f"IPCA + {c_val:.1f}%"
+                elif c_type == "CDI +":
+                    new_idx = f"CDI + {c_val:.1f}%"
+                else: # % do CDI
+                    new_idx = f"{c_val:.0f}% do CDI"
+                
+                if new_idx not in st.session_state.custom_indices:
+                    st.session_state.custom_indices.append(new_idx)
+                    st.rerun()
+    
+    if st.session_state.custom_indices:
+        st.sidebar.caption("Meus Índices:")
+        for idx in st.session_state.custom_indices:
+            c1, c2 = st.sidebar.columns([0.85, 0.15])
+            c1.text(idx)
+            if c2.button("x", key=f"rm_{idx}"):
+                st.session_state.custom_indices.remove(idx)
+                st.rerun()
+    
+    selected_assets.extend(st.session_state.custom_indices)
+    
     return list(set(selected_assets))
 
 def get_expanded_assets(available_assets):
