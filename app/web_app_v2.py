@@ -164,7 +164,7 @@ def render_sidebar_asset_selection():
     for cat, assets in categories.items():
         assets = sorted(list(set(assets)))
         with st.sidebar.expander(cat, expanded=False):
-            sel = st.multiselect(f"Ativos ({cat})", assets, key=f"sel_{cat}")
+            sel = st.multiselect("Selecione", assets, key=f"sel_{cat}", label_visibility="collapsed")
             selected_assets.extend(sel)
             
     # --- Índices Personalizados ---
