@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 
 # Configuração da Página (Deve ser o primeiro comando Streamlit)
 st.set_page_config(
-    page_title="Investimentos V2",
+    page_title="Investimentos V3",
     page_icon="📈",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -249,13 +249,12 @@ def render_altair_line(df, title, y_format=".0%", y_title="Valor"):
 
 # --- Função Principal do App ---
 def main():
-    st.title("📊 Dashboard de Investimentos V2")
+    st.title("📊 Dashboard de Investimentos V3")
     st.markdown("---")
 
     # Inicializa variáveis
     ativo = None
     classe = None
-    historico = 5
     token = None
     active_benchmarks_list = None # Lista final a ser passada para o report
     simular_aportes = False
@@ -263,28 +262,40 @@ def main():
     # --- Sidebar: Configurações Gerais ---
     with st.sidebar:
         st.header("Configurações")
-        modo = st.radio("Modo de Operação", ["Mercado (Benchmarks)", "Carteira DLP Invest"])
+        
+        # Seleção de Período (Substitui o slider de anos)
+        st.subheader("Período de Análise")
+        col_d1, col_d2 = st.columns(2)
+        with col_d1:
+            default_start = pd.Timestamp.today() - pd.DateOffset(years=1)
+            data_inicio = st.date_input("Início", value=default_start)
+        with col_d2:
+            data_fim = st.date_input("Fim", value="today")
+            
         st.divider()
 
-        if modo == "Carteira DLP Invest":
+        # Opção de Comparação com Carteira
+        comparar_carteira = st.checkbox("Comparar com Carteira DLP Invest", value=False)
+        
+        if comparar_carteira:
             env_token = os.getenv('DLP_TOKEN', '')
             token = st.text_input("Token API (DLP)", value=env_token, type="password")
-            st.button("Aplicar Token") # Botão para confirmar entrada em dispositivos móveis
-        else:
-            historico = st.slider("Anos de Histórico", min_value=1, max_value=20, value=5)
 
     # --- Main Area: Personalização ---
     with st.container(border=True):
-        if modo == "Carteira DLP Invest":
+        # 1. Seleção de Benchmarks (Sempre visível)
+        active_benchmarks_list = render_benchmark_section()
+
+        # 2. Seleção de Ativos da Carteira (Condicional)
+        if comparar_carteira:
+            st.markdown("---")
+            st.subheader("Seleção de Ativos da Carteira")
+            
             # Tenta buscar dados da carteira se o token estiver presente
             wallet_data = None
             if token:
                 wallet_data = get_wallet_data(token)
 
-            # Adiciona a seleção de benchmarks também no modo Carteira
-            active_benchmarks_list = render_benchmark_section()
-
-            st.subheader("Seleção de Ativos")
             col1, col2 = st.columns(2)
             
             with col1:
@@ -325,36 +336,17 @@ def main():
                 if len(ativo) > 5:
                     st.caption(f"... e mais {len(ativo)-5} ativos selecionados.")
             
-            st.markdown("---")
-            
-            st.subheader("Período de Análise")
-            use_full_period = st.checkbox("Usar todo o histórico disponível", value=True)
-            
-            data_inicio = None
-            data_fim = None
-            
-            if not use_full_period:
-                col_d1, col_d2 = st.columns(2)
-                with col_d1:
-                    default_start = pd.Timestamp.today() - pd.DateOffset(years=1)
-                    data_inicio = st.date_input("Data Início", value=default_start)
-                with col_d2:
-                    data_fim = st.date_input("Data Fim", value="today")
-            
-            st.markdown("---")
-            
             st.markdown("")
             simular_aportes = st.checkbox("Simular Aportes (Shadow Portfolio)", value=True)
             
-        else: # Modo Mercado
-            active_benchmarks_list = render_benchmark_section()
+        # else: # Modo Mercado (Benchmarks já renderizados acima)
 
         st.markdown("")
         btn_processar = st.button("🚀 Gerar Relatório", type="primary")
 
     # --- Processamento ---
     if btn_processar:
-        if not token and modo == "Carteira DLP Invest":
+        if comparar_carteira and not token:
             st.error("Por favor, informe o Token da API.")
             return
 
@@ -369,9 +361,11 @@ def main():
         try:
             # 1. Busca Dados
             user_series = None
-            nome_analise = ""
+            # Formata datas para string YYYY-MM-DD
+            start_date_str = data_inicio.strftime('%Y-%m-%d')
+            end_date_str = data_fim.strftime('%Y-%m-%d')
             
-            if modo == "Carteira DLP Invest":
+            if comparar_carteira:
                 ativo_str = ",".join(ativo) if ativo else None
                 classe_str = ",".join(classe) if classe else None
                 
@@ -384,23 +378,24 @@ def main():
                     token, 
                     ativo=ativo_str, 
                     classe=classe_str,
-                    start_date=data_inicio if not use_full_period else None,
-                    end_date=data_fim if not use_full_period else None
+                    start_date=start_date_str,
+                    end_date=end_date_str
                 )
                 
                 if user_series is None:
                     st.error("Não foi possível obter dados da carteira. Verifique o Token ou o Ativo/Classe.")
                     return
             else:
-                nome_analise = f"Mercado_{historico}anos"
-                status_text.info(f"Buscando dados de mercado ({historico} anos)...")
+                nome_analise = f"Mercado_{start_date_str}_{end_date_str}"
+                status_text.info(f"Buscando dados de mercado ({start_date_str} a {end_date_str})...")
 
             # 2. Constrói Dataset
             status_text.info("Consolidando benchmarks e calculando indicadores...")
             report.build_dataset(
                 user_series=user_series, 
-                years_history=historico if modo != "Carteira DLP Invest" else None,
-                active_benchmarks=active_benchmarks_list
+                active_benchmarks=active_benchmarks_list,
+                start_date=start_date_str,
+                end_date=end_date_str
             )
 
             if report.df_combined.empty:
@@ -479,7 +474,7 @@ def main():
                 render_altair_line(df_sharpe, "Sharpe Ratio", y_format=".2f", y_title="Sharpe")
 
             with tab3:
-                if modo == "Carteira DLP Invest":
+                if comparar_carteira:
                     col_tir, col_sim = st.columns(2)
                     
                     with col_tir:
