@@ -7,6 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
 from dotenv import load_dotenv
+from datetime import datetime
 
 # Configuração de Caminhos
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -93,10 +94,10 @@ class FinancialReport:
         self.portfolio_df = df_grp.copy()
         return result_series
 
-    def build_dataset(self, user_series=None, years_history=None, active_benchmarks=None):
+    def build_dataset(self, user_series=None, years_history=None, active_benchmarks=None, start_date=None, end_date=None):
         """
         Constrói o DataFrame unificado (Carteira + Benchmarks).
-        Se user_series existir, usa as datas dela. Se não, usa years_history.
+        Se user_series existir, usa as datas dela. Se não, usa start_date/end_date ou years_history.
         Se active_benchmarks for fornecido, usa essa lista em vez da configuração padrão.
         """
         # 1. Definição de Datas
@@ -104,12 +105,15 @@ class FinancialReport:
             start_date = user_series.index.min().strftime('%Y-%m-%d')
             end_date = user_series.index.max().strftime('%Y-%m-%d')
             self.logger.info(f"Período definido pela carteira: {start_date} a {end_date}")
+        elif start_date and end_date:
+            self.logger.info(f"Período definido por datas manuais: {start_date} a {end_date}")
         else:
+            years = years_history if years_history else 1
             end_dt = pd.Timestamp.today()
-            start_dt = end_dt - pd.DateOffset(years=years_history)
+            start_dt = end_dt - pd.DateOffset(years=years)
             start_date = start_dt.strftime('%Y-%m-%d')
             end_date = end_dt.strftime('%Y-%m-%d')
-            self.logger.info(f"Período definido por histórico ({years_history} anos): {start_date} a {end_date}")
+            self.logger.info(f"Período definido por histórico ({years} anos): {start_date} a {end_date}")
 
         # 2. Processa Configuração e Filtra Catálogos
         # Identifica quais ativos base precisam ser baixados com base na configuração ativa
@@ -695,13 +699,26 @@ def main():
     parser.add_argument('--debug', action='store_true', help='Log detalhado.')
     
     # Modos de Operação
-    group = parser.add_mutually_exclusive_group(required=True)
+    group = parser.add_mutually_exclusive_group(required=False)
     group.add_argument('--historico', type=int, help='Anos de histórico para análise de mercado (sem carteira).')
     group.add_argument('--ativo', type=str, help='Código do ativo na carteira do usuário.')
     group.add_argument('--classe', type=str, help='Classe de ativos na carteira do usuário.')
+    
+    # Argumentos de Data (Opcionais, substituem histórico)
+    parser.add_argument('--data-inicio', type=str, help='Data de início (DDMMAAAA).')
+    parser.add_argument('--data-fim', type=str, help='Data de fim (DDMMAAAA).')
+    
     parser.add_argument('--simular-aportes', action='store_true', help='Simula o desempenho se os aportes fossem feitos nos benchmarks.')
     
     args = parser.parse_args()
+
+    # Validação de Modos
+    has_wallet = bool(args.ativo or args.classe)
+    has_history = bool(args.historico)
+    has_dates = bool(args.data_inicio and args.data_fim)
+
+    if not (has_wallet or has_history or has_dates):
+        parser.error("É necessário informar um modo de operação: --historico, --data-inicio/--data-fim, ou --ativo/--classe.")
 
     start_time = time.time()
     # Setup
@@ -711,6 +728,17 @@ def main():
     if not token and (args.ativo or args.classe):
         logger.error("Token DLP_TOKEN não encontrado para buscar dados da carteira.")
         return
+
+    # Parsing de Datas Customizadas
+    custom_start = None
+    custom_end = None
+    if has_dates:
+        try:
+            custom_start = datetime.strptime(args.data_inicio, "%d%m%Y").strftime("%Y-%m-%d")
+            custom_end = datetime.strptime(args.data_fim, "%d%m%Y").strftime("%Y-%m-%d")
+        except ValueError:
+            logger.error("Formato de data inválido. Use DDMMAAAA (ex: 01012020).")
+            return
 
     report = FinancialReport(logger)
     
@@ -728,12 +756,21 @@ def main():
             logger.error("Não foi possível obter dados da carteira. Encerrando.")
             return
     else:
-        nome_analise = f"Mercado_{args.historico}anos"
-        logger.info(f"Iniciando análise de mercado (Standalone): {args.historico} anos")
+        if has_dates:
+            nome_analise = f"Mercado_{args.data_inicio}_{args.data_fim}"
+            logger.info(f"Iniciando análise de mercado (Datas): {custom_start} a {custom_end}")
+        else:
+            nome_analise = f"Mercado_{args.historico}anos"
+            logger.info(f"Iniciando análise de mercado (Standalone): {args.historico} anos")
 
     # 2. Construção do Dataset Unificado (Carteira + Benchmarks)
-    # Se user_series for None, ele usa args.historico para definir as datas
-    report.build_dataset(user_series=user_series, years_history=args.historico)
+    # Se user_series for None, ele usa args.historico ou custom dates para definir as datas
+    report.build_dataset(
+        user_series=user_series, 
+        years_history=args.historico,
+        start_date=custom_start,
+        end_date=custom_end
+    )
 
     # 3. Geração de Artefatos (Gráficos e CSVs)
     logger.info("Gerando gráficos e relatórios...")
