@@ -2,6 +2,7 @@ import os
 import time
 import sys
 import argparse
+import re
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -142,10 +143,15 @@ class FinancialReport:
         # Resolve dependências implícitas (ex: 'IMID BRL' precisa de 'IMID')
         final_needed = set(needed_assets)
         for asset in needed_assets:
-            if isinstance(asset, str) and asset.endswith(' BRL'):
-                final_needed.add(asset.replace(' BRL', ''))
-            if asset == 'IPCA + 6%':
-                final_needed.add('IPCA')
+            if isinstance(asset, str):
+                if asset.endswith(' BRL'):
+                    final_needed.add(asset.replace(' BRL', ''))
+                
+                # Dependências de Índices Sintéticos Dinâmicos
+                if 'IPCA +' in asset:
+                    final_needed.add('IPCA')
+                if 'CDI +' in asset or '% do CDI' in asset:
+                    final_needed.add('CDI')
 
         # Filtra os catálogos para baixar apenas o necessário
         yf_filtered = {k: v for k, v in CATALOGO_YF.items() if k in final_needed}
@@ -163,6 +169,42 @@ class FinancialReport:
         
         loaded_benchmarks = [k for k, v in bench_data.items() if v is not None and not v.empty]
         self.logger.debug(f"Benchmarks carregados com sucesso ({len(loaded_benchmarks)}): {loaded_benchmarks}")
+
+        # Cálculo de Índices Sintéticos Dinâmicos (Pós-processamento)
+        for item in benchmarks_to_use:
+            asset_name = item if isinstance(item, str) else item.get('nome')
+            
+            if asset_name not in bench_data:
+                # IPCA + XX%
+                match = re.match(r"IPCA \+ (\d+(?:\.\d+)?)%", asset_name)
+                if match and 'IPCA' in bench_data and bench_data['IPCA'] is not None:
+                    spread = float(match.group(1))
+                    base = bench_data['IPCA']
+                    # Retorno diário do índice base
+                    ret = base.pct_change().fillna(0)
+                    # Spread diário: (1 + spread/100)^(1/252) - 1
+                    spread_daily = (1 + spread/100)**(1/252) - 1
+                    new_ret = (1 + ret) * (1 + spread_daily) - 1
+                    bench_data[asset_name] = (1 + new_ret).cumprod() * 100
+                
+                # CDI + XX%
+                match = re.match(r"CDI \+ (\d+(?:\.\d+)?)%", asset_name)
+                if match and 'CDI' in bench_data and bench_data['CDI'] is not None:
+                    spread = float(match.group(1))
+                    base = bench_data['CDI']
+                    ret = base.pct_change().fillna(0)
+                    spread_daily = (1 + spread/100)**(1/252) - 1
+                    new_ret = (1 + ret) * (1 + spread_daily) - 1
+                    bench_data[asset_name] = (1 + new_ret).cumprod() * 100
+
+                # XX% do CDI
+                match = re.match(r"(\d+(?:\.\d+)?)% do CDI", asset_name)
+                if match and 'CDI' in bench_data and bench_data['CDI'] is not None:
+                    pct = float(match.group(1))
+                    base = bench_data['CDI']
+                    ret = base.pct_change().fillna(0)
+                    new_ret = ret * (pct/100)
+                    bench_data[asset_name] = (1 + new_ret).cumprod() * 100
 
         # 4. Unificação
         data_frames = []
@@ -187,6 +229,18 @@ class FinancialReport:
         for nome in nomes_para_exibir:
             if nome in bench_data and bench_data[nome] is not None:
                 s = bench_data[nome]
+                
+                # Garante que é uma Series (se for DataFrame, tenta extrair coluna de valor)
+                if isinstance(s, pd.DataFrame):
+                    if s.shape[1] == 1:
+                        s = s.iloc[:, 0]
+                    elif 'Close' in s.columns:
+                        s = s['Close']
+                    elif 'Adj Close' in s.columns:
+                        s = s['Adj Close']
+                    else:
+                        s = s.iloc[:, 0]
+
                 s = pd.to_numeric(s, errors='coerce')
                 s.name = nome
                 data_frames.append(s)
