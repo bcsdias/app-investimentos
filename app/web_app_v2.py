@@ -90,10 +90,12 @@ def load_assets_from_csv():
                 elif exchange == 'LON':
                     yf_ticker = f"{ticker}.L"
             
+            display_name = f"{ticker} - {classe}"
+            
             if classe in classes_br:
-                br_assets[ticker] = yf_ticker
+                br_assets[display_name] = yf_ticker
             elif classe in classes_intl:
-                intl_assets[ticker] = yf_ticker
+                intl_assets[display_name] = yf_ticker
                 
         return br_assets, intl_assets
     except Exception as e:
