@@ -73,7 +73,9 @@ def get_asset_categories():
     
     # YF
     for name, ticker in CATALOGO_YF.items():
-        if ticker in intl_tickers or name in ['S&P 500', 'S&P 500 BRL', 'IVVB11', 'IMID', 'Bitcoin']:
+        if name == 'S&P 500 BRL': continue # Oculta versão BRL explícita da sidebar
+        
+        if ticker in intl_tickers or name in ['S&P 500', 'IVVB11', 'IMID', 'Bitcoin']:
             categories["Bolsa Internacional"].append(name)
         else:
             categories["Bolsa Brasil"].append(name)
@@ -88,7 +90,7 @@ def get_asset_categories():
     categories["Tesouro Direto"].extend(list(CATALOGO_TD.keys()))
     
     # Adiciona sintéticos comuns
-    categories["Bolsa Internacional"].extend(["IMID BRL", "Bitcoin BRL"])
+    # categories["Bolsa Internacional"].extend(["IMID BRL", "Bitcoin BRL"]) # Removido para gerar dinamicamente
     categories["Índices / Renda Fixa"].append("IPCA + 6%")
     
     return categories
@@ -109,40 +111,78 @@ def render_sidebar_asset_selection():
             
     return list(set(selected_assets))
 
-def render_portfolio_builder(available_assets):
-    """Renderiza a área de construção de carteiras no painel principal."""
-    st.subheader("2. Construção de Carteiras e Benchmarks")
+def get_expanded_assets(available_assets):
+    # Expande lista de ativos com versões em BRL para internacionais (USD)
+    usd_assets = ['S&P 500', 'IMID', 'Bitcoin']
+    expanded_assets = []
+    for a in sorted(available_assets):
+        expanded_assets.append(a)
+        if a in usd_assets:
+            expanded_assets.append(f"{a} BRL")
+    return expanded_assets
+
+def render_benchmark_selector(available_assets):
+    """Renderiza a tabela de seleção de benchmarks individuais."""
+    st.subheader("2. Seleção de Benchmarks")
     
     if not available_assets:
         st.info("👈 Selecione ativos na barra lateral para começar.")
         return []
         
+    expanded_assets = get_expanded_assets(available_assets)
+    
+    # Gerenciamento de Exclusões
+    if "benchmarks_deleted" not in st.session_state:
+        st.session_state.benchmarks_deleted = set()
+    
+    visible_assets = [a for a in expanded_assets if a not in st.session_state.benchmarks_deleted]
+
     # --- Benchmarks Individuais ---
     with st.expander("Benchmarks Individuais (Plotar Linhas)", expanded=True):
-        df_bench = pd.DataFrame({"Ativo": available_assets, "Incluir": True})
+        df_bench = pd.DataFrame({"Ativo": visible_assets, "Incluir": True})
         edited_bench = st.data_editor(
             df_bench, 
             column_config={
                 "Ativo": st.column_config.TextColumn("Ativo", disabled=True),
-                "Incluir": st.column_config.CheckboxColumn("Plotar", width="small")
+                "Incluir": st.column_config.CheckboxColumn("Plotar", width="small"),
             },
             hide_index=True,
             use_container_width=True,
+            num_rows="dynamic",
             key="editor_bench_individual"
         )
-    active_benchmarks = edited_bench[edited_bench["Incluir"]]["Ativo"].tolist()
+        
+        # Detecta exclusões feitas diretamente na tabela
+        current_assets = set(edited_bench["Ativo"].dropna().tolist())
+        deleted_assets = [a for a in visible_assets if a not in current_assets]
+        
+        if deleted_assets:
+            st.session_state.benchmarks_deleted.update(deleted_assets)
+            st.rerun()
+
+    active_benchmarks = edited_bench[edited_bench["Incluir"]]["Ativo"].dropna().tolist()
+    return active_benchmarks
+
+def render_custom_portfolio_builder(available_assets):
+    """Renderiza a área de construção de carteiras personalizadas."""
+    st.subheader("3. Carteiras Personalizadas")
     
-    # --- Carteiras Personalizadas ---
-    st.markdown("##### Carteiras Personalizadas")
+    if not available_assets:
+        return []
+    
+    expanded_assets = get_expanded_assets(available_assets)
     
     if "custom_portfolios" not in st.session_state:
-        st.session_state.custom_portfolios = [{"name": "Minha Carteira", "weights": {}}]
+        # Inicializa com todos os ativos disponíveis (peso 0) para facilitar edição
+        initial_weights = {a: 0.0 for a in expanded_assets}
+        st.session_state.custom_portfolios = [{"name": "Carteira 1", "weights": initial_weights}]
 
     if st.button("➕ Nova Carteira"):
         new_id = len(st.session_state.custom_portfolios) + 1
-        st.session_state.custom_portfolios.append({"name": f"Carteira {new_id}", "weights": {}})
+        initial_weights = {a: 0.0 for a in expanded_assets}
+        st.session_state.custom_portfolios.append({"name": f"Carteira {new_id}", "weights": initial_weights})
     
-    final_config_list = list(active_benchmarks)
+    custom_portfolios_list = []
     indices_to_remove = []
     
     if st.session_state.custom_portfolios:
@@ -151,7 +191,7 @@ def render_portfolio_builder(available_assets):
         for i, tab in enumerate(tabs):
             with tab:
                 p = st.session_state.custom_portfolios[i]
-                col1, col2 = st.columns([4, 1])
+                col1, col2 = st.columns([4, 1], vertical_alignment="bottom")
                 with col1:
                     new_name = st.text_input(f"Nome", value=p["name"], key=f"name_{i}")
                     st.session_state.custom_portfolios[i]["name"] = new_name
@@ -160,36 +200,47 @@ def render_portfolio_builder(available_assets):
                 
                 # Prepara dados para o editor
                 current_weights = p.get("weights", {})
-                data = [{"Ativo": a, "Peso (%)": current_weights.get(a, 0.0) * 100} for a in available_assets]
+                
+                # Garante que as opções incluam ativos já presentes na carteira (mesmo que desmarcados na sidebar)
+                all_options = sorted(list(set(expanded_assets + list(current_weights.keys()))))
+                
+                # Constrói dados baseados apenas no que está salvo em 'weights' (permite exclusão)
+                data = [{"Ativo": k, "Peso (%)": v * 100} for k, v in current_weights.items()]
                 
                 edited_weights = st.data_editor(
                     pd.DataFrame(data),
                     column_config={
-                        "Ativo": st.column_config.TextColumn("Ativo", disabled=True),
+                        "Ativo": st.column_config.SelectboxColumn("Ativo", options=all_options, required=True),
                         "Peso (%)": st.column_config.NumberColumn("Peso (%)", min_value=0, max_value=100, format="%.1f")
                     },
                     hide_index=True,
                     use_container_width=True,
+                    num_rows="dynamic",
                     key=f"editor_port_{i}"
                 )
                 
                 # Processa pesos
-                composition = {}
+                composition_state = {} # Para persistência na UI (inclui zeros)
+                composition_calc = {}  # Para cálculo (apenas > 0)
                 total_w = 0.0
                 for _, row in edited_weights.iterrows():
+                    asset = row["Ativo"]
                     w = row["Peso (%)"]
-                    if w > 0:
-                        composition[row["Ativo"]] = w / 100.0
+                    
+                    if asset:
+                        composition_state[asset] = w / 100.0
                         total_w += w
+                        if w > 0:
+                            composition_calc[asset] = w / 100.0
                 
-                st.session_state.custom_portfolios[i]["weights"] = composition
+                st.session_state.custom_portfolios[i]["weights"] = composition_state
                 
-                if composition:
+                if composition_calc:
                     if abs(total_w - 100.0) > 0.1:
                         st.warning(f"Total: {total_w:.1f}%. Ajuste para 100%.")
                     else:
                         st.success(f"Carteira válida.")
-                        final_config_list.append({"nome": new_name, "composicao": composition})
+                        custom_portfolios_list.append({"nome": new_name, "composicao": composition_calc})
                 else:
                     st.caption("Defina os pesos acima.")
 
@@ -198,7 +249,7 @@ def render_portfolio_builder(available_assets):
             del st.session_state.custom_portfolios[index]
         st.rerun()
         
-    return final_config_list
+    return custom_portfolios_list
 
 # --- Helper para Gráficos Altair ---
 def render_altair_line(df, title, y_format=".0%", y_title="Valor"):
@@ -318,12 +369,16 @@ def main():
 
     # --- Main Area: Personalização ---
     with st.container(border=True):
-        # 1. Construção de Carteiras (Substitui render_benchmark_section)
-        active_benchmarks_list = render_portfolio_builder(selected_assets)
+        benchmarks_list = render_benchmark_selector(selected_assets)
+        
+    with st.container(border=True):
+        portfolios_list = render_custom_portfolio_builder(selected_assets)
+        
+    active_benchmarks_list = benchmarks_list + portfolios_list
 
-        # 2. Seleção de Ativos da Carteira (Condicional)
-        if comparar_carteira:
-            st.markdown("---")
+    # 2. Seleção de Ativos da Carteira (Condicional)
+    if comparar_carteira:
+        with st.container(border=True):
             st.subheader("Seleção de Ativos da Carteira")
             
             # Tenta buscar dados da carteira se o token estiver presente
@@ -374,10 +429,8 @@ def main():
             st.markdown("")
             simular_aportes = st.checkbox("Simular Aportes (Shadow Portfolio)", value=True)
             
-        # else: # Modo Mercado (Benchmarks já renderizados acima)
-
-        st.markdown("")
-        btn_processar = st.button("🚀 Gerar Relatório", type="primary")
+    st.markdown("")
+    btn_processar = st.button("🚀 Gerar Relatório", type="primary")
 
     # --- Processamento ---
     if btn_processar:

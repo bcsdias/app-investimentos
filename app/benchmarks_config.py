@@ -9,7 +9,7 @@ Aqui definimos os catálogos de dados disponíveis e quais serão efetivamente u
 
 CATALOGO_YF = {
     'S&P 500': '^GSPC',
-    #'S&P 500 BRL': 'SPY.BA', # Fallback se cálculo sintético falhar
+    # 'S&P 500 BRL': 'SPY.BA', # Fallback se cálculo sintético falhar
     'IVVB11': 'IVVB11.SA',
     'BOVA11': 'BOVA11.SA',
     'IMID': 'IMID.L',
@@ -18,7 +18,7 @@ CATALOGO_YF = {
 }
 
 CATALOGO_B3 = {
-    'IBOV': 'IBOV',
+    # 'IBOV': 'IBOV',
     'IFIX': 'IFIX',
     'SMLL': 'SMLL',
     'IDIV': 'IDIV',
