@@ -20,7 +20,7 @@ sys.path.append(BASE_DIR)
 
 # Importa a classe de lógica do main_v2
 from app.main_v2 import FinancialReport
-from app.benchmarks_config import BENCHMARKS_ATIVOS, CATALOGO_YF, CATALOGO_B3, CATALOGO_BCB, CATALOGO_TD
+from app.benchmarks_config import BENCHMARKS_ATIVOS, CATALOGO_YF, CATALOGO_B3, CATALOGO_BCB, CATALOGO_TD, CATALOGO_CRYPTO
 
 # Carrega variáveis de ambiente
 load_dotenv()
@@ -73,8 +73,8 @@ def load_assets_from_csv():
         intl_assets = {}
         
         # Definição de classes
-        classes_br = ['ACAO', 'ETF', 'ETF RF', 'FI_INFRA', 'FI_SET', 'FIDC', 'FII', 'FIP', 'FIP_IE']
-        classes_intl = ['BDR', 'BDR ETF', 'ETF_GB', 'ETF_US', 'REIT', 'STOCK']
+        classes_br = ['ACAO', 'ETF', 'ETF RF', 'FI_INFRA', 'FI_SET', 'FIDC', 'FII', 'FIP', 'FIP_IE', 'BDR', 'BDR ETF']
+        classes_intl = ['ETF_GB', 'ETF_US', 'REIT', 'STOCK']
         
         for _, row in df.iterrows():
             classe = str(row['classe']).strip()
@@ -151,36 +151,104 @@ def get_asset_categories():
     # Carrega Tesouro Direto do CSV local
     td_csv = load_tesouro_from_csv()
     CATALOGO_TD.update(td_csv)
+
+    # Adiciona Criptos ao catálogo YF para download
+    CATALOGO_YF.update(CATALOGO_CRYPTO)
     
+    # Nova estrutura para categories, com "Bolsa Brasil" como um dicionário
     categories = {
-        "Bolsa Brasil": [],
-        "Bolsa Internacional": [],
+        "Bolsa Brasil": {},
+        "Bolsa Internacional": {},
+        "Criptomoedas": [],
         "Indices": [],
         "Tesouro Direto": []
     }
     
-    # Helper para identificar internacionais no YF
-    intl_tickers_hardcoded = ['SPY', 'SPY.BA', 'IVVB11.SA', 'IMID.L', 'BTC-USD']
-    
-    # YF
-    for name, ticker in CATALOGO_YF.items():
-        if name == 'S&P 500 BRL': continue # Oculta versão BRL explícita da sidebar
+    # Mapeamento e Filtro de Classes Bolsa Brasil
+    map_classes_br = {
+        'ACAO': 'AÇÕES',
+        'FII': 'FII',
+        'ETF': 'ETF',
+        'ETF RF': 'ETF RENDA FIXA',
+        'FI_INFRA': 'FI INFRA',
+        'FIP': 'FIP/FIP IE',
+        'FIP_IE': 'FIP/FIP IE',
+        'BDR': 'BDR',
+        'BDR ETF': 'BDR'
+    }
+    ignore_classes_br = ['FIDC', 'FI_SET']
+
+    # Processa ativos brasileiros do CSV, agrupando por classe
+    for display_name in br_assets.keys():
+        try:
+            # Extrai a classe do display_name (ex: "ITSA4 - ACAO" -> "ACAO")
+            parts = display_name.split(' - ')
+            if len(parts) < 2: continue
+            classe_raw = parts[1]
+        except IndexError:
+            continue # Pula nomes mal formatados
         
-        # Prioridade: Categorização vinda do CSV
-        if name in br_assets:
-            categories["Bolsa Brasil"].append(name)
+        if classe_raw in ignore_classes_br:
             continue
-        if name in intl_assets:
-            categories["Bolsa Internacional"].append(name)
+            
+        classe_final = map_classes_br.get(classe_raw, classe_raw)
+        
+        if classe_final not in categories["Bolsa Brasil"]:
+            categories["Bolsa Brasil"][classe_final] = []
+        categories["Bolsa Brasil"][classe_final].append(display_name)
+
+    # Mapeamento de Classes Bolsa Internacional
+    map_classes_intl = {
+        'STOCK': 'STOCK',
+        'REIT': 'REIT',
+        'ETF': 'ETF',
+        'ETF_US': 'ETF',
+        'ETF_GB': 'ETF',
+    }
+
+    # Processa ativos internacionais do CSV
+    for display_name in intl_assets.keys():
+        try:
+            parts = display_name.split(' - ')
+            if len(parts) < 2: continue
+            classe_raw = parts[1]
+        except IndexError:
             continue
+        
+        classe_final = map_classes_intl.get(classe_raw, classe_raw)
+        if classe_final not in categories["Bolsa Internacional"]:
+            categories["Bolsa Internacional"][classe_final] = []
+        categories["Bolsa Internacional"][classe_final].append(display_name)
+    
+    # Helper para identificar internacionais no YF (hardcoded)
+    intl_tickers_hardcoded = ['SPY', 'SPY.BA', 'IVVB11.SA', 'IMID.L']
+    
+    # Processa ativos hardcoded do CATALOGO_YF que não vieram do CSV
+    for name, ticker in CATALOGO_YF.items():
+        # Pula os que já foram processados do CSV
+        if name in br_assets or name in intl_assets or name in CATALOGO_CRYPTO:
+            continue
+            
+        if name == 'S&P 500 BRL': continue # Oculta versão BRL explícita da sidebar
         
         if name in ['S&P 500', 'Ibovespa (YF)']:
             categories["Indices"].append(name)
-        elif ticker in intl_tickers_hardcoded or name in ['IVVB11', 'IMID', 'Bitcoin']:
-            categories["Bolsa Internacional"].append(name)
-        else:
-            categories["Bolsa Brasil"].append(name)
+        elif ticker in intl_tickers_hardcoded or name in ['IVVB11', 'IMID']:
+            # Categoriza hardcoded como ETF
+            c_name = "ETF"
             
+            if c_name not in categories["Bolsa Internacional"]:
+                categories["Bolsa Internacional"][c_name] = []
+            categories["Bolsa Internacional"][c_name].append(name)
+        else:
+            # Ativos BR hardcoded vão para a categoria 'Ações' por padrão
+            if "AÇÕES" not in categories["Bolsa Brasil"]:
+                categories["Bolsa Brasil"]["AÇÕES"] = []
+            categories["Bolsa Brasil"]["AÇÕES"].append(name)
+            
+    # Popula a categoria Criptomoedas com a lista do config
+    categories["Criptomoedas"].extend(list(CATALOGO_CRYPTO.keys()))
+
     # B3
     categories["Indices"].extend(list(CATALOGO_B3.keys()))
     
@@ -189,10 +257,6 @@ def get_asset_categories():
     
     # TD
     categories["Tesouro Direto"].extend(list(CATALOGO_TD.keys()))
-    
-    # Adiciona sintéticos comuns
-    # categories["Bolsa Internacional"].extend(["IMID BRL", "Bitcoin BRL"]) # Removido para gerar dinamicamente
-    # categories["Índices / Renda Fixa"].append("IPCA + 6%") # Removido para usar dinâmico
     
     return categories
 
@@ -204,11 +268,40 @@ def render_sidebar_asset_selection():
     categories = get_asset_categories()
     selected_assets = []
     
-    for cat, assets in categories.items():
-        assets = sorted(list(set(assets)))
-        with st.sidebar.expander(cat, expanded=False):
-            sel = st.multiselect("Selecione", assets, key=f"sel_{cat}", label_visibility="collapsed")
-            selected_assets.extend(sel)
+    # Ordem desejada das categorias principais
+    main_cat_order = ["Bolsa Brasil", "Bolsa Internacional", "Criptomoedas", "Indices", "Tesouro Direto"]
+    
+    for cat_name in main_cat_order:
+        if cat_name not in categories:
+            continue
+        
+        cat_content = categories[cat_name]
+        
+        with st.sidebar.expander(cat_name, expanded=False):
+            # Se o conteúdo for um dicionário, cria sub-seleções para cada classe
+            if isinstance(cat_content, dict):
+                # Ordenação específica para Bolsa Brasil
+                if cat_name == "Bolsa Brasil":
+                    order_br = ['AÇÕES', 'FII', 'BDR', 'ETF', 'ETF RENDA FIXA', 'FI INFRA', 'FIP/FIP IE']
+                    sub_cats = sorted(cat_content.keys(), key=lambda x: (order_br.index(x) if x in order_br else 999, x))
+                elif cat_name == "Bolsa Internacional":
+                    order_intl = ['STOCK', 'REIT', 'ETF']
+                    sub_cats = sorted(cat_content.keys(), key=lambda x: (order_intl.index(x) if x in order_intl else 999, x))
+                else:
+                    sub_cats = sorted(cat_content.keys())
+
+                for sub_cat_name in sub_cats:
+                    assets = cat_content[sub_cat_name]
+                    sel = st.multiselect(
+                        sub_cat_name,
+                        sorted(list(set(assets))), 
+                        key=f"sel_{cat_name}_{sub_cat_name}"
+                    )
+                    selected_assets.extend(sel)
+            else: # Para as outras categorias, mantém o multiselect único
+                assets = sorted(list(set(cat_content)))
+                sel = st.multiselect("Selecione", assets, key=f"sel_{cat_name}", label_visibility="collapsed")
+                selected_assets.extend(sel)
             
     # --- Índices Personalizados ---
     st.sidebar.markdown("---")
@@ -249,7 +342,7 @@ def render_sidebar_asset_selection():
 
 def get_expanded_assets(available_assets):
     # Expande lista de ativos com versões em BRL para internacionais (USD)
-    usd_assets = ['S&P 500', 'IMID', 'Bitcoin']
+    usd_assets = ['S&P 500', 'IMID', 'Bitcoin', 'Ethereum']
     expanded_assets = []
     for a in sorted(available_assets):
         expanded_assets.append(a)

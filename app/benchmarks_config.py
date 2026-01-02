@@ -13,7 +13,6 @@ CATALOGO_YF = {
     'IVVB11': 'IVVB11.SA',
     'BOVA11': 'BOVA11.SA',
     'IMID': 'IMID.L',
-    'Bitcoin': 'BTC-USD',
     'Ibovespa (YF)': '^BVSP'
 }
 
@@ -43,6 +42,32 @@ CATALOGO_BCB = {
 # }
 
 CATALOGO_TD = {}
+
+CATALOGO_CRYPTO = {
+    'Bitcoin': 'BTC-USD',
+    'Ethereum': 'ETH-USD',
+    'Tether': 'USDT-USD',
+    'BNB': 'BNB-USD',
+    'XRP': 'XRP-USD',
+    'USD Coin': 'USDC-USD',
+    'Solana': 'SOL-USD',
+    'Lido Staked ETH': 'STETH-USD',
+    'TRON': 'TRX-USD',
+    'Wrapped TRON': 'WTRX-USD',
+    'Dogecoin': 'DOGE-USD',
+    'Cardano': 'ADA-USD',
+    'Lido wstETH': 'WSTETH-USD',
+    'Bitcoin Cash': 'BCH-USD',
+    'Wrapped Bitcoin': 'WBTC-USD',
+    'Wrapped Beacon ETH': 'WBETH-USD',
+    'WETH': 'WETH-USD',
+    'Aave Ethereum WETH': 'AETHWETH-USD',
+    'Wrapped eETH': 'WEETH-USD',
+    'Chainlink': 'LINK-USD',
+    'UNUS SED LEO': 'LEO-USD',
+    'Zcash': 'ZEC-USD',
+    'Monero': 'XMR-USD',
+}
 
 # --- CONFIGURAÇÃO ATIVA ---
 # Lista unificada do que será calculado e exibido nos gráficos.
