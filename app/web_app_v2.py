@@ -365,7 +365,7 @@ def render_benchmark_selector(available_assets):
                 "Incluir": st.column_config.CheckboxColumn("Plotar", width="small"),
             },
             hide_index=True,
-            use_container_width=True,
+            use_container_width=True, # st.data_editor suporta use_container_width
             num_rows="dynamic",
             key="editor_bench_individual"
         )
@@ -544,7 +544,8 @@ def render_altair_line(df, title, y_format=".0%", y_title="Valor"):
     
     chart = alt.layer(lines, points, rule).properties(title=title, height=400).interactive()
     
-    st.altair_chart(chart, use_container_width=True)
+    st.altair_chart(chart, use_container_width=True) # Mantido use_container_width pois é o padrão atual, o warning sugere width='stretch' para st.image/video, mas para altair_chart use_container_width ainda é válido na versão atual, o warning pode ser de outro componente.
+    # Verificando o log: "Please replace use_container_width with width". Isso geralmente ocorre em st.dataframe ou st.data_editor.
     with st.expander(f"🔍 Ver dados: {title}"):
         st.dataframe(df_display, use_container_width=True)
 
@@ -836,7 +837,7 @@ def main():
                 st.dataframe(yearly.style.format("{:.2%}"), use_container_width=True)
                 
                 st.subheader("Dataset Consolidado (Download)")
-                st.dataframe(report.df_combined)
+                st.dataframe(report.df_combined, use_container_width=True)
                 
                 # Botão de Download
                 csv = report.df_combined.to_csv(sep=';', decimal=',').encode('utf-8')

@@ -250,23 +250,43 @@ class FinancialReport:
             # Cria temporário para análise de qualidade dos dados
             df_raw = pd.concat(data_frames, axis=1).sort_index()
             
+            # Diagnóstico de datas de início (para log)
+            for col in df_raw.columns:
+                first_valid = df_raw[col].first_valid_index()
+                if first_valid:
+                    self.logger.debug(f"Ativo '{col}' inicia em: {first_idx.date() if (first_idx := first_valid) else 'N/A'}")
+
             # Log de diagnóstico de NaNs (Debug)
             nans = df_raw.isna().sum()
             if nans.sum() > 0:
                 self.logger.debug(f"Valores ausentes (NaN) antes da limpeza:\n{nans[nans > 0].to_string()}")
 
-            # Preenche buracos (feriados locais vs globais) com o valor anterior
-            self.df_combined = df_raw.ffill().dropna()
+            # Lógica de Corte: Prioriza o intervalo solicitado (start_date/end_date)
+            # Se houver carteira, o start_date já foi alinhado com ela no início do método
+            if start_date and end_date:
+                df_raw = df_raw.loc[start_date:end_date]
+
+            # Preenche buracos (feriados) mas MANTÉM o histórico mesmo se algum ativo não existir no começo
+            self.df_combined = df_raw.ffill()
             
-            rows_dropped = len(df_raw) - len(self.df_combined)
-            if rows_dropped > 0:
-                self.logger.warning(f"Foram removidas {rows_dropped} linhas (dias) devido à falta de interseção de dados entre os ativos.")
+            # Remove apenas linhas onde TODOS os ativos são NaN (dias sem pregão nenhum)
+            # ou se tiver Carteira, garante que não temos linhas vazias da carteira
+            if 'Carteira' in self.df_combined.columns:
+                self.df_combined = self.df_combined.dropna(subset=['Carteira'])
+            else:
+                self.df_combined = self.df_combined.dropna(how='all')
             
             self.logger.info(f"Dataset consolidado: {self.df_combined.shape[0]} linhas x {self.df_combined.shape[1]} colunas. Período comum: {self.df_combined.index.min().date()} a {self.df_combined.index.max().date()}")
             
             # Normaliza tudo para Base 100 no início do período comum
+            # Ajuste: Normaliza cada coluna baseada no SEU primeiro valor válido no período
             if not self.df_combined.empty:
-                self.df_combined = (self.df_combined / self.df_combined.iloc[0]) * 100
+                for col in self.df_combined.columns:
+                    first_idx = self.df_combined[col].first_valid_index()
+                    if first_idx is not None:
+                        base_val = self.df_combined.loc[first_idx, col]
+                        if base_val != 0:
+                            self.df_combined[col] = (self.df_combined[col] / base_val) * 100
         else:
             self.logger.warning("Nenhum dado disponível para análise.")
 
@@ -356,7 +376,7 @@ class FinancialReport:
         df = self.df_combined
         
         # Retornos diários
-        daily_ret = df.pct_change().dropna()
+        daily_ret = df.pct_change() # Removido dropna() global para permitir históricos diferentes
         
         # Métricas Anualizadas (252 dias úteis)
         volatility = daily_ret.std() * np.sqrt(252)
@@ -378,6 +398,7 @@ class FinancialReport:
             'Retorno (CAGR)': cagr,
             'Sharpe': sharpe
         })
+        metrics = metrics.dropna() # Remove ativos que não puderam ser calculados
 
         # Plot
         fig, ax = plt.subplots(figsize=(10, 8))
@@ -418,7 +439,7 @@ class FinancialReport:
         if self.df_combined.empty: return
         
         # Retornos diários
-        daily_ret = self.df_combined.pct_change().dropna()
+        daily_ret = self.df_combined.pct_change()
         
         # Volatilidade Móvel Anualizada (Janela de 'window' dias)
         rolling_vol = daily_ret.rolling(window=window).std() * np.sqrt(252)
@@ -452,7 +473,7 @@ class FinancialReport:
         """Gera gráfico de Sharpe Ratio Móvel."""
         if self.df_combined.empty: return
         
-        daily_ret = self.df_combined.pct_change().dropna()
+        daily_ret = self.df_combined.pct_change()
         
         # Define Taxa Livre de Risco (Diária)
         rf_daily_series = pd.Series(0.0, index=daily_ret.index)
