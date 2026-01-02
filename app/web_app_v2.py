@@ -3,6 +3,7 @@ import os
 import sys
 import pandas as pd
 import matplotlib.pyplot as plt
+import traceback
 import altair as alt
 from dotenv import load_dotenv
 
@@ -21,31 +22,10 @@ sys.path.append(BASE_DIR)
 # Importa a classe de lógica do main_v2
 from app.main_v2 import FinancialReport
 from app.benchmarks_config import BENCHMARKS_ATIVOS, CATALOGO_YF, CATALOGO_B3, CATALOGO_BCB, CATALOGO_TD, CATALOGO_CRYPTO
+from utils.logger import setup_logger
 
 # Carrega variáveis de ambiente
 load_dotenv()
-
-# --- Classe de Logger para Streamlit ---
-class StreamlitLogger:
-    """Redireciona logs para a interface do Streamlit (Toast e Sidebar)."""
-    def info(self, msg):
-        # Mostra mensagens curtas como toast flutuante
-        # if len(msg) < 80:
-        #    st.toast(msg, icon="ℹ️")
-        # Mensagens de sistema vão para o console do servidor também
-        print(f"[INFO] {msg}")
-
-    def debug(self, msg):
-        # Debug só no console para não poluir
-        print(f"[DEBUG] {msg}")
-
-    def warning(self, msg):
-        st.warning(msg)
-        print(f"[WARN] {msg}")
-
-    def error(self, msg):
-        st.error(msg)
-        print(f"[ERROR] {msg}")
 
 # --- Função de Cache para Dados da Carteira ---
 @st.cache_data(ttl=600, show_spinner=False)
@@ -62,6 +42,8 @@ def get_wallet_data(token):
 @st.cache_data
 def load_assets_from_csv():
     """Carrega ativos do CSV local e separa por categoria (Brasil vs Internacional)."""
+    logger = setup_logger(log_file='webapp.log')
+    logger.debug("Executando load_assets_from_csv")
     csv_path = os.path.join(BASE_DIR, 'data', 'ativos.csv')
     if not os.path.exists(csv_path):
         return {}, {}
@@ -99,12 +81,15 @@ def load_assets_from_csv():
                 
         return br_assets, intl_assets
     except Exception as e:
-        print(f"[ERROR] Erro ao carregar ativos.csv: {e}")
+        logger.error(f"Erro ao carregar ativos.csv: {e}")
+        logger.debug(traceback.format_exc())
         return {}, {}
 
 @st.cache_data
 def load_tesouro_from_csv():
     """Carrega títulos do Tesouro Direto do CSV local (data/raw/PrecoTaxaTesouroDireto.csv)."""
+    logger = setup_logger(log_file='webapp.log')
+    logger.debug("Executando load_tesouro_from_csv")
     csv_path = os.path.join(BASE_DIR, 'data', 'raw', 'PrecoTaxaTesouroDireto.csv')
     if not os.path.exists(csv_path):
         return {}
@@ -138,11 +123,14 @@ def load_tesouro_from_csv():
             
         return td_assets
     except Exception as e:
-        print(f"[ERROR] Erro ao carregar Tesouro Direto do CSV: {e}")
+        logger.error(f"Erro ao carregar Tesouro Direto do CSV: {e}")
+        logger.debug(traceback.format_exc())
         return {}
 
 def get_asset_categories():
     """Organiza os ativos dos catálogos em categorias para exibição."""
+    logger = setup_logger(log_file='webapp.log')
+    logger.debug("Iniciando get_asset_categories para montar lista de ativos.")
     # Carrega ativos do CSV e atualiza o catálogo YF
     br_assets, intl_assets = load_assets_from_csv()
     CATALOGO_YF.update(br_assets)
@@ -257,6 +245,7 @@ def get_asset_categories():
     
     # TD
     categories["Tesouro Direto"].extend(list(CATALOGO_TD.keys()))
+    logger.debug(f"Categorias de ativos montadas: { {k: len(v) for k, v in categories.items()} }")
     
     return categories
 
@@ -269,7 +258,7 @@ def render_sidebar_asset_selection():
     selected_assets = []
     
     # Ordem desejada das categorias principais
-    main_cat_order = ["Bolsa Brasil", "Bolsa Internacional", "Criptomoedas", "Indices", "Tesouro Direto"]
+    main_cat_order = ["Bolsa Brasil", "Bolsa Internacional", "Criptomoedas", "Indices", "Tesouro Direto"] # Mantido para clareza
     
     for cat_name in main_cat_order:
         if cat_name not in categories:
@@ -561,6 +550,11 @@ def render_altair_line(df, title, y_format=".0%", y_title="Valor"):
 
 # --- Função Principal do App ---
 def main():
+    # Configura o logger para o webapp. O 'debug=True' pode ser controlado por um checkbox ou var de ambiente.
+    # Por agora, vamos deixar em modo INFO por padrão para não poluir, mas o arquivo será gerado.
+    logger = setup_logger(log_file='webapp.log', debug=False)
+    logger.info("="*50)
+    logger.info("Iniciando nova sessão do WebApp de Investimentos V3.")
     st.title("📊 Dashboard de Investimentos V3")
     st.markdown("---")
 
@@ -596,6 +590,10 @@ def main():
             env_token = os.getenv('DLP_TOKEN', '')
             token = st.text_input("Token API (DLP)", value=env_token, type="password")
 
+    logger.debug(f"Ativos base selecionados na sidebar: {selected_assets}")
+    logger.debug(f"Período de análise: {data_inicio} a {data_fim}")
+    logger.debug(f"Comparar com carteira DLP: {comparar_carteira}")
+
     # --- Main Area: Personalização ---
     with st.container(border=True):
         benchmarks_list = render_benchmark_selector(selected_assets)
@@ -604,6 +602,8 @@ def main():
         portfolios_list = render_custom_portfolio_builder(selected_assets)
         
     active_benchmarks_list = benchmarks_list + portfolios_list
+    logger.info(f"Lista final de benchmarks e carteiras para análise: {active_benchmarks_list}")
+
 
     # 2. Seleção de Ativos da Carteira (Condicional)
     if comparar_carteira:
@@ -667,13 +667,13 @@ def main():
             st.error("Por favor, informe o Token da API.")
             return
 
-        # Inicializa o Report com nosso Logger customizado
-        logger = StreamlitLogger()
+        # Inicializa o Report com o logger configurado
         report = FinancialReport(logger)
         
         # Placeholder para status
         status_text = st.empty()
         status_text.info("Iniciando processamento...")
+        logger.info("Botão 'Gerar Relatório' pressionado. Iniciando processamento.")
 
         try:
             # 1. Busca Dados
@@ -691,6 +691,7 @@ def main():
                     nome_analise = nome_analise[:47] + "..."
                 
                 status_text.info(f"Buscando dados da carteira: {nome_analise}...")
+                logger.info(f"Buscando dados da carteira com filtros: ativo='{ativo_str}', classe='{classe_str}'")
                 user_series = report.fetch_user_portfolio(
                     token, 
                     ativo=ativo_str, 
@@ -701,13 +702,16 @@ def main():
                 
                 if user_series is None:
                     st.error("Não foi possível obter dados da carteira. Verifique o Token ou o Ativo/Classe.")
+                    logger.error("fetch_user_portfolio retornou None. Abortando.")
                     return
             else:
                 nome_analise = f"Mercado_{start_date_str}_{end_date_str}"
                 status_text.info(f"Buscando dados de mercado ({start_date_str} a {end_date_str})...")
+                logger.info(f"Modo de análise de mercado. Período: {start_date_str} a {end_date_str}")
 
             # 2. Constrói Dataset
             status_text.info("Consolidando benchmarks e calculando indicadores...")
+            logger.info("Iniciando report.build_dataset...")
             report.build_dataset(
                 user_series=user_series, 
                 active_benchmarks=active_benchmarks_list,
@@ -717,9 +721,11 @@ def main():
 
             if report.df_combined.empty:
                 st.error("Nenhum dado disponível para gerar gráficos.")
+                logger.error("report.df_combined está vazio após build_dataset. Abortando.")
                 return
 
             status_text.success("Dados processados com sucesso!")
+            logger.info("Dataset construído com sucesso. Iniciando renderização dos gráficos.")
             
             # --- Exibição dos Resultados ---
             
@@ -843,9 +849,8 @@ def main():
 
         except Exception as e:
             st.error(f"Ocorreu um erro durante a execução: {str(e)}")
-            # Em produção, logar o traceback completo no console
-            import traceback
-            traceback.print_exc()
+            logger.error(f"Erro não capturado na interface: {str(e)}")
+            logger.exception("Traceback completo do erro:")
 
 if __name__ == "__main__":
     main()
