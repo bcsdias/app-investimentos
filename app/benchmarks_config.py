@@ -37,10 +37,12 @@ CATALOGO_BCB = {
     'IMA-Geral': 12462
 }
 
-CATALOGO_TD = {
-    'TD IPCA 2035': {'titulo': 'Tesouro IPCA+', 'vencimento': '15/05/2035'},
-    'TD IPCA 2045': {'titulo': 'Tesouro IPCA+', 'vencimento': '15/05/2045'}
-}
+# CATALOGO_TD = {
+#     'TD IPCA 2035': {'titulo': 'Tesouro IPCA+', 'vencimento': '15/05/2035'},
+#     'TD IPCA 2045': {'titulo': 'Tesouro IPCA+', 'vencimento': '15/05/2045'}
+# }
+
+CATALOGO_TD = {}
 
 # --- CONFIGURAÇÃO ATIVA ---
 # Lista unificada do que será calculado e exibido nos gráficos.
