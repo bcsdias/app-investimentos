@@ -102,12 +102,55 @@ def load_assets_from_csv():
         print(f"[ERROR] Erro ao carregar ativos.csv: {e}")
         return {}, {}
 
+@st.cache_data
+def load_tesouro_from_csv():
+    """Carrega títulos do Tesouro Direto do CSV local (data/raw/PrecoTaxaTesouroDireto.csv)."""
+    csv_path = os.path.join(BASE_DIR, 'data', 'raw', 'PrecoTaxaTesouroDireto.csv')
+    if not os.path.exists(csv_path):
+        return {}
+    
+    try:
+        # Lê apenas colunas necessárias e remove duplicatas para performance
+        # encoding='latin1' é comum para arquivos gerados no Excel/Tesouro
+        df = pd.read_csv(csv_path, sep=';', decimal=',', usecols=['Tipo Titulo', 'Data Vencimento'], encoding='latin1')
+        df = df.drop_duplicates()
+        
+        # Identifica se há múltiplos vencimentos do mesmo título no mesmo ano
+        # Ex: Prefixado 2007 (Jan) e Prefixado 2007 (Jul)
+        df['Ano'] = df['Data Vencimento'].apply(lambda x: x.split('/')[-1] if isinstance(x, str) else '')
+        counts = df.groupby(['Tipo Titulo', 'Ano']).size().to_dict()
+        
+        td_assets = {}
+        for _, row in df.iterrows():
+            tipo = row['Tipo Titulo']
+            venc = row['Data Vencimento']
+            ano = row['Ano']
+            
+            if not ano: continue
+            
+            # Se houver mais de um título do mesmo tipo vencendo no mesmo ano, usa a data completa no nome
+            if counts.get((tipo, ano), 0) > 1:
+                key = f"{tipo} {venc}"
+            else:
+                key = f"{tipo} {ano}"
+                
+            td_assets[key] = {'titulo': tipo, 'vencimento': venc}
+            
+        return td_assets
+    except Exception as e:
+        print(f"[ERROR] Erro ao carregar Tesouro Direto do CSV: {e}")
+        return {}
+
 def get_asset_categories():
     """Organiza os ativos dos catálogos em categorias para exibição."""
     # Carrega ativos do CSV e atualiza o catálogo YF
     br_assets, intl_assets = load_assets_from_csv()
     CATALOGO_YF.update(br_assets)
     CATALOGO_YF.update(intl_assets)
+    
+    # Carrega Tesouro Direto do CSV local
+    td_csv = load_tesouro_from_csv()
+    CATALOGO_TD.update(td_csv)
     
     categories = {
         "Bolsa Brasil": [],
