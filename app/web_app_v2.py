@@ -755,15 +755,51 @@ def main():
                         #)
 
             # Abas para organização
-            tab1, tab2, tab3, tab4 = st.tabs(["📈 Rentabilidade & Risco", "📉 Drawdown & Volatilidade", "💰 Simulação & TIR", "📋 Dados Brutos"])
+            tab_rent, tab_risk, tab_data = st.tabs(["📈 Rentabilidade", "📉 Risco", "📋 Dados Brutos"])
 
-            with tab1:
-                st.subheader("Evolução TWR (Time-Weighted Return)")
+            with tab_rent:
+                st.subheader("Evolução TWR (Time-Weighted Return)", help="Mede o retorno acumulado da carteira eliminando o efeito dos aportes e retiradas. Ideal para comparar a habilidade do gestor com benchmarks.")
                 # O df_twr vem em Base 100 (ex: 105.0). Usamos formato float (.1f)
                 _, df_twr = report.plot_twr_evolution(title_suffix=nome_analise, return_fig=True)
                 render_altair_line(df_twr, "Evolução TWR (Base 100)", y_format=".1f", y_title="Base 100")
 
-                st.subheader("Risco x Retorno")
+                if comparar_carteira:
+                    st.subheader("Evolução da TIR (Rentabilidade Real)", help="Taxa Interna de Retorno. Considera o timing e o volume dos aportes. É a rentabilidade efetiva do dinheiro investido pelo usuário.")
+                    _, series_tir = report.plot_irr_evolution(title_suffix=nome_analise, return_fig=True)
+                    if series_tir is not None and not series_tir.empty:
+                        # TIR vem multiplicada por 100 no main_v2 (ex: 10.5). 
+                        # Altair espera decimal para %, ou usamos 'f' com sufixo.
+                        # Vamos converter de volta para decimal para usar formatação % padrão
+                        df_tir = (series_tir / 100).to_frame(name="TIR")
+                        render_altair_line(df_tir, "TIR Histórica", y_format=".2%")
+                    else:
+                        st.info("Dados insuficientes para cálculo da TIR.")
+
+                    if simular_aportes:
+                        st.subheader("Simulação de Aportes (Shadow Portfolio)", help="Mostra quanto você teria hoje se tivesse aportado os mesmos valores, nas mesmas datas, nos benchmarks selecionados (ex: CDI, Ibovespa).")
+                        _, df_sim = report.simulate_shadow_portfolios(title_suffix=nome_analise, return_fig=True)
+                        # Valores monetários
+                        render_altair_line(df_sim, "Patrimônio Simulado (R$)", y_format=",.0f", y_title="R$")
+                    else:
+                        st.info("Simulação de aportes desativada.")
+                else:
+                    st.info("Análises de TIR e Simulação de Aportes disponíveis apenas no modo 'Carteira DLP Invest'.")
+
+            with tab_risk:
+                st.subheader("Drawdown (Queda Máxima)", help="Mede a queda percentual do topo histórico até o fundo. Indica o tamanho do prejuízo máximo que um investidor teria sofrido se entrasse no pior momento.")
+                _, df_dd = report.plot_drawdown(title_suffix=nome_analise, return_fig=True)
+                # Drawdown é negativo (ex: -0.05), formato % funciona bem
+                render_altair_line(df_dd, "Drawdown", y_format=".1%")
+                
+                st.subheader("Volatilidade Móvel (Risco)", help="Desvio padrão anualizado dos retornos diários em uma janela móvel. Indica o grau de oscilação ou risco do ativo ao longo do tempo.")
+                _, df_vol = report.plot_rolling_volatility(title_suffix=nome_analise, return_fig=True)
+                render_altair_line(df_vol, "Volatilidade Anualizada", y_format=".1%")
+
+                st.subheader("Sharpe Ratio Móvel (Eficiência)", help="Mede o retorno excedente sobre a taxa livre de risco (Selic) por unidade de volatilidade. Quanto maior, melhor a relação risco-retorno.")
+                _, df_sharpe = report.plot_rolling_sharpe(title_suffix=nome_analise, return_fig=True)
+                render_altair_line(df_sharpe, "Sharpe Ratio", y_format=".2f", y_title="Sharpe")
+
+                st.subheader("Risco x Retorno", help="Mapa de dispersão que compara o retorno anualizado (CAGR) com a volatilidade anualizada. Ativos no canto superior esquerdo são os mais eficientes (maior retorno com menor risco).")
                 _, df_risk = report.plot_risk_return_scatter(title_suffix=nome_analise, return_fig=True)
                 
                 if df_risk is not None:
@@ -780,51 +816,7 @@ def main():
                     with st.expander("🔍 Ver dados: Risco x Retorno"):
                         st.dataframe(df_risk, use_container_width=True)
 
-            with tab2:
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.subheader("Drawdown (Queda Máxima)")
-                    _, df_dd = report.plot_drawdown(title_suffix=nome_analise, return_fig=True)
-                    # Drawdown é negativo (ex: -0.05), formato % funciona bem
-                    render_altair_line(df_dd, "Drawdown", y_format=".1%")
-                
-                with col2:
-                    st.subheader("Volatilidade Móvel (Risco)")
-                    _, df_vol = report.plot_rolling_volatility(title_suffix=nome_analise, return_fig=True)
-                    render_altair_line(df_vol, "Volatilidade Anualizada", y_format=".1%")
-
-                st.subheader("Sharpe Ratio Móvel (Eficiência)")
-                _, df_sharpe = report.plot_rolling_sharpe(title_suffix=nome_analise, return_fig=True)
-                render_altair_line(df_sharpe, "Sharpe Ratio", y_format=".2f", y_title="Sharpe")
-
-            with tab3:
-                if comparar_carteira:
-                    col_tir, col_sim = st.columns(2)
-                    
-                    with col_tir:
-                        st.subheader("Evolução da TIR (Rentabilidade Real)")
-                        _, series_tir = report.plot_irr_evolution(title_suffix=nome_analise, return_fig=True)
-                        if series_tir is not None and not series_tir.empty:
-                            # TIR vem multiplicada por 100 no main_v2 (ex: 10.5). 
-                            # Altair espera decimal para %, ou usamos 'f' com sufixo.
-                            # Vamos converter de volta para decimal para usar formatação % padrão
-                            df_tir = (series_tir / 100).to_frame(name="TIR")
-                            render_altair_line(df_tir, "TIR Histórica", y_format=".2%")
-                        else:
-                            st.info("Dados insuficientes para cálculo da TIR.")
-
-                    with col_sim:
-                        if simular_aportes:
-                            st.subheader("Simulação de Aportes (Shadow Portfolio)")
-                            _, df_sim = report.simulate_shadow_portfolios(title_suffix=nome_analise, return_fig=True)
-                            # Valores monetários
-                            render_altair_line(df_sim, "Patrimônio Simulado (R$)", y_format=",.0f", y_title="R$")
-                        else:
-                            st.info("Simulação de aportes desativada.")
-                else:
-                    st.info("Análises de TIR e Simulação de Aportes disponíveis apenas no modo 'Carteira DLP Invest'.")
-
-            with tab4:
+            with tab_data:
                 st.subheader("Tabela Resumo de Rentabilidade")
                 # Recalcula a tabela resumo para exibir
                 # (O método generate_summary_table salva CSV, aqui vamos recriar a lógica simples para exibir)
