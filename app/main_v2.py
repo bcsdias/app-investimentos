@@ -212,6 +212,7 @@ class FinancialReport:
         # Adiciona Carteira (se houver)
         if user_series is not None:
             user_series.name = 'Carteira'
+            user_series.index = pd.to_datetime(user_series.index)
             data_frames.append(user_series)
 
         # Adiciona Benchmarks (apenas os configurados para exibir)
@@ -240,6 +241,9 @@ class FinancialReport:
                         s = s['Adj Close']
                     else:
                         s = s.iloc[:, 0]
+
+                # Garante que o índice é datetime para evitar erro de ordenação (str vs Timestamp)
+                s.index = pd.to_datetime(s.index)
 
                 s = pd.to_numeric(s, errors='coerce')
                 s.name = nome
@@ -568,7 +572,7 @@ class FinancialReport:
     def plot_irr_evolution(self, title_suffix="", return_fig=False):
         """Gera gráfico da evolução da TIR (Taxa Interna de Retorno)."""
         if not hasattr(self, 'portfolio_df') or self.portfolio_df is None or self.portfolio_df.empty:
-            return
+            return (None, None) if return_fig else None
 
         df = self.portfolio_df.sort_values('date')
         
@@ -617,7 +621,7 @@ class FinancialReport:
                 pass
 
         if not irr_history:
-            return
+            return (None, None) if return_fig else None
 
         series_irr = pd.Series(irr_history, index=valid_dates) * 100
         
