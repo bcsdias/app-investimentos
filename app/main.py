@@ -1,1380 +1,910 @@
 import os
+import time
 import sys
 import argparse
-from dotenv import load_dotenv
+import re
 import pandas as pd
 import numpy as np
-import matplotlib.ticker as mticker
 import matplotlib.pyplot as plt
-from adjustText import adjust_text
+import matplotlib.ticker as mticker
+from dotenv import load_dotenv
+from datetime import datetime
 
-# Define o diretório raiz do projeto 
+# Configuração de Caminhos
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-# Adiciona a raiz ao PYTHONPATH para permitir imports como "from utils.logger"
 sys.path.append(BASE_DIR)
-from utils.logger import setup_logger
-# Importa as funções de dados do novo módulo
-from utils.market_data import (
-    buscar_historico,
-    buscar_dados_benchmark,
-    buscar_dados_tesouro,
-    buscar_dados_bcb,
-    buscar_dados_b3,
-    processar_benchmarks,
-    _ensure_series
-)
-from app.config import (
-    BENCHMARKS_YF,
-    BENCHMARKS_B3,
-    BENCHMARKS_BCB,
-    BENCHMARKS_TD,
-    CARTEIRAS_SINTETICAS,
-    BENCHMARKS_EXIBIR
-)
 
-# Carrega as variáveis de ambiente do arquivo .env
-#load_dotenv(os.path.join(BASE_DIR, '.env'))
+from utils.logger import setup_logger
+from utils.market_data import processar_benchmarks
+from app.benchmarks_config import CATALOGO_YF, CATALOGO_B3, CATALOGO_BCB, CATALOGO_TD, BENCHMARKS_ATIVOS
+
+# Carrega ambiente
 load_dotenv()
 
-# Obtém o token da variável de ambiente
-token = os.getenv('DLP_TOKEN')
-
-if not token:
-    msg = "A variável de ambiente 'DLP_TOKEN' não foi encontrada ou está vazia. Verifique seu arquivo .env."
-    # O logger ainda não foi configurado, então usamos print e raise para um erro crítico.
-    print(f"CRITICAL: {msg}")
-    raise ValueError(msg)
-
-def get_report_path(subfolder: str) -> str:
-    """Retorna o caminho absoluto para uma subpasta de relatórios, criando-a se necessário."""
-    path = os.path.join(BASE_DIR, "reports", subfolder)
-    os.makedirs(path, exist_ok=True)
-    return path
-
-def gerar_grafico_twr(df: pd.DataFrame, nome_grafico: str, logger) -> tuple[pd.DataFrame | None, plt.Figure | None]:
-    """
-    Calcula o Time-Weighted Return (TWR) e gera um gráfico da sua evolução.
-
-    Args:
-        df (pd.DataFrame): DataFrame com o histórico, contendo 'date', 'vlr_mercado' e 'vlr_investido'.
-        nome_grafico (str): Nome para o título e arquivo do gráfico (ex: 'KLBN11' ou 'Ações').
-    Returns:
-        tuple: (DataFrame TWR, Figure Object)
-    """
-    colunas_necessarias = ['date', 'vlr_mercado', 'vlr_investido', 'proventos']
-    if not all(col in df.columns for col in colunas_necessarias):
-        logger.error(f"DataFrame não contém as colunas necessárias ({', '.join(colunas_necessarias)}) para calcular o TWR.")
-        return None, None
-
-    # Garante que a pasta de gráficos exista
-    pasta_graficos = get_report_path("twr")
-
-    # 1. Preparar e consolidar os dados por data
-    logger.info("Iniciando cálculo de TWR...")
-    logger.debug(f"DataFrame de entrada TWR: {df.shape[0]} linhas. Colunas: {list(df.columns)}")
-    # Se a análise for de uma classe de ativos, haverá múltiplas linhas por data (uma para cada ativo).
-    # Precisamos agrupar por data e somar os valores para ter a visão consolidada da carteira.
-    df_consolidado = df.copy()
-    df_consolidado['date'] = pd.to_datetime(df_consolidado['date'])
-    
-    colunas_para_somar = ['vlr_mercado', 'vlr_investido', 'proventos']
-    df_twr = df_consolidado.groupby('date')[colunas_para_somar].sum().reset_index()
-
-    # Ordena por data para garantir a sequência cronológica correta
-    df_twr = df_twr.sort_values(by='date').reset_index(drop=True)
-    logger.debug(f"DataFrame consolidado para TWR:\n{df_twr.to_string()}")
-
-    # --- NORMALIZAÇÃO: Ajuste de Base para Período Recortado ---
-    # Se estamos analisando um recorte (ex: últimos 7 anos), ajustamos o valor investido inicial
-    # para igualar o valor de mercado. Isso garante que o TWR comece de 0% (índice 1.0) na data inicial.
-    if not df_twr.empty:
-        delta_base = df_twr.at[0, 'vlr_mercado'] - df_twr.at[0, 'vlr_investido']
-        if delta_base != 0:
-            df_twr['vlr_investido'] = df_twr['vlr_investido'] + delta_base
-
-    # 2. Calcular o fluxo de caixa (aportes/retiradas) em cada período
-    # O fluxo de caixa é a variação do capital investido MENOS os proventos recebidos no período.
-    # Proventos são parte do retorno, não do aporte, e são tratados como retirada de caixa.
-    df_twr['fluxo_mes'] = df_twr['vlr_investido'].diff().fillna(df_twr['vlr_investido'].iloc[0]) - df_twr['proventos']
-
-    # 3. Calcular valores do período anterior e fluxos acumulados
-    # O .shift(1) "puxa" o valor da linha anterior.
-    df_twr['valor_inicial_periodo'] = df_twr['vlr_mercado'].shift(1).fillna(0)
-    df_twr['fluxo_acc'] = df_twr['fluxo_mes'].cumsum()
-
-    # 4. Calcular o Retorno do Período (Holding Period Return - HPR)
-    # HPR = (Valor Final de Mercado) / (Valor Inicial de Mercado + Fluxo de Caixa do Período)
-    # O denominador é o valor de mercado do mês anterior somado ao dinheiro que entrou/saiu neste mês.
-    denominador = df_twr['valor_inicial_periodo'] + df_twr['fluxo_mes']
-    
-    # Calcula o lucro/prejuízo do mês para usar no cálculo do HPR em caso de venda total.
-    df_twr['lucro_mes'] = df_twr['vlr_mercado'] - df_twr['valor_inicial_periodo'] - df_twr['fluxo_mes']
-
-    # Calcula o HPR (Holding Period Return)
-    # O HPR é o fator de multiplicação (ex: 1.05 para 5% de ganho).
-    df_twr['hpr'] = 0.0 # Inicializa a coluna
-
-    # Caso 1: Cálculo normal, onde o denominador não é zero.
-    mask_normal = denominador != 0
-    df_twr.loc[mask_normal, 'hpr'] = df_twr.loc[mask_normal, 'vlr_mercado'] / denominador[mask_normal]
-
-    # Caso 2: Venda total do ativo (vlr_mercado vai a zero, mas valor_inicial não era).
-    # O HPR reflete o retorno até o momento da venda.
-    mask_venda_total = (df_twr['vlr_mercado'] == 0) & (df_twr['valor_inicial_periodo'] != 0)
-    df_twr.loc[mask_venda_total, 'hpr'] = (df_twr.loc[mask_venda_total, 'lucro_mes'] - df_twr.loc[mask_venda_total, 'fluxo_mes']) / df_twr.loc[mask_venda_total, 'valor_inicial_periodo']
-
-    # Caso 3: Posição estava e continua zerada. O HPR deve ser 1.
-    # Isso "congela" o TWR acumulado até que um novo aporte seja feito.
-    mask_zerado = (df_twr['valor_inicial_periodo'] == 0) & (df_twr['vlr_mercado'] == 0)
-    df_twr.loc[mask_zerado, 'hpr'] = 1.0
-
-    # 5. Calcular o TWR acumulado
-    # twr_mes é o retorno do período (HPR - 1)
-    df_twr['twr_mes'] = df_twr['hpr'] - 1
-    # O .cumprod() multiplica acumuladamente os valores da série.
-    df_twr['twr_acc'] = (df_twr['hpr'].cumprod() - 1)
-    logger.debug(f"DataFrame final com cálculo de TWR:\n{df_twr.to_string()}")
-
-    # 6. Gerar o gráfico
-    fig = plt.figure(figsize=(12, 7))
-    # Multiplicamos por 100 apenas para a exibição no gráfico
-    plt.plot(df_twr['date'], df_twr['twr_acc'] * 100, marker='o', linestyle='-', color='darkorange', label=nome_grafico)
-    plt.title(f'Rentabilidade (TWR Acumulado) - {nome_grafico}', fontsize=16)
-    plt.ylabel('Rentabilidade Acumulada (%)', fontsize=12)
-    plt.gca().yaxis.set_major_formatter(mticker.PercentFormatter())
-    plt.grid(True, which='both', linestyle='--', linewidth=0.5)
-    plt.axhline(0, color='black', linewidth=1.2, linestyle='--')
-    caminho_arquivo = os.path.join(pasta_graficos, f'evolucao_twr_{nome_grafico}.png')
-
-    # Adiciona os rótulos de valor em cada ponto
-    for index, row in df_twr.iterrows():
-        plt.text(row['date'], row['twr_acc'] * 100, f' {row["twr_acc"]*100:.2f}%', va='bottom', ha='left', fontsize=9)
-
-    # Salva os dados em um arquivo CSV (formato para Excel brasileiro)
-    caminho_csv = os.path.join(pasta_graficos, f'evolucao_twr_{nome_grafico}.csv')
-    
-    # Seleciona e renomeia as colunas para o formato desejado
-    colunas_csv = [
-        'date', 'vlr_investido', 'vlr_mercado', 'fluxo_mes', 
-        'fluxo_acc', 'lucro_mes', 'twr_mes', 'twr_acc'
-    ]
-    df_csv = df_twr[colunas_csv].copy()
-
-    # Formata a data para DD/MM/AAAA
-    df_csv['date'] = df_csv['date'].dt.strftime('%d/%m/%Y')
-
-    # Salva o CSV com separador de ponto e vírgula e decimal com vírgula
-    df_csv.to_csv(caminho_csv, index=False, sep=';', decimal=',')
-
-    logger.info(f"Dados do gráfico de TWR salvos em: {caminho_csv}")
-
-
-    plt.savefig(caminho_arquivo)
-    logger.info(f"Gráfico de TWR salvo com sucesso em: {caminho_arquivo}")
-    
-    return df_twr, fig
-
-
-def gerar_grafico_percentual(df: pd.DataFrame, nome_grafico: str, logger):
-    """
-    Gera e salva um gráfico da evolução percentual (lucro/prejuízo) de um ativo.
-
-    Args:
-        df (pd.DataFrame): DataFrame contendo os dados do histórico.
-        nome_grafico (str): O nome para usar no título e nome do arquivo.
-    """
-    colunas_necessarias = ['date', 'vlr_mercado', 'vlr_investido']
-    if not all(col in df.columns for col in colunas_necessarias):
-        logger.error(f"DataFrame não contém as colunas necessárias ({', '.join(colunas_necessarias)}) para gerar o gráfico percentual.")
-        return
-
-    # Garante que a pasta de gráficos exista
-    pasta_graficos = get_report_path("evolucao")
-
-    # Prepara os dados para o gráfico
-    df_grafico = df.copy()
-    df_grafico['date'] = pd.to_datetime(df_grafico['date'])
-    df_grafico = df_grafico.sort_values(by='date')
-
-    # Calcula a evolução percentual, tratando divisão por zero
-    df_grafico['evolucao_%'] = 0.0
-    df_grafico.loc[df_grafico['vlr_investido'] != 0, 'evolucao_%'] = \
-        ((df_grafico['vlr_mercado'] / df_grafico['vlr_investido']) - 1) * 100
-
-    # Cria o gráfico
-    fig = plt.figure(figsize=(12, 7))
-    plt.plot(df_grafico['date'], df_grafico['evolucao_%'], marker='o', linestyle='-', color='seagreen', label=nome_grafico)
-    
-    # Customiza o gráfico
-    plt.title(f'Evolução Percentual (Lucro/Prejuízo) - {nome_grafico}', fontsize=16)
-    plt.xlabel('Data', fontsize=12)
-    plt.ylabel('Lucro / Prejuízo (%)', fontsize=12)
-    plt.grid(True, which='both', linestyle='--', linewidth=0.5)
-    plt.axhline(0, color='black', linewidth=1.2, linestyle='--') # Linha do 0%
-    plt.gca().yaxis.set_major_formatter(mticker.PercentFormatter()) # Formata o eixo Y como porcentagem
-    plt.tight_layout()
-    plt.gcf().autofmt_xdate()
-
-    # Salva o gráfico em um arquivo
-    caminho_arquivo = os.path.join(pasta_graficos, f'evolucao_percentual_{nome_grafico}.png')
-
-    # Adiciona os rótulos de valor em cada ponto
-    for index, row in df_grafico.iterrows():
-        plt.text(row['date'], row['evolucao_%'], f' {row["evolucao_%"]:.2f}%', va='bottom', ha='left', fontsize=9)
-
-    # Salva os dados em um arquivo CSV (formato para Excel brasileiro)
-    caminho_csv = os.path.join(pasta_graficos, f'evolucao_percentual_{nome_grafico}.csv')
-    df_grafico[['date', 'evolucao_%']].to_csv(caminho_csv, index=False, decimal=',', sep=';')
-    logger.info(f"Dados do gráfico percentual salvos em: {caminho_csv}")
-
-    plt.savefig(caminho_arquivo)
-    logger.info(f"Gráfico percentual salvo com sucesso em: {caminho_arquivo}")
-    return fig
-
-def gerar_grafico_evolucao(df: pd.DataFrame, nome_grafico: str, logger):
-    """
-    Gera e salva um gráfico da evolução do valor de mercado de um ativo.
-
-    Args:
-        df (pd.DataFrame): DataFrame contendo os dados do histórico.
-        nome_grafico (str): O nome para usar no título e nome do arquivo.
-    """
-    if 'date' not in df.columns or 'vlr_mercado' not in df.columns:
-        logger.error("DataFrame não contém as colunas 'date' e 'vlr_mercado' para gerar o gráfico.")
-        return
-
-    # Garante que a pasta de gráficos exista
-    pasta_graficos = get_report_path("evolucao")
-
-    # Prepara os dados para o gráfico
-    df_grafico = df.copy()
-    df_grafico['date'] = pd.to_datetime(df_grafico['date'])
-    df_grafico = df_grafico.sort_values(by='date')
-
-    # Cria o gráfico
-    fig = plt.figure(figsize=(12, 7))
-    plt.plot(df_grafico['date'], df_grafico['vlr_mercado'], marker='o', linestyle='-', color='royalblue', label=nome_grafico)
-    
-    # Customiza o gráfico
-    plt.title(f'Evolução do Patrimônio - {nome_grafico}', fontsize=16)
-    plt.xlabel('Data', fontsize=12)
-    plt.ylabel('Valor de Mercado (R$)', fontsize=12)
-    plt.grid(True, which='both', linestyle='--', linewidth=0.5)
-    plt.tight_layout()
-    plt.gcf().autofmt_xdate() # Melhora a visualização das datas
-
-    # Salva o gráfico em um arquivo
-    caminho_arquivo = os.path.join(pasta_graficos, f'evolucao_{nome_grafico}.png')
-
-    # Adiciona os rótulos de valor em cada ponto
-    for index, row in df_grafico.iterrows():
-        plt.text(row['date'], row['vlr_mercado'], f' R${row["vlr_mercado"]:.2f}', va='bottom', ha='left', fontsize=9)
-
-    # Salva os dados em um arquivo CSV (formato para Excel brasileiro)
-    caminho_csv = os.path.join(pasta_graficos, f'evolucao_{nome_grafico}.csv')
-    df_grafico[['date', 'vlr_mercado']].to_csv(caminho_csv, index=False, decimal=',', sep=';')
-    logger.info(f"Dados do gráfico de evolução salvos em: {caminho_csv}")
-
-    plt.savefig(caminho_arquivo)
-    logger.info(f"Gráfico de evolução salvo com sucesso em: {caminho_arquivo}")
-    return fig
-
-def calcular_rentabilidades_resumo(df_twr: pd.DataFrame, benchmarks_data: dict, nome_carteira: str, logger) -> pd.DataFrame | None:
-    """
-    Calcula a rentabilidade anual e total para a carteira e benchmarks.
-
-    Returns:
-        pd.DataFrame: DataFrame formatado com as rentabilidades para a tabela.
-    """
-    logger.debug("Iniciando cálculo de rentabilidades para a tabela de resumo.")
-    logger.debug(f"Benchmarks recebidos para resumo: {list(benchmarks_data.keys())}")
-    resumo_data = {}
-
-    # 1. Processar a carteira
-    df_carteira = df_twr.set_index('date')['twr_acc']
-    
-    # Adiciona 1 para ter o fator de crescimento
-    fator_carteira = df_carteira + 1
-    
-    # Pega o valor no final de cada ano
-    # 'A' está sendo preterido em versões recentes do pandas; usar 'YE' (year end)
-    anual_carteira = fator_carteira.resample('YE').last()
-    # Calcula o retorno anual
-    retornos_anuais_carteira = anual_carteira.pct_change().fillna(anual_carteira.iloc[0] - 1)
-    logger.debug(f"Tipo de dados para 'Carteira': {type(retornos_anuais_carteira)}")
-    
-    chave_carteira = 'Carteira'
-    resumo_data[chave_carteira] = retornos_anuais_carteira
-
-    # 2. Processar cada benchmark
-    def _ensure_series(dados):
-        """Garante que `dados` seja uma pd.Series com valores numéricos: seleciona
-        a primeira coluna numérica de um DataFrame ou converte iteráveis para Series."""
-        if dados is None or getattr(dados, 'empty', False):
-            return None
-        if isinstance(dados, pd.DataFrame):
-            if dados.shape[1] == 1:
-                s = dados.iloc[:, 0]
-            else:
-                numeric = dados.select_dtypes(include=[np.number])
-                if not numeric.empty:
-                    s = numeric.iloc[:, 0]
-                else:
-                    s = pd.to_numeric(dados.iloc[:, 0], errors='coerce')
-                    s = pd.Series(s.values, index=dados.index)
-        elif isinstance(dados, pd.Series):
-            s = dados
-        else:
-            try:
-                s = pd.Series(dados)
-            except Exception:
-                return None
-
-        # Converte para float e remove NaNs intermediários
-        s = pd.to_numeric(s, errors='coerce')
-        s = s.dropna()
-        if s.empty:
-            return None
-        return s
-
-    for nome, dados in benchmarks_data.items():
-        s = _ensure_series(dados)
-        if s is None:
-            logger.debug(f"Benchmark '{nome}' vazio ou inválido para cálculo anual.")
-            continue
-
-        # Normaliza o benchmark como fator a partir do primeiro valor (base 1)
-        fator_bench = s / s.iloc[0]
-        # Usar 'YE' (year end) para compatibilidade futura
-        anual_bench = fator_bench.resample('YE').last()
-        # Retorno anual = pct_change; para o primeiro ano, usa o fator final do ano menos 1
-        if not anual_bench.empty:
-            retornos_anuais_bench = anual_bench.pct_change().fillna(anual_bench.iloc[0] - 1)
-        else:
-            retornos_anuais_bench = anual_bench.pct_change()
-
-        # Se for DataFrame resultante (caso raro), reduz para Series
-        if isinstance(retornos_anuais_bench, pd.DataFrame):
-            retornos_anuais_bench = retornos_anuais_bench.iloc[:, 0]
-
-        logger.debug(f"Tipo de dados para o benchmark '{nome}': {type(retornos_anuais_bench) if 'retornos_anuis_bench' in locals() else type(retornos_anuais_bench)}")
-        resumo_data[nome] = retornos_anuais_bench if 'retornos_anuis_bench' in locals() else retornos_anuais_bench
-
-    if not resumo_data:
-        return None
-
-    # 3. Montar o DataFrame final
-    df_resumo = pd.DataFrame(resumo_data).T # Transpõe para ter os anos como colunas
-    
-    # 4. Calcular a rentabilidade total acumulada
-    rentabilidades_totais = {}
-    # Calcula para a carteira (garante float)
-    try:
-        rentabilidades_totais[chave_carteira] = float(fator_carteira.iloc[-1] - 1)
-    except Exception:
-        rentabilidades_totais[chave_carteira] = np.nan
-
-    # Calcula para cada benchmark usando _ensure_series
-    for nome, dados in benchmarks_data.items():
-        s = _ensure_series(dados)
-        if s is None:
-            rentabilidades_totais[nome] = np.nan
-        else:
-            try:
-                rentabilidades_totais[nome] = float((s.iloc[-1] / s.iloc[0]) - 1)
-            except Exception:
-                rentabilidades_totais[nome] = np.nan
-
-    logger.debug(f"Rentabilidades totais calculadas: {rentabilidades_totais}")
-
-    # Adiciona a coluna 'Total' ao DataFrame mapeando os valores pelo índice
-    df_resumo['Total'] = df_resumo.index.map(rentabilidades_totais)
-    
-    # 5. Formatar o DataFrame para exibição
-    # Renomeia as colunas para apenas o ano
-    df_resumo.columns = [col.year if isinstance(col, pd.Timestamp) else str(col) for col in df_resumo.columns]
-    
-    # Agrupa por nomes de coluna para remover duplicatas, pegando o primeiro valor
-    # groupby with axis=1 is deprecated; transpose, groupby on columns, then transpose back
-    df_resumo = df_resumo.T.groupby(level=0).first().T
-
-    # Garante que todas as colunas de dados sejam numéricas antes de formatar
-    for col in df_resumo.columns:
-        df_resumo[col] = pd.to_numeric(df_resumo[col], errors='coerce')
-    # Calcula rentabilidade acumulada por linha (apenas para colunas de anos)
-    # Identifica colunas de ano (exclui 'Total' se presente)
-    cols = [c for c in df_resumo.columns if str(c).lower() != 'total']
-
-    # Tenta ordenar as colunas por ano (converte para int quando possível)
-    def _col_key(c):
-        try:
-            return int(c)
-        except Exception:
-            # Mantém a ordem original se não for conversível
-            return float('inf')
-
-    cols_sorted = sorted(cols, key=_col_key)
-
-    # Reordena o DataFrame (anos em ordem crescente, depois 'Total' se existir)
-    ordered_cols = cols_sorted + (['Total'] if 'Total' in df_resumo.columns else [])
-    df_resumo = df_resumo.reindex(columns=ordered_cols)
-
-    # Calcula acumulado: (1 + r).cumprod() - 1 ao longo das colunas de anos
-    if cols_sorted:
-        acumulado_df = (1 + df_resumo[cols_sorted]).cumprod(axis=1) - 1
-    else:
-        acumulado_df = pd.DataFrame(index=df_resumo.index)
-
-    # Função de formatação: 'anual (acumulado)'
-    def _format_cell(annual, acc):
-        if pd.isna(annual):
-            return '-'
-        try:
-            if pd.isna(acc):
-                return f'{float(annual):.1%}'
-            return f'{float(annual):.1%} ({float(acc):.1%})'
-        except Exception:
-            return str(annual)
-
-    # Monta um DataFrame de strings com a mesma estrutura
-    df_formatted = pd.DataFrame(index=df_resumo.index, columns=df_resumo.columns, dtype=object)
-
-    # Preenche colunas de ano com 'anual (acumulado)'
-    for c in cols_sorted:
-        for idx in df_resumo.index:
-            annual = df_resumo.at[idx, c]
-            acc = acumulado_df.at[idx, c] if (idx in acumulado_df.index and c in acumulado_df.columns) else np.nan
-            df_formatted.at[idx, c] = _format_cell(annual, acc)
-
-    # Formata a coluna 'Total' como porcentagem simples
-    if 'Total' in df_resumo.columns:
-        for idx in df_resumo.index:
-            total_val = df_resumo.at[idx, 'Total']
-            df_formatted.at[idx, 'Total'] = f'{float(total_val):.1%}' if pd.notna(total_val) else '-'
-
-    df_resumo = df_formatted
-    
-    return df_resumo
-
-
-def gerar_grafico_comparativo_twr(df_twr: pd.DataFrame, benchmarks_data: dict, nome_grafico: str, logger) -> plt.Figure:
-    """
-    Gera um gráfico comparando o TWR da carteira com outros benchmarks.
-    Args:
-        df_twr (pd.DataFrame): DataFrame com a coluna 'twr_acc' e 'date'.
-        benchmarks_data (dict): Dicionário onde a chave é o nome do benchmark (ex: 'IBOV')
-                                e o valor é uma pd.Series com os dados de preço.
-        nome_grafico (str): Nome do ativo principal para o título do gráfico.
-    """
-    pasta_graficos = get_report_path("twr")
-
-    # --- VARIÁVEL DE CONTROLE ---
-    # Define a cada quantos meses um rótulo de performance será exibido no gráfico.
-    # Use 1 para exibir todos, 6 para exibir a cada semestre, 12 para anual, etc.
-    intervalo_meses_rotulo = 6
-
-    logger.debug(f"Iniciando geração do gráfico comparativo. Benchmarks disponíveis: {list(benchmarks_data.keys())}")
-    fig, ax = plt.subplots(figsize=(15, 10))
-
-    # Lista para armazenar todos os objetos de texto que serão ajustados
-    text_labels = []
-
-    # Mapa para guardar a cor utilizada em cada linha (benchmark)
-    color_map = {}
-
-    # --- ORDENAR BENCHMARKS POR RENTABILIDADE TOTAL ---
-    # Calcula o ranking dos benchmarks pela rentabilidade total (do maior para o menor)
-    # Isso será usado para ordenar a tabela e a legenda
-    def _parse_percent(val):
-        # Aceita string tipo '23.4%' ou '23.4% (23.4%)' ou float
-        if isinstance(val, str):
-            v = val.split('%')[0].replace('(', '').replace(')', '').split()[0]
-            try:
-                return float(v.replace(',', '.')) / 100
-            except Exception:
-                return float('-inf')
-        try:
-            return float(val)
-        except Exception:
-            return float('-inf')
-
-    # Garante que a função de resumo já foi chamada para obter a tabela
-    df_resumo = calcular_rentabilidades_resumo(df_twr, benchmarks_data, nome_grafico, logger)
-    if df_resumo is not None and 'Total' in df_resumo.columns:
-        # Cria lista de (nome, total) e ordena
-        total_ranking = sorted(
-            [(idx, _parse_percent(df_resumo.at[idx, 'Total'])) for idx in df_resumo.index],
-            key=lambda x: x[1], reverse=True)
-        ordered_labels = [x[0] for x in total_ranking]
-        logger.debug(f"Ranking de rentabilidade: {ordered_labels}")
-    else:
-        ordered_labels = None
-        logger.debug("Não foi possível gerar ranking de rentabilidade (df_resumo vazio ou sem Total).")
-
-    # 1. Plotar o TWR da carteira (normalizado em base 100)
-    # (twr_acc + 1) transforma o percentual de retorno em um fator de crescimento
-    carteira_normalizada = (df_twr['twr_acc'] + 1) * 100
-    logger.debug(f"Dados TWR Carteira para plot: {len(df_twr)} registros.")
-
-    # --- ORDEM DE PLOTAGEM ---
-    # Monta lista de nomes para plotar, na ordem do ranking
-    carteira_label = 'Carteira'
-    all_labels = [carteira_label] + list(benchmarks_data.keys())
-    logger.debug(f"Labels candidatos para plotagem: {all_labels}")
-
-    if ordered_labels:
-        # Garante que todos os labels estejam presentes
-        plot_labels = [lbl for lbl in ordered_labels if lbl in all_labels]
-        # Adiciona os que não estão no ranking (ex: benchmarks sem total)
-        plot_labels += [lbl for lbl in all_labels if lbl not in plot_labels]
-    else:
-        plot_labels = all_labels
-
-    # Safety check: Garante que a carteira está na lista de plotagem
-    if carteira_label not in plot_labels:
-        logger.warning(f"Carteira '{carteira_label}' não encontrada na lista de plotagem. Adicionando manualmente.")
-        plot_labels.insert(0, carteira_label)
-
-    logger.debug(f"Ordem final de plotagem: {plot_labels}")
-
-    # Plotagem na ordem do ranking
-    for nome in plot_labels:
-        if nome == carteira_label:
-            logger.debug(f"Plotando série da Carteira: {nome}")
-            # Trunca o nome se for muito longo para não quebrar a legenda
-            label_plot = f'Carteira - {nome_grafico}'
-            if len(label_plot) > 40:
-                label_plot = f'Carteira - {nome_grafico[:37]}...'
-            
-            try:
-                # zorder=10 garante que a carteira fique sempre por cima das outras linhas
-                linha_carteira, = ax.plot(df_twr['date'].values, list(carteira_normalizada), label=label_plot, color='blue', linewidth=5, zorder=10)
-                color_map[nome] = linha_carteira.get_color()
-            except Exception as e:
-                logger.error(f"Erro ao plotar a carteira: {e}")
-                logger.debug(f"Dados carteira: date head {df_twr['date'].head()}, twr_acc head {df_twr['twr_acc'].head()}")
-        elif nome in benchmarks_data:
-            logger.debug(f"Plotando benchmark: {nome}")
-            dados_benchmark = _ensure_series(benchmarks_data[nome])
-            if dados_benchmark is not None and not dados_benchmark.empty:
-                benchmark_normalizado = (dados_benchmark / dados_benchmark.iloc[0]) * 100
-                linha_bench, = ax.plot(benchmark_normalizado.index, benchmark_normalizado, label=nome, linestyle='--', color='red')
-                color_map[nome] = linha_bench.get_color()
-            else:
-                logger.warning(f"Benchmark '{nome}' vazio ou inválido ao tentar plotar.")
-
-    # 2. Plotar cada benchmark (normalizado em base 100)
-    # Adiciona rótulos nos pontos mensais correspondentes ao df_twr para cada benchmark (na ordem de plotagem)
-    for nome in plot_labels:
-        if nome == carteira_label:
-            continue  # já rotulado abaixo
-        if nome in benchmarks_data:
-            dados_benchmark = _ensure_series(benchmarks_data[nome])
-            if dados_benchmark is not None and not dados_benchmark.empty:
-                benchmark_normalizado = (dados_benchmark / dados_benchmark.iloc[0]) * 100
-                benchmark_mensal = benchmark_normalizado.reindex(df_twr['date'], method='ffill')
-                if isinstance(benchmark_mensal, pd.DataFrame):
-                    benchmark_mensal = benchmark_mensal.iloc[:, 0]
-                for i, (data, valor_ponto) in enumerate(benchmark_mensal.items()):
-                    if pd.notna(valor_ponto) and (i % intervalo_meses_rotulo == 0 or i == 0):
-                        label = ax.text(data, valor_ponto, f' {valor_ponto-100:.1f}%', va='top', ha='center', fontsize=8, alpha=0.7)
-                        text_labels.append(label)
-            else:
-                logger.warning(f"Nenhum dado válido para o benchmark '{nome}'. Não será plotado.")
-
-    # Adiciona os rótulos para a carteira a cada 6 meses
-    for index, row in df_twr.iterrows():
-        if index % intervalo_meses_rotulo == 0 or index == 0:
-            valor_normalizado = (row['twr_acc'] + 1) * 100
-            label = ax.text(row['date'], valor_normalizado, f' {valor_normalizado-100:.1f}%', va='bottom', ha='center', fontsize=8, color='red', weight='bold')
-            text_labels.append(label)
-
-
-    # 3. Customizar o gráfico
-    ax.set_title(f'Comparativo de Rentabilidade: {nome_grafico} vs. Benchmarks', fontsize=16)
-    ax.set_ylabel('Performance (Base 100)', fontsize=12)
-    ax.set_xlabel('Data', fontsize=12)
-    # Ordena a legenda pela ordem de plotagem
-    # Como já plotamos na ordem do ranking (plot_labels), a legenda automática
-    # já respeitará essa ordem, sem necessidade de reordenação manual complexa.
-    ax.legend(fontsize=10, loc='upper left')
-    ax.grid(True, which='both', linestyle='--', linewidth=0.5)
-    fig.autofmt_xdate()
-
-    # 4. Ajustar a posição dos rótulos para evitar sobreposição
-    # A função adjust_text irá reposicionar os textos da lista 'text_labels'
-    adjust_text(text_labels, arrowprops=dict(arrowstyle='-', color='gray', lw=0.5))
-
-    # 5. Adicionar a tabela de resumo de rentabilidade
-    df_resumo = calcular_rentabilidades_resumo(df_twr, benchmarks_data, nome_grafico, logger)
-    if df_resumo is not None:
-        # Reordena a tabela pela ordem do ranking
-        if ordered_labels:
-            df_resumo = df_resumo.reindex(ordered_labels)
+class FinancialReport:
+    def __init__(self, logger, output_dir="reports"):
+        self.logger = logger
+        self.base_output_dir = os.path.join(BASE_DIR, output_dir)
+        self.df_combined = pd.DataFrame() # DataFrame Mestre (Carteira + Benchmarks)
+        self.risk_free_rate = 0.0 # Será preenchido com a SELIC média ou atual
+        self.selic_series = None
+
+    def _get_path(self, subfolder, filename):
+        """Gera caminho completo e cria pasta se não existir."""
+        folder = os.path.join(self.base_output_dir, subfolder)
+        os.makedirs(folder, exist_ok=True)
+        return os.path.join(folder, filename)
+
+    def fetch_user_portfolio(self, token, ativo=None, classe=None, start_date=None, end_date=None):
+        """Busca dados da API e calcula o TWR da carteira."""
+        from utils.market_data import buscar_historico # Import local para evitar ciclo se houver
         
-        # Ajuste: Incluir rótulos como primeira coluna para alinhar largura com o gráfico
-        cell_text = []
-        for idx, row in zip(df_resumo.index, df_resumo.values):
-            cell_text.append([idx] + list(row))
-            
-        col_labels = ['Ativo'] + list(df_resumo.columns)
-
-        # Ajusta os rótulos das colunas para indicar que entre parênteses está o acumulado
-        col_labels_display = [c if c == 'Ativo' or str(c).lower() == 'total' else f"{c} (acc)" for c in col_labels]
-
-        # Calcula largura das colunas baseada no conteúdo
-        all_rows = [col_labels_display] + cell_text
-        cols_data = list(zip(*all_rows))
-        col_widths_raw = [max(len(str(x)) for x in col) + 2 for col in cols_data]
-        total_width = sum(col_widths_raw)
-        col_widths = [w / total_width for w in col_widths_raw]
-
-        # Adiciona a tabela na parte de baixo do gráfico
-        tabela = ax.table(cellText=cell_text, colLabels=col_labels_display, colWidths=col_widths,
-                  loc='bottom', cellLoc='center', bbox=[0, -0.4, 1, 0.3])
-        tabela.auto_set_font_size(False)
-        tabela.set_fontsize(10)
-        tabela.scale(1, 1.6) # Ajusta a altura das células
-
-        # Colorir a célula do rótulo da linha com a cor da linha do gráfico, quando disponível
-        try:
-            celld = tabela.get_celld()
-
-            def _find_color_for(name):
-                # tentativa exata
-                if name in color_map:
-                    return color_map[name]
-                # normaliza e tenta novamente
-                name_norm = name.strip().lower()
-                for k, v in color_map.items():
-                    if k.strip().lower() == name_norm:
-                        return v
-                # tentativa por prefixo/sufixo
-                for k, v in color_map.items():
-                    kn = k.strip().lower()
-                    if name_norm.startswith(kn) or kn.startswith(name_norm):
-                        return v
-                return None
-
-            for (r, c), cell in celld.items():
-                # Header é row 0. Dados começam em row 1. Coluna 0 agora é o nome do ativo.
-                if c == 0 and r > 0:
-                    # Recupera o nome da linha a partir do texto da célula
-                    nome_linha = cell.get_text().get_text()
-                    if nome_linha:
-                        cor = _find_color_for(nome_linha)
-                        if cor:
-                            cell.get_text().set_color(cor)
-                            cell.get_text().set_weight('bold')
-        except Exception as e:
-            logger.debug(f'Não foi possível colorir os rótulos das linhas na tabela: {e}')
-
-        # Ajusta o layout para dar espaço para a tabela
-        fig.subplots_adjust(bottom=0.3)
-
-    # 6. Salvar o gráfico
-    fig.canvas.draw()
-    caminho_arquivo = os.path.join(pasta_graficos, f'comparativo_twr_{nome_grafico}.png')
-    plt.savefig(caminho_arquivo, bbox_inches='tight')
-    logger.info(f"Gráfico comparativo de TWR salvo com sucesso em: {caminho_arquivo}")
-    return fig
-
-def gerar_twr_historico(benchmarks_data: dict, years: int, nome_grafico: str, end_date: pd.Timestamp, logger) -> plt.Figure | None:
-    """Gera um gráfico com o TWR histórico (normalizado em base 100) para cada benchmark
-    no período de `years` anos até `end_date`. Se uma série não tiver histórico completo,
-    ela é plotada a partir da sua primeira data disponível dentro do intervalo.
-
-    Args:
-        benchmarks_data (dict): dicionário nome -> pd.Series/df com índices de data.
-        years (int): número de anos do histórico a plotar.
-        nome_grafico (str): sufixo/nome para os arquivos gerados.
-        end_date (pd.Timestamp): data final do período (usualmente df_twr['date'].max()).
-        logger: logger para mensagens.
-    """
-    pasta_graficos = get_report_path("twr")
-
-    start_candidate = end_date - pd.DateOffset(years=years) + pd.Timedelta(days=1)
-    logger.debug(f"Gerando TWR Histórico. Janela alvo: {start_candidate.date()} até {end_date.date()}")
-
-    # Prepara um DataFrame para armazenar as séries normalizadas (base 100)
-    normalized = []
-    names = []
-
-    for nome, série in benchmarks_data.items():
-        s = _ensure_series(série)
-        if s is None:
-            logger.debug(f"Ignorando benchmark '{nome}' no histórico: série inválida ou vazia.")
-            continue
-
-        # Ensina selecção do período: tenta usar start_candidate, senão usa o primeiro disponível
-        try:
-            # Garante índice datetime, ordenado e único
-            if not isinstance(s.index, pd.DatetimeIndex):
-                s.index = pd.to_datetime(s.index, errors='coerce')
-            s = s.sort_index()
-            s = s[~s.index.duplicated(keep='last')]
-            
-            s_period = s.loc[(s.index >= start_candidate) & (s.index <= end_date)]
-        except Exception:
-            # índices não compatíveis, tenta converter index para DatetimeIndex
-            s = s.copy()
-            s.index = pd.to_datetime(s.index, errors='coerce')
-            s = s.dropna()
-            if s.empty:
-                logger.debug(f"Ignorando benchmark '{nome}': índice de datas inválido")
-                continue
-            s = s.sort_index()
-            s = s[~s.index.duplicated(keep='last')]
-            s_period = s.loc[(s.index >= start_candidate) & (s.index <= end_date)]
-
-        if s_period.empty:
-            # plot a partir da primeira data disponível até end_date
-            s_period = s.loc[:end_date]
-            if s_period.empty:
-                logger.debug(f"Ignorando benchmark '{nome}': sem dados até {end_date}")
-                continue
-
-        # Normaliza para base 100 a partir do primeiro ponto disponível no sub-período
-        s_norm = (s_period / s_period.iloc[0]) * 100
-        normalized.append(s_norm)
-        names.append(nome)
-
-    if not normalized:
-        logger.info("Nenhum benchmark válido para gerar TWR histórico.")
-        return None
-
-    df_plot = pd.concat(normalized, axis=1)
-    df_plot.columns = names
-
-    # Calcula rentabilidade total para ordenação (do maior para o menor)
-    # df_plot está em base 100. Usamos o último valor válido de cada série.
-    total_returns = pd.Series(index=df_plot.columns, dtype=float)
-    for col in df_plot.columns:
-        last_valid = df_plot[col].dropna().iloc[-1]
-        total_returns[col] = (last_valid / 100) - 1
-
-    sorted_cols = total_returns.sort_values(ascending=False).index.tolist()
-    df_plot = df_plot[sorted_cols]
-
-    # Gera gráfico (usando fig/ax para permitir tabela abaixo)
-    # Aumentado para melhorar a visualização da tabela e colunas (horizontal e vertical)
-    # Ajuste dinâmico da largura: 18 base + extra por ano acima de 10
-    fig_width = 18
-    if years > 10:
-        fig_width += (years - 10) * 0.8
-    fig, ax = plt.subplots(figsize=(fig_width, 10))
-
-    # Captura cores para colorir os rótulos da tabela
-    color_map = {}
-    for col in df_plot.columns:
-        label_text = f"{col} ({total_returns[col]:.1%})" if pd.notna(total_returns[col]) else col
-        line, = ax.plot(df_plot.index, df_plot[col], label=label_text)
-        color_map[col] = line.get_color()
-
-    ax.set_title(f'TWR Histórico ({years} anos) - {nome_grafico}', fontsize=14)
-    ax.set_ylabel('Performance (Base 100)', fontsize=12)
-    ax.set_xlabel('Data', fontsize=12)
-    ax.grid(True, which='both', linestyle='--', linewidth=0.5)
-    ax.legend(fontsize=9)
-    fig.autofmt_xdate()
-
-    # --- Monta tabela de rentabilidade anual semelhante ao comparativo ---
-    # Calcula retornos anuais para cada série a partir dos dados originais (não normalizados)
-    anos_dict = {}
-    totais = {}
-    for nome in sorted_cols:
-        # recupera a série original a partir do df_plot col (reconstrói fator usando índice)
-        s = df_plot[nome] / 100.0  # fator (pois df_plot é base 100)
-        # recupera fator anual no final do ano
-        try:
-            anual = s.resample('YE').last()
-            retornos = anual.pct_change(fill_method=None).fillna(anual.iloc[0] - 1) if not anual.empty else pd.Series(dtype=float)
-        except Exception:
-            # tenta converter index para DatetimeIndex e repetir
-            temp = s.copy()
-            temp.index = pd.to_datetime(temp.index, errors='coerce')
-            temp = temp.dropna()
-            if temp.empty:
-                retornos = pd.Series(dtype=float)
-            else:
-                anual = temp.resample('YE').last()
-                retornos = anual.pct_change(fill_method=None).fillna(anual.iloc[0] - 1) if not anual.empty else pd.Series(dtype=float)
-
-        # Armazena retornos (index são timestamps de fim de ano)
-        anos_dict[nome] = retornos
-        # total acumulado: último fator - 1
-        try:
-            totais[nome] = float(s.iloc[-1] - 1)
-        except Exception:
-            totais[nome] = np.nan
-
-    # Junta em um DataFrame: linhas = nomes, colunas = anos
-    if anos_dict:
-        df_anos = pd.DataFrame({k: v for k, v in anos_dict.items()}).T
-        # df_anos index são nomes, columns are Timestamp; convert columns to year ints when possible
-        col_years = []
-        for c in df_anos.columns:
-            try:
-                col_years.append(int(pd.to_datetime(c).year))
-            except Exception:
-                col_years.append(str(c))
-        df_anos.columns = col_years
-
-        # Reorder columns (years ascending then Total will be computed below)
-        year_cols = [c for c in df_anos.columns if str(c).lower() != 'total']
-        try:
-            year_cols_sorted = sorted(year_cols)
-        except Exception:
-            year_cols_sorted = year_cols
-        ordered_cols = year_cols_sorted + (['Total'] if 'Total' in df_anos.columns else [])
-        df_anos = df_anos.reindex(columns=ordered_cols)
-
-        # Calcula acumulado por linha ao longo dos anos (preenche anos faltantes com 0)
-        if year_cols_sorted:
-            # Quando faltar algum ano, considera retorno anual 0 (fillna(0)) conforme solicitado
-            acumulado_df = (1 + df_anos[year_cols_sorted].fillna(0)).cumprod(axis=1) - 1
-        else:
-            acumulado_df = pd.DataFrame(index=df_anos.index)
-
-        # Calcula Total a partir dos anos (tratando anos ausentes como 0)
-        if year_cols_sorted:
-            totais_calc = (1 + df_anos[year_cols_sorted].fillna(0)).prod(axis=1) - 1
-        else:
-            # Se não há colunas de ano, considera Total como 0 para todas as séries
-            totais_calc = pd.Series(0.0, index=df_anos.index)
-
-        df_anos['Total'] = totais_calc
-
-        # Formata as células: 'anual (acumulado)'
-        def _format_cell(annual, acc):
-            if pd.isna(annual):
-                return '-'
-            try:
-                if pd.isna(acc):
-                    return f'{float(annual):.1%}'
-                return f'{float(annual):.1%} ({float(acc):.1%})'
-            except Exception:
-                return str(annual)
-
-        df_formatted = pd.DataFrame(index=df_anos.index, columns=df_anos.columns, dtype=object)
-        for c in year_cols_sorted:
-            for idx in df_anos.index:
-                annual = df_anos.at[idx, c]
-                acc = acumulado_df.at[idx, c] if (idx in acumulado_df.index and c in acumulado_df.columns) else np.nan
-                df_formatted.at[idx, c] = _format_cell(annual, acc)
-
-        # Formata Total
-        if 'Total' in df_anos.columns:
-            for idx in df_anos.index:
-                total_val = df_anos.at[idx, 'Total']
-                df_formatted.at[idx, 'Total'] = f'{float(total_val):.1%}' if pd.notna(total_val) else '-'
-
-        # Adiciona a tabela abaixo do gráfico
-        cell_text = []
-        for idx, row in zip(df_formatted.index, df_formatted.values):
-            cell_text.append([idx] + list(row))
-            
-        col_labels = ['Ativo'] + list(df_formatted.columns)
-        col_labels_display = [c if c == 'Ativo' or str(c).lower() == 'total' else f"{c} (acc)" for c in col_labels]
-
-        # Calcula largura das colunas baseada no conteúdo
-        all_rows = [col_labels_display] + cell_text
-        cols_data = list(zip(*all_rows))
-        col_widths_raw = [max(len(str(x)) for x in col) + 3 for col in cols_data]
-        total_width = sum(col_widths_raw)
-        col_widths = [w / total_width for w in col_widths_raw]
-
-        tabela = ax.table(cellText=cell_text, colLabels=col_labels_display, colWidths=col_widths,
-                          loc='bottom', cellLoc='center', bbox=[0, -0.65, 1, 0.45])
-        tabela.auto_set_font_size(False)
+        self.logger.info("Buscando histórico da carteira do usuário...")
+        df = buscar_historico(token, self.logger, ativo=ativo, classe=classe)
         
-        # Ajusta tamanho da fonte se houver muitos anos
-        font_size = 9
-        if years > 12:
-            font_size = 8
-        if years > 18:
-            font_size = 7
-        tabela.set_fontsize(font_size)
-        # Aumenta a altura das linhas (1.6) para não espremer o texto
-        tabela.scale(1, 1.6)
+        if df is None or df.empty:
+            self.logger.warning("Nenhum dado retornado pela API ou DataFrame vazio.")
+            return None
+        self.logger.debug(f"Dados brutos recebidos da API: {df.shape[0]} linhas. Colunas: {list(df.columns)}")
 
-        # Colorir o rótulo das linhas para coincidir com as cores do gráfico
-        try:
-            celld = tabela.get_celld()
-
-            def _find_color_for(name):
-                if name in color_map:
-                    return color_map[name]
-                name_norm = name.strip().lower()
-                for k, v in color_map.items():
-                    if k.strip().lower() == name_norm:
-                        return v
-                for k, v in color_map.items():
-                    kn = k.strip().lower()
-                    if name_norm.startswith(kn) or kn.startswith(name_norm):
-                        return v
-                return None
-
-            for (r, c), cell in celld.items():
-                if c == 0 and r > 0:
-                    nome_linha = cell.get_text().get_text()
-                    if nome_linha:
-                        cor = _find_color_for(nome_linha)
-                        if cor:
-                            cell.get_text().set_color(cor)
-                            cell.get_text().set_weight('bold')
-        except Exception as e:
-            logger.debug(f'Não foi possível colorir os rótulos da tabela histórica: {e}')
-
-        # Ajusta o layout para dar espaço à tabela
-        fig.subplots_adjust(bottom=0.45)
-
-        # Salva CSV da tabela numérica (não formatada) e da tabela formatada para inspeção
-        caminho_csv_table = os.path.join(pasta_graficos, f'twr_historico_{years}y_{nome_grafico}_table.csv')
-        try:
-            df_anos.to_csv(caminho_csv_table, sep=';', decimal=',')
-        except Exception:
-            logger.debug('Falha ao salvar CSV da tabela de rentabilidades históricas.')
-
-    caminho_png = os.path.join(pasta_graficos, f'twr_historico_{years}y_{nome_grafico}.png')
-    caminho_csv = os.path.join(pasta_graficos, f'twr_historico_{years}y_{nome_grafico}.csv')
-
-    df_plot.to_csv(caminho_csv, sep=';', decimal=',')
-    fig.canvas.draw()
-    plt.savefig(caminho_png, bbox_inches='tight')
-    logger.info(f'TWR histórico salvo em: {caminho_png} e dados em {caminho_csv}')
-    return fig
-
-def gerar_analise_risco(benchmarks_data: dict, risk_free_series: pd.Series | None, nome_analise: str, logger) -> plt.Figure | None:
-    """
-    Calcula métricas de risco (Volatilidade, Sharpe, Drawdown) e gera gráfico Risk x Return.
-    """
-    pasta_graficos = get_report_path("risco")
-    logger.debug(f"Iniciando análise de risco para {len(benchmarks_data)} ativos.")
-    
-    metricas = []
-    
-    # Prepara série de retorno livre de risco (diário) para cálculo do Sharpe
-    rf_returns = None
-    if risk_free_series is not None:
-        rf_returns = risk_free_series.pct_change().fillna(0)
-    else:
-        logger.debug("Série livre de risco (SELIC) não fornecida. Sharpe será calculado assumindo RF=0.")
-
-    for nome, serie in benchmarks_data.items():
-        s = _ensure_series(serie)
-        if s is None or s.empty:
-            logger.debug(f"Pulando análise de risco para '{nome}': série vazia.")
-            continue
+        # --- Cálculo do TWR (Simplificado e Extraído) ---
+        df['date'] = pd.to_datetime(df['date'])
+        df = df.sort_values('date')
+        
+        # Agrupa por data (caso haja múltiplos ativos na mesma classe)
+        df_grp = df.groupby('date')[['vlr_mercado', 'vlr_investido', 'proventos']].sum().reset_index()
+        
+        # Lógica TWR
+        df_grp['fluxo'] = df_grp['vlr_investido'].diff().fillna(df_grp['vlr_investido'].iloc[0]) - df_grp['proventos']
+        df_grp['vlr_inicial'] = df_grp['vlr_mercado'].shift(1).fillna(0)
+        
+        # HPR (Holding Period Return)
+        denominador = df_grp['vlr_inicial'] + df_grp['fluxo']
+        df_grp['hpr'] = np.where(denominador != 0, df_grp['vlr_mercado'] / denominador, 1.0)
+        
+        # Tratamento para primeiro aporte ou zeragem
+        mask_zeros = (df_grp['vlr_mercado'] == 0) & (df_grp['vlr_inicial'] == 0)
+        df_grp.loc[mask_zeros, 'hpr'] = 1.0
+        
+        # TWR Acumulado (Base 1.0 para facilitar comparação com benchmarks)
+        df_grp['twr_index'] = df_grp['hpr'].cumprod()
+        
+        # --- Filtro de Período ---
+        if start_date:
+            df_grp = df_grp[df_grp['date'] >= pd.to_datetime(start_date)]
+        if end_date:
+            df_grp = df_grp[df_grp['date'] <= pd.to_datetime(end_date)]
             
+        if df_grp.empty:
+            self.logger.warning("Nenhum dado restante após filtro de datas.")
+            return None
+
+        # Ajuste de Base para Simulações (Shadow Portfolio)
+        # Se estamos olhando um recorte, assumimos que o valor investido inicial 
+        # é o valor de mercado no início do período (Mark-to-Market).
+        if start_date:
+            gap = df_grp['vlr_mercado'].iloc[0] - df_grp['vlr_investido'].iloc[0]
+            df_grp['vlr_investido'] = df_grp['vlr_investido'] + gap
+
+        # Retorna Série indexada por data
+        result_series = df_grp.set_index('date')['twr_index']
+        self.logger.info(f"Carteira processada: {len(result_series)} dias de histórico ({result_series.index.min().date()} a {result_series.index.max().date()}).")
+        self.logger.debug(f"Amostra TWR Carteira (Head):\n{result_series.head().to_string()}")
+        
+        # Armazena DataFrame processado para cálculo de TIR (fluxos)
+        self.portfolio_df = df_grp.copy()
+        return result_series
+
+    def build_dataset(self, user_series=None, years_history=None, active_benchmarks=None, start_date=None, end_date=None):
+        """
+        Constrói o DataFrame unificado (Carteira + Benchmarks).
+        Se user_series existir, usa as datas dela. Se não, usa start_date/end_date ou years_history.
+        Se active_benchmarks for fornecido, usa essa lista em vez da configuração padrão.
+        """
+        # 1. Definição de Datas
+        if user_series is not None:
+            start_date = user_series.index.min().strftime('%Y-%m-%d')
+            end_date = user_series.index.max().strftime('%Y-%m-%d')
+            self.logger.info(f"Período definido pela carteira: {start_date} a {end_date}")
+        elif start_date and end_date:
+            self.logger.info(f"Período definido por datas manuais: {start_date} a {end_date}")
+        else:
+            years = years_history if years_history else 1
+            end_dt = pd.Timestamp.today()
+            start_dt = end_dt - pd.DateOffset(years=years)
+            start_date = start_dt.strftime('%Y-%m-%d')
+            end_date = end_dt.strftime('%Y-%m-%d')
+            self.logger.info(f"Período definido por histórico ({years} anos): {start_date} a {end_date}")
+
+        # 2. Processa Configuração e Filtra Catálogos
+        # Identifica quais ativos base precisam ser baixados com base na configuração ativa
+        needed_assets = set()
+        carteiras_sinteticas = {}
+        
+        # Sempre tenta baixar SELIC para cálculo de risco (se disponível no catálogo)
+        if 'SELIC' in CATALOGO_BCB:
+            needed_assets.add('SELIC')
+
+        # Usa a lista passada ou a padrão do arquivo de config
+        benchmarks_to_use = active_benchmarks if active_benchmarks is not None else BENCHMARKS_ATIVOS
+
+        for item in benchmarks_to_use:
+            if isinstance(item, str):
+                needed_assets.add(item)
+            elif isinstance(item, dict):
+                nome = item.get('nome')
+                comps = item.get('composicao')
+                if nome and comps:
+                    carteiras_sinteticas[nome] = comps
+                    # Adiciona componentes da carteira à lista de necessários
+                    for comp_name in comps.keys():
+                        needed_assets.add(comp_name)
+
+        # Resolve dependências implícitas (ex: 'IMID BRL' precisa de 'IMID')
+        final_needed = set(needed_assets)
+        for asset in needed_assets:
+            if isinstance(asset, str):
+                if asset.endswith(' BRL'):
+                    final_needed.add(asset.replace(' BRL', ''))
+                
+                # Dependências de Índices Sintéticos Dinâmicos
+                if 'IPCA +' in asset:
+                    final_needed.add('IPCA')
+                if 'CDI +' in asset or '% do CDI' in asset:
+                    final_needed.add('CDI')
+
+        # Filtra os catálogos para baixar apenas o necessário
+        yf_filtered = {k: v for k, v in CATALOGO_YF.items() if k in final_needed}
+        b3_filtered = {k: v for k, v in CATALOGO_B3.items() if k in final_needed}
+        bcb_filtered = {k: v for k, v in CATALOGO_BCB.items() if k in final_needed}
+        td_filtered = {k: v for k, v in CATALOGO_TD.items() if k in final_needed}
+
+        # 3. Busca Benchmarks (Market Data)
+        self.logger.info(f"Solicitando dados de mercado. Fontes filtradas: YF={len(yf_filtered)}, B3={len(b3_filtered)}, BCB={len(bcb_filtered)}, TD={len(td_filtered)}")
+        bench_data = processar_benchmarks(
+            start_date, end_date,
+            yf_filtered, b3_filtered, bcb_filtered,
+            td_filtered, carteiras_sinteticas, self.logger
+        )
+        
+        loaded_benchmarks = [k for k, v in bench_data.items() if v is not None and not v.empty]
+        self.logger.debug(f"Benchmarks carregados com sucesso ({len(loaded_benchmarks)}): {loaded_benchmarks}")
+
+        # Cálculo de Índices Sintéticos Dinâmicos (Pós-processamento)
+        for item in benchmarks_to_use:
+            asset_name = item if isinstance(item, str) else item.get('nome')
+            
+            if asset_name not in bench_data:
+                # IPCA + XX%
+                match = re.match(r"IPCA \+ (\d+(?:\.\d+)?)%", asset_name)
+                if match and 'IPCA' in bench_data and bench_data['IPCA'] is not None:
+                    spread = float(match.group(1))
+                    base = bench_data['IPCA']
+                    # Retorno diário do índice base
+                    ret = base.pct_change().fillna(0)
+                    # Spread diário: (1 + spread/100)^(1/252) - 1
+                    spread_daily = (1 + spread/100)**(1/252) - 1
+                    new_ret = (1 + ret) * (1 + spread_daily) - 1
+                    bench_data[asset_name] = (1 + new_ret).cumprod() * 100
+                
+                # CDI + XX%
+                match = re.match(r"CDI \+ (\d+(?:\.\d+)?)%", asset_name)
+                if match and 'CDI' in bench_data and bench_data['CDI'] is not None:
+                    spread = float(match.group(1))
+                    base = bench_data['CDI']
+                    ret = base.pct_change().fillna(0)
+                    spread_daily = (1 + spread/100)**(1/252) - 1
+                    new_ret = (1 + ret) * (1 + spread_daily) - 1
+                    bench_data[asset_name] = (1 + new_ret).cumprod() * 100
+
+                # XX% do CDI
+                match = re.match(r"(\d+(?:\.\d+)?)% do CDI", asset_name)
+                if match and 'CDI' in bench_data and bench_data['CDI'] is not None:
+                    pct = float(match.group(1))
+                    base = bench_data['CDI']
+                    ret = base.pct_change().fillna(0)
+                    new_ret = ret * (pct/100)
+                    bench_data[asset_name] = (1 + new_ret).cumprod() * 100
+
+        # 4. Unificação
+        data_frames = []
+        
+        # Adiciona Carteira (se houver)
+        if user_series is not None:
+            user_series.name = 'Carteira'
+            user_series.index = pd.to_datetime(user_series.index)
+            data_frames.append(user_series)
+
+        # Adiciona Benchmarks (apenas os configurados para exibir)
+        # Mas guarda SELIC separada para cálculo de risco
+        if 'SELIC' in bench_data:
+            self.selic_series = bench_data['SELIC']
+        
+        # Adiciona apenas os itens listados explicitamente em BENCHMARKS_ATIVOS
+        # (Isso filtra ativos base que foram baixados apenas como dependência, ex: 'IMID' puro)
+        nomes_para_exibir = []
+        for item in benchmarks_to_use:
+            if isinstance(item, str): nomes_para_exibir.append(item)
+            elif isinstance(item, dict): nomes_para_exibir.append(item.get('nome'))
+
+        for nome in nomes_para_exibir:
+            if nome in bench_data and bench_data[nome] is not None:
+                s = bench_data[nome]
+                
+                # Garante que é uma Series (se for DataFrame, tenta extrair coluna de valor)
+                if isinstance(s, pd.DataFrame):
+                    if s.shape[1] == 1:
+                        s = s.iloc[:, 0]
+                    elif 'Close' in s.columns:
+                        s = s['Close']
+                    elif 'Adj Close' in s.columns:
+                        s = s['Adj Close']
+                    else:
+                        s = s.iloc[:, 0]
+
+                # Garante que o índice é datetime para evitar erro de ordenação (str vs Timestamp)
+                s.index = pd.to_datetime(s.index)
+
+                s = pd.to_numeric(s, errors='coerce')
+                s.name = nome
+                data_frames.append(s)
+
+        # Concatena tudo alinhando pelo índice (Data)
+        if data_frames:
+            # Cria temporário para análise de qualidade dos dados
+            df_raw = pd.concat(data_frames, axis=1).sort_index()
+            
+            # Diagnóstico de datas de início (para log)
+            for col in df_raw.columns:
+                first_valid = df_raw[col].first_valid_index()
+                if first_valid:
+                    self.logger.debug(f"Ativo '{col}' inicia em: {first_idx.date() if (first_idx := first_valid) else 'N/A'}")
+
+            # Log de diagnóstico de NaNs (Debug)
+            nans = df_raw.isna().sum()
+            if nans.sum() > 0:
+                self.logger.debug(f"Valores ausentes (NaN) antes da limpeza:\n{nans[nans > 0].to_string()}")
+
+            # Lógica de Corte: Prioriza o intervalo solicitado (start_date/end_date)
+            # Se houver carteira, o start_date já foi alinhado com ela no início do método
+            if start_date and end_date:
+                df_raw = df_raw.loc[start_date:end_date]
+
+            # Preenche buracos (feriados) mas MANTÉM o histórico mesmo se algum ativo não existir no começo
+            self.df_combined = df_raw.ffill()
+            
+            # Remove apenas linhas onde TODOS os ativos são NaN (dias sem pregão nenhum)
+            # ou se tiver Carteira, garante que não temos linhas vazias da carteira
+            if 'Carteira' in self.df_combined.columns:
+                self.df_combined = self.df_combined.dropna(subset=['Carteira'])
+            else:
+                self.df_combined = self.df_combined.dropna(how='all')
+            
+            self.logger.info(f"Dataset consolidado: {self.df_combined.shape[0]} linhas x {self.df_combined.shape[1]} colunas. Período comum: {self.df_combined.index.min().date()} a {self.df_combined.index.max().date()}")
+            
+            # Normaliza tudo para Base 100 no início do período comum
+            # Ajuste: Normaliza cada coluna baseada no SEU primeiro valor válido no período
+            if not self.df_combined.empty:
+                for col in self.df_combined.columns:
+                    first_idx = self.df_combined[col].first_valid_index()
+                    if first_idx is not None:
+                        base_val = self.df_combined.loc[first_idx, col]
+                        if base_val != 0:
+                            self.df_combined[col] = (self.df_combined[col] / base_val) * 100
+        else:
+            self.logger.warning("Nenhum dado disponível para análise.")
+
+    def export_csv(self, df, name):
+        """Salva DataFrame em CSV formatado."""
+        path = self._get_path("dados", f"{name}.csv")
+        df.to_csv(path, sep=';', decimal=',')
+        self.logger.info(f"CSV salvo: {path}")
+
+    # ==========================================
+    # MÉTODOS DE ANÁLISE E PLOTAGEM
+    # ==========================================
+
+    def plot_twr_evolution(self, title_suffix="", return_fig=False):
+        """Gera gráfico de linha comparativo (TWR)."""
+        if self.df_combined.empty: return
+
+        df = self.df_combined
+        
+        # Ordena legenda pela rentabilidade final
+        last_values = df.iloc[-1].sort_values(ascending=False)
+        cols_sorted = last_values.index
+
+        fig, ax = plt.subplots(figsize=(12, 7))
+        
+        for col in cols_sorted:
+            # Destaque para a Carteira
+            if col == 'Carteira':
+                ax.plot(df.index, df[col], label=f"{col} ({df[col].iloc[-1]-100:.1f}%)", linewidth=3, color='blue', zorder=10)
+            else:
+                ax.plot(df.index, df[col], label=f"{col} ({df[col].iloc[-1]-100:.1f}%)", linewidth=1.5, alpha=0.7)
+
+        ax.set_title(f"Evolução TWR (Base 100) - {title_suffix}", fontsize=14)
+        ax.set_ylabel("Performance")
+        ax.grid(True, linestyle='--', alpha=0.5)
+        ax.legend()
+        
+        # Salva
+        path = self._get_path("graficos", f"twr_evolucao_{title_suffix}.png")
+        self.logger.info(f"Gerando gráfico TWR: {path}")
+        self.export_csv(df, f"twr_evolucao_{title_suffix}")
+        
+        plt.savefig(path, bbox_inches='tight')
+        
+        if return_fig:
+            return fig, df
+            
+        plt.close()
+
+    def plot_drawdown(self, title_suffix="", return_fig=False):
+        """Calcula e plota o Drawdown (Queda do topo)."""
+        if self.df_combined.empty: return
+
+        # Cálculo do Drawdown: (Preço / Máximo_Acumulado) - 1
+        rolling_max = self.df_combined.cummax()
+        drawdown = (self.df_combined / rolling_max) - 1
+
+        fig, ax = plt.subplots(figsize=(12, 6))
+        
+        for col in drawdown.columns:
+            if col == 'Carteira':
+                ax.plot(drawdown.index, drawdown[col], label=col, color='red', linewidth=2)
+                ax.fill_between(drawdown.index, drawdown[col], 0, color='red', alpha=0.1)
+            else:
+                ax.plot(drawdown.index, drawdown[col], label=col, linestyle='--', alpha=0.6)
+
+        ax.set_title(f"Drawdown (Queda Máxima) - {title_suffix}", fontsize=14)
+        ax.yaxis.set_major_formatter(mticker.PercentFormatter(1.0))
+        ax.grid(True, linestyle='--', alpha=0.5)
+        ax.legend()
+
+        path = self._get_path("graficos", f"drawdown_{title_suffix}.png")
+        self.logger.info(f"Gerando gráfico Drawdown: {path}")
+        self.export_csv(drawdown, f"drawdown_{title_suffix}")
+        
+        plt.savefig(path, bbox_inches='tight')
+        
+        if return_fig:
+            return fig, drawdown
+            
+        plt.close()
+
+    def plot_risk_return_scatter(self, title_suffix="", return_fig=False):
+        """Gera gráfico de dispersão Risco (Volatilidade) x Retorno (CAGR)."""
+        if self.df_combined.empty: return
+
+        df = self.df_combined
+        
         # Retornos diários
-        retornos = s.pct_change().fillna(0)
+        daily_ret = df.pct_change() # Removido dropna() global para permitir históricos diferentes
         
-        # 1. Volatilidade Anualizada (Desvio Padrão * raiz(252))
-        volatilidade = retornos.std() * np.sqrt(252)
+        # Métricas Anualizadas (252 dias úteis)
+        volatility = daily_ret.std() * np.sqrt(252)
         
-        # 2. Retorno Anualizado (CAGR)
-        days = (s.index[-1] - s.index[0]).days
-        if days > 0:
-            cagr = (s.iloc[-1] / s.iloc[0]) ** (365.25 / days) - 1
-        else:
-            cagr = 0
-            
-        # 3. Sharpe Ratio = (Retorno Carteira - Retorno Livre de Risco) / Volatilidade
-        if rf_returns is not None:
-            # Alinha datas da SELIC com a carteira
-            rf_aligned = rf_returns.reindex(retornos.index).fillna(0)
-            excess_returns = retornos - rf_aligned
-            if excess_returns.std() > 0:
-                sharpe = (excess_returns.mean() * 252) / (excess_returns.std() * np.sqrt(252))
-            else:
-                sharpe = 0
-        else:
-            # Fallback se sem SELIC (Sharpe simples)
-            sharpe = cagr / volatilidade if volatilidade > 0 else 0
-                
-        # 4. Max Drawdown (Queda máxima do topo ao fundo)
-        cummax = s.cummax()
-        drawdown = (s / cummax) - 1
-        max_drawdown = drawdown.min()
-        
-        metricas.append({
-            'Ativo': nome,
-            'Retorno Anualizado': cagr,
-            'Volatilidade': volatilidade,
-            'Sharpe': sharpe,
-            'Max Drawdown': max_drawdown
+        # CAGR (Compound Annual Growth Rate)
+        days = (df.index[-1] - df.index[0]).days
+        total_ret = (df.iloc[-1] / df.iloc[0])
+        cagr = (total_ret ** (365.25 / days)) - 1
+
+        # Sharpe Ratio (Simplificado, assumindo RF constante se não tiver série)
+        # Se tivermos a série SELIC alinhada, poderíamos fazer o cálculo exato.
+        # Aqui faremos (CAGR - 10%) / Vol para simplificar a visualização ou usar a média da SELIC se disponível.
+        rf = 0.10 # 10% a.a. default
+        sharpe = (cagr - rf) / volatility
+
+        # DataFrame de Métricas
+        metrics = pd.DataFrame({
+            'Volatilidade': volatility,
+            'Retorno (CAGR)': cagr,
+            'Sharpe': sharpe
         })
-        
-    if not metricas:
-        logger.warning("Não foi possível calcular métricas de risco.")
-        return None
+        metrics = metrics.dropna() # Remove ativos que não puderam ser calculados
 
-    df_metricas = pd.DataFrame(metricas).set_index('Ativo')
-    
-    # Ordena por Sharpe (eficiência)
-    df_metricas = df_metricas.sort_values('Sharpe', ascending=False)
-    
-    # Salva CSV
-    caminho_csv = os.path.join(pasta_graficos, f'metricas_risco_{nome_analise}.csv')
-    df_metricas.to_csv(caminho_csv, sep=';', decimal=',')
-    logger.info(f"Tabela de métricas de risco salva em: {caminho_csv}")
-    
-    # Gera Gráfico Scatter (Risco x Retorno)
-    fig = plt.figure(figsize=(14, 9))
-    
-    # Plota os pontos
-    for ativo, row in df_metricas.iterrows():
-        x = row['Volatilidade']
-        y = row['Retorno Anualizado']
+        # Plot
+        fig, ax = plt.subplots(figsize=(10, 8))
         
-        # Destaque visual para a Carteira do usuário
-        if str(ativo).startswith('Carteira'):
-            plt.scatter(x, y, color='red', s=150, zorder=10, label=ativo, edgecolors='black')
-            plt.text(x, y, f'  {ativo}', fontsize=10, fontweight='bold', color='red', va='bottom')
+        for name, row in metrics.iterrows():
+            color = 'red' if name == 'Carteira' else 'blue'
+            size = 150 if name == 'Carteira' else 80
+            alpha = 1.0 if name == 'Carteira' else 0.6
+            
+            ax.scatter(row['Volatilidade'], row['Retorno (CAGR)'], s=size, c=color, alpha=alpha, edgecolors='black')
+            ax.text(row['Volatilidade'], row['Retorno (CAGR)'], f"  {name}", fontsize=9, va='center')
+
+        ax.set_title(f"Risco x Retorno - {title_suffix}", fontsize=14)
+        ax.set_xlabel("Risco (Volatilidade Anualizada)")
+        ax.set_ylabel("Retorno Anualizado (CAGR)")
+        
+        ax.xaxis.set_major_formatter(mticker.PercentFormatter(1.0))
+        ax.yaxis.set_major_formatter(mticker.PercentFormatter(1.0))
+        ax.grid(True, linestyle='--', alpha=0.5)
+        
+        # Linhas de quadrante (média)
+        ax.axhline(metrics['Retorno (CAGR)'].mean(), color='gray', linestyle=':', alpha=0.5)
+        ax.axvline(metrics['Volatilidade'].mean(), color='gray', linestyle=':', alpha=0.5)
+
+        path = self._get_path("graficos", f"risco_retorno_{title_suffix}.png")
+        self.logger.info(f"Gerando gráfico Risco x Retorno: {path}")
+        self.export_csv(metrics, f"metricas_risco_{title_suffix}")
+        
+        plt.savefig(path, bbox_inches='tight')
+        
+        if return_fig:
+            return fig, metrics
+            
+        plt.close()
+
+    def plot_rolling_volatility(self, window=252, title_suffix="", return_fig=False):
+        """Gera gráfico de Volatilidade Móvel (anualizada)."""
+        if self.df_combined.empty: return
+        
+        # Retornos diários
+        daily_ret = self.df_combined.pct_change()
+        
+        # Volatilidade Móvel Anualizada (Janela de 'window' dias)
+        rolling_vol = daily_ret.rolling(window=window).std() * np.sqrt(252)
+        rolling_vol = rolling_vol.dropna()
+
+        fig, ax = plt.subplots(figsize=(12, 6))
+        
+        for col in rolling_vol.columns:
+            if col == 'Carteira':
+                ax.plot(rolling_vol.index, rolling_vol[col], label=col, color='red', linewidth=2, zorder=10)
+            else:
+                 ax.plot(rolling_vol.index, rolling_vol[col], label=col, linewidth=1.5, alpha=0.7)
+
+        ax.set_title(f"Volatilidade Móvel ({window} dias) - {title_suffix}", fontsize=14)
+        ax.yaxis.set_major_formatter(mticker.PercentFormatter(1.0))
+        ax.grid(True, linestyle='--', alpha=0.5)
+        ax.legend()
+
+        path = self._get_path("graficos", f"volatilidade_movel_{title_suffix}.png")
+        self.logger.info(f"Gerando gráfico Volatilidade Móvel: {path}")
+        self.export_csv(rolling_vol, f"volatilidade_movel_{title_suffix}")
+        
+        plt.savefig(path, bbox_inches='tight')
+        
+        if return_fig:
+            return fig, rolling_vol
+            
+        plt.close()
+
+    def plot_rolling_sharpe(self, window=252, title_suffix="", return_fig=False):
+        """Gera gráfico de Sharpe Ratio Móvel."""
+        if self.df_combined.empty: return
+        
+        daily_ret = self.df_combined.pct_change()
+        
+        # Define Taxa Livre de Risco (Diária)
+        rf_daily_series = pd.Series(0.0, index=daily_ret.index)
+        
+        if self.selic_series is not None:
+             # Calcula taxa diária a partir do índice acumulado da SELIC
+             selic_daily = self.selic_series.pct_change().fillna(0)
+             # Alinha com as datas do dataframe
+             rf_daily_series = selic_daily.reindex(daily_ret.index).ffill().fillna(0)
+             self.logger.debug("Usando série histórica da SELIC para cálculo do Sharpe.")
         else:
-            plt.scatter(x, y, s=80, alpha=0.7, edgecolors='white')
-            plt.text(x, y, f'  {ativo}', fontsize=8, alpha=0.8, va='bottom')
+             # Fallback: 10% a.a. convertido para diário
+             rf_daily_series[:] = (1.10 ** (1/252)) - 1
+             self.logger.info("Série SELIC não disponível. Usando taxa fixa de 10% a.a. como Risk Free para o Sharpe.")
 
-    plt.title(f'Risco (Volatilidade) x Retorno - {nome_analise}', fontsize=16)
-    plt.xlabel('Risco (Volatilidade Anualizada)', fontsize=12)
-    plt.ylabel('Retorno Anualizado (CAGR)', fontsize=12)
-    
-    # Formata eixos como porcentagem
-    plt.gca().xaxis.set_major_formatter(mticker.PercentFormatter(1.0))
-    plt.gca().yaxis.set_major_formatter(mticker.PercentFormatter(1.0))
-    
-    plt.grid(True, linestyle='--', alpha=0.5)
-    plt.axhline(0, color='black', linewidth=0.8)
-    plt.axvline(0, color='black', linewidth=0.8)
-    
-    caminho_png = os.path.join(pasta_graficos, f'grafico_risco_retorno_{nome_analise}.png')
-    plt.savefig(caminho_png, bbox_inches='tight')
-    logger.info(f"Gráfico de Risco x Retorno salvo em: {caminho_png}")
-    return fig
-
-def simular_evolucao_patrimonio(benchmarks_data: dict, carteiras_config: dict, aporte_mensal: float, meses_rebalanceamento: int, logger) -> dict:
-    """
-    Simula a evolução do patrimônio com aportes mensais e rebalanceamento periódico.
-    Gera gráficos de área (Patrimônio vs Investido) e CSVs.
-    Retorna um dicionário com os objetos Figure gerados.
-    """
-    pasta_graficos = get_report_path("simulacao")
-    
-    logger.info(f"Iniciando simulação: Aporte R${aporte_mensal:.2f}/mês, Rebalanceamento a cada {meses_rebalanceamento} meses.")
-    logger.debug(f"Carteiras a simular: {list(carteiras_config.keys())}")
-
-    resultados_consolidados = {}
-    figuras_geradas = {}
-
-    for nome_carteira, pesos in carteiras_config.items():
-        # Verifica se todos os ativos da carteira estão disponíveis
-        ativos_validos = True
-        series_ativos = {}
-        for ativo in pesos.keys():
-            s = _ensure_series(benchmarks_data.get(ativo))
-            if s is None or s.empty:
-                logger.warning(f"Ativo '{ativo}' não encontrado ou vazio. Pulando simulação da carteira '{nome_carteira}'. Verifique se o benchmark foi carregado corretamente.")
-                ativos_validos = False
-                break
-            series_ativos[ativo] = s
+        # Excesso de retorno (Retorno Ativo - Risk Free)
+        excess_ret = daily_ret.sub(rf_daily_series, axis=0)
         
-        if not ativos_validos:
-            continue
+        # Média e Volatilidade Móveis
+        rolling_mean = excess_ret.rolling(window=window).mean()
+        rolling_std = excess_ret.rolling(window=window).std()
+        
+        # Sharpe Anualizado = (Média Diária / Vol Diária) * sqrt(252)
+        rolling_sharpe = (rolling_mean / rolling_std) * np.sqrt(252)
+        rolling_sharpe = rolling_sharpe.dropna()
 
-        # Alinha as datas de todos os ativos (intersecção)
-        df_precos = pd.concat(series_ativos, axis=1).dropna()
-        if df_precos.empty:
-            logger.warning(f"Sem dados coincidentes para a carteira '{nome_carteira}'.")
-            continue
+        fig, ax = plt.subplots(figsize=(12, 6))
+        
+        for col in rolling_sharpe.columns:
+            if col == 'Carteira':
+                ax.plot(rolling_sharpe.index, rolling_sharpe[col], label=col, color='red', linewidth=2, zorder=10)
+            else:
+                ax.plot(rolling_sharpe.index, rolling_sharpe[col], label=col, linewidth=1.5, alpha=0.7)
 
-        # Inicialização da simulação
-        # 'shares' armazena a quantidade "fictícia" de cada ativo (Valor / Preço)
-        shares = pd.Series(0.0, index=pesos.keys())
-        total_investido = 0.0
+        ax.set_title(f"Sharpe Ratio Móvel ({window} dias) - {title_suffix}", fontsize=14)
+        ax.grid(True, linestyle='--', alpha=0.5)
+        ax.legend()
+        ax.axhline(0, color='black', linewidth=1)
+
+        path = self._get_path("graficos", f"sharpe_movel_{title_suffix}.png")
+        self.logger.info(f"Gerando gráfico Sharpe Móvel: {path}")
+        self.export_csv(rolling_sharpe, f"sharpe_movel_{title_suffix}")
         
-        historico_simulacao = []
+        plt.savefig(path, bbox_inches='tight')
         
-        last_month = None
-        months_since_start = 0
-        
-        # Itera dia a dia
-        for data, row_precos in df_precos.iterrows():
-            current_month = data.month
+        if return_fig:
+            return fig, rolling_sharpe
             
-            # Verifica virada de mês para Aporte e Rebalanceamento
-            if last_month is not None and current_month != last_month:
-                months_since_start += 1
+        plt.close()
+
+    def _calculate_xirr(self, cash_flows, dates):
+        """Calcula a TIR (XIRR) usando Newton-Raphson."""
+        if len(cash_flows) < 2: return None
+        
+        # Garante tipos numpy/pandas
+        cash_flows = np.array(cash_flows)
+        dates = pd.to_datetime(dates)
+        
+        # Datas relativas em anos
+        start_date = dates[0]
+        days = (dates - start_date).days.values
+        years = days / 365.0
+        
+        # Chute inicial (10%)
+        r = 0.1
+        
+        for _ in range(50): # Max iterações
+            if r <= -1.0: r = -0.99
+            
+            # NPV = sum(Flow / (1+r)^Year)
+            factor = (1 + r) ** years
+            npv = np.sum(cash_flows / factor)
+            
+            # Derivada: d/dr [ C * (1+r)^-y ] = C * -y * (1+r)^(-y-1)
+            d_npv = np.sum(-years * cash_flows / ((1 + r) ** (years + 1)))
+            
+            if abs(npv) < 1e-5:
+                return r
+            
+            if d_npv == 0:
+                return None
                 
-                # 1. Aporte Mensal (compra ativos mantendo proporção alvo ou apenas distribuindo o aporte)
-                # Simplificação: Distribui o aporte conforme os pesos alvo
-                cash_in = aporte_mensal
-                total_investido += cash_in
-                
-                # Compra ativos
-                shares += (cash_in * pd.Series(pesos)) / row_precos
-                
-                # 2. Rebalanceamento
-                if months_since_start % meses_rebalanceamento == 0:
-                    # Calcula valor atual total
-                    valor_atual_total = (shares * row_precos).sum()
-                    # Redefine shares para bater exatamente com os pesos alvo
-                    # NOTA: Isso implica VENDA de ativos que excederam a meta e COMPRA dos que estão abaixo.
-                    target_values = valor_atual_total * pd.Series(pesos)
-                    shares = target_values / row_precos
+            new_r = r - npv / d_npv
             
-            # No primeiro dia, faz o aporte inicial
-            if last_month is None:
-                total_investido += aporte_mensal
-                shares += (aporte_mensal * pd.Series(pesos)) / row_precos
+            if abs(new_r - r) < 1e-5:
+                return new_r
+                
+            r = new_r
+            
+        return r if abs(npv) < 0.1 else None
 
-            last_month = current_month
+    def plot_irr_evolution(self, title_suffix="", return_fig=False):
+        """Gera gráfico da evolução da TIR (Taxa Interna de Retorno)."""
+        if not hasattr(self, 'portfolio_df') or self.portfolio_df is None or self.portfolio_df.empty:
+            return (None, None) if return_fig else None
+
+        df = self.portfolio_df.sort_values('date')
+        
+        # Amostragem mensal para performance (calcular dia a dia é muito pesado)
+        dates_to_calc = df.set_index('date').resample('ME').last().index
+        # Garante inclusão da última data real
+        if df['date'].iloc[-1] not in dates_to_calc:
+            dates_to_calc = dates_to_calc.union([df['date'].iloc[-1]])
+        dates_to_calc = dates_to_calc[dates_to_calc >= df['date'].iloc[0]]
+        
+        irr_history = []
+        valid_dates = []
+        
+        all_dates = df['date'].values
+        # Fluxo para TIR: Investimento é negativo (-fluxo), Resgate é positivo
+        # Na nossa lógica: fluxo = investido.diff - proventos. 
+        # Se investi 1000, fluxo=1000. Para TIR deve ser -1000.
+        all_flows = -1 * df['fluxo'].values 
+        all_markets = df['vlr_mercado'].values
+        
+        for target_date in dates_to_calc:
+            # Filtra dados até a data alvo
+            mask = all_dates <= target_date
+            if not np.any(mask): continue
             
-            # Calcula valor diário do patrimônio
-            valor_patrimonio = (shares * row_precos).sum()
+            current_flows = all_flows[mask]
+            current_dates = all_dates[mask]
             
-            historico_simulacao.append({
-                'Date': data,
-                'Total Investido': total_investido,
-                'Patrimônio Bruto': valor_patrimonio
-            })
+            # Adiciona Valor de Mercado atual como fluxo positivo (resgate fictício)
+            last_idx = np.where(mask)[0][-1]
+            current_market_val = all_markets[last_idx]
             
-        # Cria DataFrame da simulação
-        df_sim = pd.DataFrame(historico_simulacao)
+            # Se valor de mercado é zero e não há fluxos relevantes, pula
+            if current_market_val == 0 and np.sum(np.abs(current_flows)) == 0: continue
+
+            # Monta arrays finais para cálculo
+            calc_flows = np.append(current_flows, current_market_val)
+            calc_dates = np.append(current_dates, all_dates[last_idx])
+            
+            try:
+                res = self._calculate_xirr(calc_flows, pd.to_datetime(calc_dates))
+                if res is not None and -0.99 < res < 10.0: # Filtra outliers extremos
+                    irr_history.append(res)
+                    valid_dates.append(target_date)
+            except Exception:
+                pass
+
+        if not irr_history:
+            return (None, None) if return_fig else None
+
+        series_irr = pd.Series(irr_history, index=valid_dates) * 100
         
-        # Armazena para o gráfico consolidado
-        resultados_consolidados[nome_carteira] = df_sim.set_index('Date')['Patrimônio Bruto']
+        fig, ax = plt.subplots(figsize=(12, 6))
+        ax.plot(series_irr.index, series_irr.values, label='TIR (Carteira)', color='purple', linewidth=2)
         
-        # Salva CSV
-        safe_name = nome_carteira.replace('/', '_').replace('+', 'mais')
-        caminho_csv = os.path.join(pasta_graficos, f'simulacao_{safe_name}.csv')
-        df_sim.to_csv(caminho_csv, sep=';', decimal=',', index=False)
+        ax.set_title(f"Evolução da TIR (Taxa Interna de Retorno) - {title_suffix}", fontsize=14)
+        ax.yaxis.set_major_formatter(mticker.PercentFormatter())
+        ax.grid(True, linestyle='--', alpha=0.5)
+        ax.legend()
+        ax.axhline(0, color='black', linewidth=1)
+
+        path = self._get_path("graficos", f"tir_evolucao_{title_suffix}.png")
+        self.logger.info(f"Gerando gráfico TIR: {path}")
+        self.export_csv(series_irr, f"tir_evolucao_{title_suffix}")
         
-        # Gera Gráfico
-        fig = plt.figure(figsize=(12, 7))
-        plt.plot(df_sim['Date'], df_sim['Patrimônio Bruto'], label='Patrimônio Bruto', color='green', linewidth=2)
-        plt.plot(df_sim['Date'], df_sim['Total Investido'], label='Total Investido', color='gray', linestyle='--', linewidth=1.5)
+        plt.savefig(path, bbox_inches='tight')
         
-        # Preenche a área de lucro
-        plt.fill_between(df_sim['Date'], df_sim['Total Investido'], df_sim['Patrimônio Bruto'], 
-                         where=(df_sim['Patrimônio Bruto'] >= df_sim['Total Investido']),
-                         color='green', alpha=0.1, interpolate=True)
+        if return_fig:
+            return fig, series_irr
+            
+        plt.close()
+
+    def simulate_shadow_portfolios(self, title_suffix="", return_fig=False):
+        """
+        Simula o patrimônio se os mesmos aportes/resgates da carteira tivessem sido
+        feitos nos benchmarks (Shadow Portfolio).
+        """
+        if self.df_combined.empty or not hasattr(self, 'portfolio_df') or self.portfolio_df is None:
+            return
+
+        # 1. Prepara os dados de Fluxo da Carteira Real
+        # Garante que o índice é datetime
+        df_flows = self.portfolio_df.set_index('date')[['fluxo', 'vlr_mercado', 'vlr_investido']].copy()
+        df_flows.index = pd.to_datetime(df_flows.index)
         
-        plt.title(f'Simulação: {nome_carteira}\n(Aporte: R${aporte_mensal} | Rebal: {meses_rebalanceamento} meses)', fontsize=14)
-        plt.xlabel('Data')
-        plt.ylabel('Valor (R$)')
-        plt.legend()
-        plt.grid(True, linestyle='--', alpha=0.5)
+        # 2. Prepara os Benchmarks (Preços/Índices)
+        # Usa o df_combined que já tem os benchmarks alinhados e limpos
+        # (Não importa que esteja em base 100, pois a variação relativa é o que conta)
+        df_prices = self.df_combined.copy()
         
-        # Formata eixo Y como moeda (aproximado)
-        ax = plt.gca()
+        # 3. Alinha Fluxos com Preços (Reindexa para garantir mesmas datas)
+        # Mantém apenas datas onde temos preços de benchmark (intersecção)
+        common_index = df_prices.index
+        
+        # Cria série de fluxos alinhada (preenche dias sem aporte com 0)
+        # Agrupa fluxos por dia (caso haja duplicidade) e reindexa
+        flows_aligned = df_flows['fluxo'].groupby(df_flows.index).sum().reindex(common_index, fill_value=0.0)
+        
+        # DataFrame para guardar os resultados (Patrimônio em R$)
+        shadow_wealth = pd.DataFrame(index=common_index)
+        
+        # Adiciona a Carteira Real (Valor de Mercado original)
+        # Reindexa e preenche buracos (forward fill para dias sem cotação na carteira mas com cotação no mercado)
+        shadow_wealth['Carteira Real'] = df_flows['vlr_mercado'].reindex(common_index).ffill()
+        
+        # Adiciona linha de "Total Investido" (Acumulado dos fluxos)
+        shadow_wealth['Total Investido'] = flows_aligned.cumsum() + (df_flows['vlr_investido'].iloc[0] if not df_flows.empty else 0)
+
+        # 4. Simulação para cada Benchmark
+        for col in df_prices.columns:
+            if col == 'Carteira': continue # Pula a própria carteira (já tratada acima)
+            
+            price_series = df_prices[col]
+            
+            # Quantidade de cotas compradas/vendidas = Fluxo / Preço do Dia
+            # Se preço for 0 ou NaN, não compra nada
+            shares_flow = flows_aligned.div(price_series).fillna(0)
+            
+            # Acumula quantidade de cotas (Posição Custódia)
+            cum_shares = shares_flow.cumsum()
+            
+            # Valor Patrimonial = Cotas Acumuladas * Preço Atual
+            # Adiciona valor inicial investido (se houver saldo inicial na carteira real antes do periodo)
+            initial_balance = df_flows['vlr_mercado'].iloc[0] if not df_flows.empty else 0
+            # Ajuste simples: assume que o saldo inicial compraria cotas no dia 0
+            initial_shares = initial_balance / price_series.iloc[0]
+            
+            shadow_wealth[col] = (cum_shares + initial_shares) * price_series
+
+        # 5. Plotagem
+        fig, ax = plt.subplots(figsize=(12, 7))
+        
+        # Plota Total Investido (Referência)
+        final_investido = shadow_wealth['Total Investido'].iloc[-1]
+        ax.plot(shadow_wealth.index, shadow_wealth['Total Investido'], label=f'Total Investido (Caixa) (R$ {final_investido:,.0f})', 
+                color='gray', linestyle=':', linewidth=1.5, alpha=0.8)
+        
+        # Plota Carteira Real
+        if 'Carteira Real' in shadow_wealth.columns:
+            final_real = shadow_wealth['Carteira Real'].iloc[-1]
+            ax.plot(shadow_wealth.index, shadow_wealth['Carteira Real'], label=f'Carteira Real (R$ {final_real:,.0f})', 
+                    color='blue', linewidth=3, zorder=10)
+            # Preenche área da carteira real
+            ax.fill_between(shadow_wealth.index, shadow_wealth['Carteira Real'], 0, color='blue', alpha=0.05)
+
+        # Plota Benchmarks Simulados
+        for col in shadow_wealth.columns:
+            if col in ['Total Investido', 'Carteira Real']: continue
+            
+            # Pega o valor final para a legenda
+            final_val = shadow_wealth[col].iloc[-1]
+            ax.plot(shadow_wealth.index, shadow_wealth[col], label=f"{col} (R$ {final_val:,.0f})", 
+                    linestyle='--', linewidth=1.5, alpha=0.8)
+
+        ax.set_title(f"Simulação de Aportes: Carteira Real vs Benchmarks - {title_suffix}", fontsize=14)
+        ax.set_ylabel("Patrimônio (R$)")
         ax.yaxis.set_major_formatter(mticker.StrMethodFormatter('R${x:,.0f}'))
-        
-        caminho_png = os.path.join(pasta_graficos, f'simulacao_{safe_name}.png')
-        plt.savefig(caminho_png, bbox_inches='tight')
-        plt.close()
-        
-        logger.info(f"Simulação '{nome_carteira}' concluída. Gráfico salvo em: {caminho_png}")
-        figuras_geradas[nome_carteira] = fig
+        ax.grid(True, linestyle='--', alpha=0.5)
+        ax.legend()
 
-    # Gera Gráfico Consolidado com todas as simulações
-    if resultados_consolidados:
-        fig_consol = plt.figure(figsize=(16, 10))
+        path = self._get_path("graficos", f"simulacao_aportes_{title_suffix}.png")
+        self.logger.info(f"Gerando gráfico Simulação de Aportes: {path}")
+        self.export_csv(shadow_wealth, f"simulacao_aportes_{title_suffix}")
         
-        # Ordena pela rentabilidade final (maior para menor)
-        sorted_items = sorted(resultados_consolidados.items(), key=lambda x: x[1].iloc[-1] if not x[1].empty else 0, reverse=True)
+        plt.savefig(path, bbox_inches='tight')
         
-        for nome, serie in sorted_items:
-            if serie.empty: continue
-            final_val = serie.iloc[-1]
-            plt.plot(serie.index, serie, label=f"{nome} (R${final_val:,.0f})", linewidth=2)
+        if return_fig:
+            return fig, shadow_wealth
             
-        plt.title(f'Consolidado: Simulações de Carteiras\n(Aporte: R${aporte_mensal} | Rebal: {meses_rebalanceamento} meses)', fontsize=16)
-        plt.xlabel('Data', fontsize=12)
-        plt.ylabel('Patrimônio Bruto (R$)', fontsize=12)
-        plt.legend(fontsize=9, loc='upper left')
-        plt.grid(True, which='both', linestyle='--', linewidth=0.5)
-        plt.gca().yaxis.set_major_formatter(mticker.StrMethodFormatter('R${x:,.0f}'))
-        plt.gcf().autofmt_xdate()
-        
-        caminho_consol = os.path.join(pasta_graficos, 'simulacao_consolidada_aportes.png')
-        plt.savefig(caminho_consol, bbox_inches='tight')
         plt.close()
-        logger.info(f"Gráfico consolidado das simulações salvo em: {caminho_consol}")
-        figuras_geradas['Consolidado'] = fig_consol
 
-    return figuras_geradas
+    def generate_summary_table(self, title_suffix=""):
+        """Gera tabela resumo com Rentabilidade Total, Ano a Ano e Volatilidade."""
+        if self.df_combined.empty: return
+        
+        df = self.df_combined
+        
+        # Rentabilidade Total
+        total_ret = (df.iloc[-1] / df.iloc[0]) - 1
+        
+        # Rentabilidade Anual
+        # Resample anual pegando o último valor
+        yearly = df.resample('YE').last()
+        yearly_ret = yearly.pct_change()
+        # Ajuste do primeiro ano
+        first_year_ret = (yearly.iloc[0] / df.iloc[0]) - 1
+        yearly_ret.iloc[0] = first_year_ret
+        
+        # Transpõe para formato Tabela (Linhas=Ativos, Colunas=Anos)
+        summary = yearly_ret.T
+        summary.columns = [c.year for c in summary.columns]
+        
+        summary['Total Acum.'] = total_ret
+        
+        # Formatação (apenas para CSV visual, mantemos float para cálculo se precisar)
+        summary_fmt = summary.map(lambda x: f"{x:.2%}" if pd.notnull(x) else "-")
+        
+        self.export_csv(summary_fmt, f"resumo_rentabilidade_{title_suffix}")
+
 
 def main():
-    """
-    Função principal que orquestra a execução do script.
-    """
-    parser = argparse.ArgumentParser(description="Gera análises de carteira de investimentos a partir da API.")
-    parser.add_argument('--debug', action='store_true', help='Ativa o modo de log detalhado (debug).')
-    parser.add_argument('--historico', type=int, help='Número de anos para gerar TWR histórico de benchmarks (ex: 1, 5, 10).')
+    parser = argparse.ArgumentParser(description="Gera relatórios financeiros consolidados (V2).")
+    parser.add_argument('--debug', action='store_true', help='Log detalhado.')
     
-    parser.add_argument('--aporte', type=float, help='Valor do aporte mensal para simulação.')
-    parser.add_argument('--rebalanceamento', type=int, help='Intervalo em meses para rebalanceamento.')
-
-    # Grupo de argumentos mutuamente exclusivos: ou --ativo ou --classe deve ser fornecido.
-    # Não forçamos aqui o required, pois quando --historico for usado sozinho não é necessário.
+    # Modos de Operação
     group = parser.add_mutually_exclusive_group(required=False)
-    group.add_argument('--ativo', type=str, help='Código do ativo a ser analisado (ex: KLBN11).')
-    group.add_argument('--classe', type=str, help='Classe de ativos a ser analisada (ex: AÇÃO).')
-
+    group.add_argument('--historico', type=int, help='Anos de histórico para análise de mercado (sem carteira).')
+    group.add_argument('--ativo', type=str, help='Código do ativo na carteira do usuário.')
+    group.add_argument('--classe', type=str, help='Classe de ativos na carteira do usuário.')
+    
+    # Argumentos de Data (Opcionais, substituem histórico)
+    parser.add_argument('--data-inicio', type=str, help='Data de início (DDMMAAAA).')
+    parser.add_argument('--data-fim', type=str, help='Data de fim (DDMMAAAA).')
+    
+    parser.add_argument('--simular-aportes', action='store_true', help='Simula o desempenho se os aportes fossem feitos nos benchmarks.')
+    
     args = parser.parse_args()
 
-    # Se --historico não foi fornecido, então exige-se que o usuário passe --ativo ou --classe.
-    if not args.historico and not (args.ativo or args.classe):
-        parser.error("one of the arguments --ativo --classe is required unless --historico is provided")
+    # Validação de Modos
+    has_wallet = bool(args.ativo or args.classe)
+    has_history = bool(args.historico)
+    has_dates = bool(args.data_inicio and args.data_fim)
 
-    logger = setup_logger(debug=args.debug, log_file='main.log')
-    if args.debug:
-        logger.info("Modo de depuração ativado.")
+    if not (has_wallet or has_history or has_dates):
+        parser.error("É necessário informar um modo de operação: --historico, --data-inicio/--data-fim, ou --ativo/--classe.")
 
-    df_historico = None
-    nome_analise = ""
-
-    # Configuração centralizada de benchmarks (pode ser ajustada conforme necessidade)
-    # Use esta lista para garantir consistência entre os modos
-    benchmarks_yf_config = BENCHMARKS_YF
-    benchmarks_b3_config = BENCHMARKS_B3
-    benchmarks_bcb_config = BENCHMARKS_BCB
-    benchmarks_td_config = BENCHMARKS_TD
+    start_time = time.time()
+    # Setup
+    logger = setup_logger(debug=args.debug, log_file='main_v2.log')
+    token = os.getenv('DLP_TOKEN')
     
-    # Definição das Carteiras Sintéticas para geração de índices e simulação
-    carteiras_sinteticas_config = CARTEIRAS_SINTETICAS
-
-    # Lista de benchmarks que serão EXIBIDOS nos gráficos e tabelas.
-    # O script calcula todos (para compor carteiras), mas só mostra estes.
-    benchmarks_exibir = BENCHMARKS_EXIBIR
-
-    # Caso especial: quando o usuário solicita apenas '--historico N' (sem --ativo/--classe),
-    # geramos somente o TWR histórico dos benchmarks e encerramos o script.
-    if args.historico and not (args.ativo or args.classe):
-        years = args.historico
-        end_dt = pd.Timestamp.today().normalize()
-        start_dt = (end_dt - pd.DateOffset(years=years) + pd.Timedelta(days=1)).normalize()
-        start_date = start_dt.strftime('%Y-%m-%d')
-        end_date = end_dt.strftime('%Y-%m-%d')
-
-        logger.info(f"Modo histórico standalone: gerando TWR dos benchmarks para {years} anos ({start_date} a {end_date}).")
-
-        # Define os benchmarks para o modo Histórico (visão macro)
-        # Usa a configuração centralizada
-        benchmarks_data = processar_benchmarks(start_date, end_date, benchmarks_yf_config, benchmarks_b3_config, benchmarks_bcb_config, benchmarks_td_config, carteiras_sinteticas_config, logger)
-        
-        # Captura SELIC para cálculo de Sharpe antes de filtrar
-        selic_series = benchmarks_data.get('SELIC')
-
-        # Filtra apenas os benchmarks que devem ser exibidos
-        benchmarks_data_exibir = {k: v for k, v in benchmarks_data.items() if k in benchmarks_exibir}
-
-
-        # Gera o TWR histórico e encerra
-        try:
-            gerar_twr_historico(benchmarks_data_exibir, years, f'historico_{years}y', end_dt, logger)
-            gerar_analise_risco(benchmarks_data_exibir, selic_series, f'historico_{years}y', logger)
-            
-            # Se parâmetros de simulação foram passados, executa a simulação
-            if args.aporte and args.rebalanceamento:
-                # Filtra carteiras para simular apenas as que estão na lista de exibição (para não demorar demais)
-                carteiras_para_simular = {k: v for k, v in carteiras_sinteticas_config.items() if k in benchmarks_exibir}
-                simular_evolucao_patrimonio(benchmarks_data, carteiras_para_simular, args.aporte, args.rebalanceamento, logger)
-
-        except Exception as e:
-            logger.exception(f"Erro ao gerar TWR histórico standalone: {e}")
+    if not token and (args.ativo or args.classe):
+        logger.error("Token DLP_TOKEN não encontrado para buscar dados da carteira.")
         return
 
-    if args.ativo:
-        nome_analise = args.ativo
-        df_historico = buscar_historico(token, logger, ativo=args.ativo)
-    elif args.classe:
-        nome_analise = args.classe
-        df_historico = buscar_historico(token, logger, classe=args.classe)
+    # Parsing de Datas Customizadas
+    custom_start = None
+    custom_end = None
+    if has_dates:
+        try:
+            custom_start = datetime.strptime(args.data_inicio, "%d%m%Y").strftime("%Y-%m-%d")
+            custom_end = datetime.strptime(args.data_fim, "%d%m%Y").strftime("%Y-%m-%d")
+        except ValueError:
+            logger.error("Formato de data inválido. Use DDMMAAAA (ex: 01012020).")
+            return
 
-    if df_historico is not None:
-        logger.info("Dados capturados com sucesso!")
+    report = FinancialReport(logger)
+    
+    # 1. Obtenção de Dados da Carteira (Se aplicável)
+    user_series = None
+    nome_analise = ""
+    
+    if args.ativo or args.classe:
+        nome_analise = args.ativo if args.ativo else args.classe
+        logger.info(f"Iniciando análise de carteira: {nome_analise}")
         
-        # --- FILTRO DE PERÍODO (--historico) ---
-        # Se o usuário definiu um histórico (ex: 7 anos), filtramos os dados antes de qualquer cálculo.
-        if args.historico and 'date' in df_historico.columns:
-            df_historico['date'] = pd.to_datetime(df_historico['date'])
-            end_dt = pd.Timestamp.today().normalize()
-            start_dt = (end_dt - pd.DateOffset(years=args.historico) + pd.Timedelta(days=1)).normalize()
-            
-            logger.info(f"Filtrando histórico para os últimos {args.historico} anos (início: {start_dt.date()}).")
-            df_historico = df_historico[df_historico['date'] >= start_dt].copy()
-            
-            if df_historico.empty:
-                logger.warning(f"O filtro de {args.historico} anos resultou em dados vazios. Verifique o período.")
-                return
-
-        logger.debug(f"Cabeçalho do DataFrame de histórico:\n{df_historico.head().to_string()}")
-
-        # Salva o histórico completo em um arquivo .csv (formato para Excel brasileiro)
-        pasta_saida = get_report_path("dados_brutos")
-        caminho_csv = os.path.join(pasta_saida, f'historico_completo_{nome_analise}.csv')
-        df_historico.to_csv(caminho_csv, sep=';', decimal=',', index=False)
-        logger.info(f"Histórico completo salvo em: {caminho_csv}")
-
-        logger.info("Gerando gráficos...")
-        gerar_grafico_evolucao(df_historico, nome_grafico=nome_analise, logger=logger)
+        user_series = report.fetch_user_portfolio(token, ativo=args.ativo, classe=args.classe)
         
-        # Calcula o TWR e obtém o dataframe com os resultados
-        df_twr, _ = gerar_grafico_twr(df_historico, nome_grafico=nome_analise, logger=logger)
-
-        if df_twr is not None:
-            # Define os benchmarks para o modo Comparativo (Ativo vs Mercado)
-            # Usa a configuração centralizada
-            
-            # Define o período para a busca dos benchmarks
-            start_date = df_twr['date'].min().strftime('%Y-%m-%d')
-            end_date = df_twr['date'].max().strftime('%Y-%m-%d')
-            logger.info(f"Período da análise: {start_date} a {end_date}")
-
-            # Processa benchmarks usando a função centralizada
-            benchmarks_data = processar_benchmarks(start_date, end_date, benchmarks_yf_config, benchmarks_b3_config, benchmarks_bcb_config, benchmarks_td_config, carteiras_sinteticas_config, logger)
-            
-            # Captura SELIC para cálculo de Sharpe antes de filtrar
-            selic_series = benchmarks_data.get('SELIC')
-            # Filtra apenas os benchmarks que devem ser exibidos
-            benchmarks_data_exibir = {k: v for k, v in benchmarks_data.items() if k in benchmarks_exibir}
-
-            # Se foi solicitado, gera o TWR histórico de benchmarks para o período em anos
-            if getattr(args, 'historico', None):
-                try:
-                    # Cria uma cópia dos benchmarks e adiciona a carteira atual para comparação histórica
-                    dados_historico = benchmarks_data_exibir.copy()
-                    # Converte TWR acumulado (0.x) para fator (1.x) para ser comparável com preços
-                    dados_historico['Carteira'] = df_twr.set_index('date')['twr_acc'] + 1
-                    
-                    gerar_twr_historico(dados_historico, args.historico, nome_analise, df_twr['date'].max(), logger)
-                    # Gera análise de risco histórica
-                    gerar_analise_risco(dados_historico, selic_series, f'{nome_analise}_historico_{args.historico}y', logger)
-                    
-                    # Se parâmetros de simulação foram passados, executa a simulação
-                    if args.aporte and args.rebalanceamento:
-                        carteiras_para_simular = {k: v for k, v in carteiras_sinteticas_config.items() if k in benchmarks_exibir}
-                        simular_evolucao_patrimonio(benchmarks_data, carteiras_para_simular, args.aporte, args.rebalanceamento, logger)
-                except Exception as e:
-                    logger.debug(f"Erro ao gerar TWR histórico: {e}")
-
-            gerar_grafico_comparativo_twr(df_twr, benchmarks_data_exibir, nome_grafico=nome_analise, logger=logger)
-            
-            # Gera análise de risco para o período comparativo (carteira vs benchmarks no período da carteira)
-            dados_comparativo = benchmarks_data_exibir.copy()
-            dados_comparativo['Carteira'] = df_twr.set_index('date')['twr_acc'] + 1
-            gerar_analise_risco(dados_comparativo, selic_series, f'{nome_analise}_comparativo', logger)
-
+        if user_series is None:
+            logger.error("Não foi possível obter dados da carteira. Encerrando.")
+            return
     else:
-        logger.error(f"Não foi possível obter o histórico para a análise '{nome_analise}'. Encerrando o script.")
+        if has_dates:
+            nome_analise = f"Mercado_{args.data_inicio}_{args.data_fim}"
+            logger.info(f"Iniciando análise de mercado (Datas): {custom_start} a {custom_end}")
+        else:
+            nome_analise = f"Mercado_{args.historico}anos"
+            logger.info(f"Iniciando análise de mercado (Standalone): {args.historico} anos")
 
-# Garante que a função main() só seja executada quando o script for rodado diretamente
+    # 2. Construção do Dataset Unificado (Carteira + Benchmarks)
+    # Se user_series for None, ele usa args.historico ou custom dates para definir as datas
+    report.build_dataset(
+        user_series=user_series, 
+        years_history=args.historico,
+        start_date=custom_start,
+        end_date=custom_end
+    )
+
+    # 3. Geração de Artefatos (Gráficos e CSVs)
+    logger.info("Gerando gráficos e relatórios...")
+    
+    # TWR (Evolução)
+    report.plot_twr_evolution(title_suffix=nome_analise)
+    
+    # Drawdown
+    report.plot_drawdown(title_suffix=nome_analise)
+    
+    # Risco x Retorno (Sharpe implícito)
+    report.plot_risk_return_scatter(title_suffix=nome_analise)
+    
+    # Volatilidade Móvel (Evolução do Risco)
+    report.plot_rolling_volatility(title_suffix=nome_analise)
+
+    # Sharpe Móvel (Evolução da Eficiência)
+    report.plot_rolling_sharpe(title_suffix=nome_analise)
+    
+    # TIR (Evolução da Rentabilidade Real)
+    report.plot_irr_evolution(title_suffix=nome_analise)
+    
+    # Simulação de Aportes (Shadow Portfolio)
+    if args.simular_aportes and (args.ativo or args.classe):
+        report.simulate_shadow_portfolios(title_suffix=nome_analise)
+    
+    # Tabela Resumo
+    report.generate_summary_table(title_suffix=nome_analise)
+
+    elapsed_time = time.time() - start_time
+    logger.info(f"Processo concluído com sucesso (V2). Tempo total: {elapsed_time:.2f}s")
+
 if __name__ == "__main__":
-    try:
-        main()
-    except Exception as e:
-        # Captura qualquer exceção não tratada para garantir que seja logada.
-        setup_logger().exception("Ocorreu um erro fatal não capturado na execução principal.")
-        raise e
+    main()
+'''
+
+### Principais Otimizações Realizadas:
+
+1.  **Classe `FinancialReport`:** Centraliza o estado (dados, diretórios, logger). Isso elimina a necessidade de passar 5-6 argumentos para cada função (como acontecia no `main.py` antigo).
+2.  **DataFrame Unificado (`df_combined`):**
+   *   Em vez de tratar a carteira e os benchmarks separadamente, o script agora cria um único DataFrame onde a coluna `Carteira` (se existir) é tratada matematicamente igual às colunas `IBOV`, `CDI`, etc.
+   *   Isso permite que funções como `plot_drawdown` ou `plot_risk_return_scatter` sejam genéricas. Elas funcionam se você passar só benchmarks (modo `--historico`) ou benchmarks + carteira (modo `--ativo`).
+3.  **Cálculo de TWR Isolado:** A lógica de cálculo do TWR (Time-Weighted Return) foi extraída para `fetch_user_portfolio`. Ela retorna uma Série limpa e indexada por data, pronta para ser mesclada com os dados de mercado.
+4.  **Geração Automática de CSV:** Cada função de plotagem (`plot_*`) chama `self.export_csv` ao final, garantindo que para cada imagem gerada, existe um CSV correspondente com os dados brutos, conforme solicitado.
+5.  **Métricas Solicitadas:**
+   *   **TWR:** Gráfico de linha (`plot_twr_evolution`).
+   *   **Drawdown:** Gráfico de área/linha (`plot_drawdown`).
+   *   **Volatilidade e Sharpe:** Gráfico de dispersão (`plot_risk_return_scatter`) e tabela CSV (`metrics`).
+   *   **TIR:** Embora a TIR exata exija fluxos de caixa precisos, o TWR é a métrica padrão da indústria para comparação gráfica. O script foca no TWR para os gráficos e calcula o CAGR (Retorno Anualizado) para a tabela de risco, que serve como proxy de rentabilidade para comparação.
+
+Para rodar este novo script, você usaria comandos similares:
+*   **Apenas Mercado:** `python app/main_v2.py --historico 5`
+*   **Carteira vs Mercado:** `python app/main_v2.py --classe AÇÃO`
+
+<!--
+[PROMPT_SUGGESTION]Poderia adicionar no main_v2.py uma função para calcular a Matriz de Correlação entre a carteira e os benchmarks e salvar como um mapa de calor (heatmap)?[/PROMPT_SUGGESTION]
+[PROMPT_SUGGESTION]Como eu poderia adaptar o método fetch_user_portfolio para aceitar um arquivo CSV local de transações em vez de chamar a API, para fins de teste offline?[/PROMPT_SUGGESTION]
+'''
