@@ -330,13 +330,32 @@ def render_sidebar_asset_selection():
     return list(set(selected_assets))
 
 def get_expanded_assets(available_assets):
-    # Expande lista de ativos com versões em BRL para internacionais (USD)
-    usd_assets = ['S&P 500', 'IMID', 'Bitcoin', 'Ethereum']
+    # Coleta ativos que são nativamente em BRL para não oferecer conversão desnecessária
+    categories = get_asset_categories()
+    brl_native_assets = set()
+    
+    if "Bolsa Brasil" in categories:
+        for subcat in categories["Bolsa Brasil"].values():
+            brl_native_assets.update(subcat)
+            
+    if "Tesouro Direto" in categories:
+        brl_native_assets.update(categories["Tesouro Direto"])
+    
+    brl_native_assets.update(CATALOGO_B3.keys())
+    brl_native_assets.update(CATALOGO_BCB.keys())
+    brl_native_assets.update(['Ibovespa (YF)'])
+    
     expanded_assets = []
     for a in sorted(available_assets):
         expanded_assets.append(a)
-        if a in usd_assets:
+        
+        # Oferece a conversão BRL se o ativo não for nativamente em Reais
+        # e se o próprio nome já não for uma conversão (ex: já termina em BRL)
+        # e se não for um índice sintético customizado (que não faz sentido converter)
+        is_custom_index = ('+' in a) or ('%' in a)
+        if a not in brl_native_assets and not a.endswith(' BRL') and not is_custom_index:
             expanded_assets.append(f"{a} BRL")
+            
     return expanded_assets
 
 def render_benchmark_selector(available_assets):

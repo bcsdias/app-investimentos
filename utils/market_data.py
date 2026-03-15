@@ -684,7 +684,7 @@ def buscar_dolar_bcb(start_date: str, end_date: str, logger) -> pd.Series | None
         logger.debug("Traceback Dolar BCB:", exc_info=True)
         return None
 
-def processar_benchmarks(start_date: str, end_date: str, benchmarks_yf: dict, benchmarks_b3: dict, benchmarks_bcb: dict, benchmarks_td: dict, carteiras_config: dict, logger) -> dict:
+def processar_benchmarks(start_date: str, end_date: str, benchmarks_yf: dict, benchmarks_b3: dict, benchmarks_bcb: dict, benchmarks_td: dict, carteiras_config: dict, logger, ativos_brl: set = None) -> dict:
     """
     Centraliza a busca e cálculo de benchmarks e índices sintéticos.
     """
@@ -707,31 +707,27 @@ def processar_benchmarks(start_date: str, end_date: str, benchmarks_yf: dict, be
         benchmarks_data[nome] = buscar_dados_tesouro(config['titulo'], config['vencimento'], start_date, end_date, logger)
 
     # 4. Dolar & Conversões para BRL
-    dolar_ptax = buscar_dolar_bcb(start_date, end_date, logger)
-    if dolar_ptax is not None:
-        # IMID BRL
-        if 'IMID' in benchmarks_data and benchmarks_data['IMID'] is not None:
-            imid_series = _ensure_series(benchmarks_data['IMID'])
-            if imid_series is not None:
-                logger.info("Calculando benchmark 'IMID BRL'...")
-                dolar_aligned = dolar_ptax.reindex(imid_series.index, method='ffill')
-                benchmarks_data['IMID BRL'] = imid_series * dolar_aligned
-
-        # S&P 500 BRL
-        if 'S&P 500' in benchmarks_data and benchmarks_data['S&P 500'] is not None:
-            spy_series = _ensure_series(benchmarks_data['S&P 500'])
-            if spy_series is not None:
-                logger.info("Calculando benchmark 'S&P 500 BRL'...")
-                dolar_aligned = dolar_ptax.reindex(spy_series.index, method='ffill')
-                benchmarks_data['S&P 500 BRL'] = spy_series * dolar_aligned
-
-        # Bitcoin BRL
-        if 'Bitcoin' in benchmarks_data and benchmarks_data['Bitcoin'] is not None:
-            btc_series = _ensure_series(benchmarks_data['Bitcoin'])
-            if btc_series is not None:
-                logger.info("Calculando benchmark 'Bitcoin BRL'...")
-                dolar_aligned = dolar_ptax.reindex(btc_series.index, method='ffill')
-                benchmarks_data['Bitcoin BRL'] = btc_series * dolar_aligned
+    brl_targets = set(ativos_brl) if ativos_brl else set()
+    if carteiras_config:
+        for pesos in carteiras_config.values():
+            for ativo in pesos.keys():
+                if ativo.endswith(' BRL'):
+                    brl_targets.add(ativo.replace(' BRL', ''))
+                    
+    for hardcoded in ['IMID', 'S&P 500', 'Bitcoin']:
+        if hardcoded in benchmarks_data:
+            brl_targets.add(hardcoded)
+            
+    if brl_targets:
+        dolar_ptax = buscar_dolar_bcb(start_date, end_date, logger)
+        if dolar_ptax is not None:
+            for base_asset in brl_targets:
+                if base_asset in benchmarks_data and benchmarks_data[base_asset] is not None:
+                    series = _ensure_series(benchmarks_data[base_asset])
+                    if series is not None:
+                        logger.info(f"Calculando conversão para Reais: '{base_asset} BRL'...")
+                        dolar_aligned = dolar_ptax.reindex(series.index, method='ffill')
+                        benchmarks_data[f'{base_asset} BRL'] = series * dolar_aligned
 
     # 5. IPCA + 6%
     if 'IPCA' in benchmarks_data and benchmarks_data['IPCA'] is not None:
