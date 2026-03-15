@@ -142,10 +142,13 @@ class FinancialReport:
 
         # Resolve dependências implícitas (ex: 'IMID BRL' precisa de 'IMID')
         final_needed = set(needed_assets)
+        ativos_brl_needed = set()
         for asset in needed_assets:
             if isinstance(asset, str):
                 if asset.endswith(' BRL'):
-                    final_needed.add(asset.replace(' BRL', ''))
+                    base = asset.replace(' BRL', '')
+                    final_needed.add(base)
+                    ativos_brl_needed.add(base)
                 
                 # Dependências de Índices Sintéticos Dinâmicos
                 if 'IPCA +' in asset:
@@ -164,7 +167,8 @@ class FinancialReport:
         bench_data = processar_benchmarks(
             start_date, end_date,
             yf_filtered, b3_filtered, bcb_filtered,
-            td_filtered, carteiras_sinteticas, self.logger
+            td_filtered, carteiras_sinteticas, self.logger,
+            ativos_brl=ativos_brl_needed
         )
         
         loaded_benchmarks = [k for k, v in bench_data.items() if v is not None and not v.empty]
