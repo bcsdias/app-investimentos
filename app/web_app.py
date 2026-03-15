@@ -568,6 +568,151 @@ def render_altair_line(df, title, y_format=".0%", y_title="Valor"):
     with st.expander(f"🔍 Ver dados: {title}"):
         st.dataframe(df_display, use_container_width=True)
 
+# --- Módulo de Migração de Carteira ---
+def render_migration_tool():
+    st.subheader("🔄 Planejador de Migração de Carteira (Isenção IR)")
+    st.markdown("Planeje a transição da sua carteira atual para uma nova alocação, respeitando o limite mensal de isenção de IR para Ações (R$ 20.000,00).")
+    
+    env_token = os.getenv('DLP_TOKEN', '')
+    token = st.text_input("Token API (DLP)", value=env_token, type="password", key="token_migracao")
+    
+    if not token:
+        st.info("Insira seu token da DLP para carregar a carteira atual.")
+        return
+        
+    wallet_data = get_wallet_data(token)
+    if not wallet_data or 'wallet' not in wallet_data:
+        st.error("Não foi possível carregar a carteira.")
+        return
+        
+    # Pega todas as classes disponíveis para permitir que o usuário escolha o que vender
+    wallet_items = wallet_data.get('wallet', [])
+    classes_disponiveis = sorted(list(set([item.get('classe', 'Outros') for item in wallet_items])))
+    
+    with st.expander("⚙️ Configurações da Migração", expanded=True):
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.markdown("**Regras de Venda**")
+            # R$ 19.500 de default para dar margem de segurança para oscilação da cotação no dia
+            limite_mensal = st.number_input("Limite de Venda Mensal (R$)", min_value=1000, max_value=50000, value=19500, step=100)
+            classes_venda = st.multiselect("Classes para Vender", classes_disponiveis, default=["AÇÃO"] if "AÇÃO" in classes_disponiveis else [])
+            st.caption("*A isenção de 20k aplica-se apenas à classe AÇÃO.*")
+        
+        with col2:
+            st.markdown("**Alocação Alvo (%)**")
+            peso_b5p2 = st.number_input("B5P211 (Renda Fixa)", min_value=0, max_value=100, value=60)
+            peso_vwra = st.number_input("VWRA11 (Global)", min_value=0, max_value=100, value=35)
+            peso_bith = st.number_input("BITH11 (Crypto)", min_value=0, max_value=100, value=5)
+            
+        with col3:
+            st.markdown("**Validação**")
+            soma = peso_b5p2 + peso_vwra + peso_bith
+            st.metric("Soma dos Pesos", f"{soma}%", delta="OK" if soma == 100 else "Ajuste para 100%", delta_color="normal" if soma == 100 else "inverse")
+            
+    if soma != 100:
+        st.warning("A soma da alocação alvo deve ser exatamente 100%.")
+        return
+        
+    if not classes_venda:
+        st.info("Selecione pelo menos uma classe para vender.")
+        return
+        
+    # Filtra os itens que serão vendidos
+    itens_venda = []
+    for item in wallet_items:
+        # Busca por 'quantidade' ou 'qtd'
+        qtd = item.get('quantidade', item.get('qtd', 0))
+        if item.get('classe') in classes_venda and qtd > 0:
+            preco = item.get('price', 0)
+            vlr_mercado = qtd * preco
+            if vlr_mercado > 0:
+                itens_venda.append({
+                    'Ativo': item.get('ativo'),
+                    'Classe': item.get('classe'),
+                    'Qtd Atual': qtd,
+                    'Preço Atual': preco,
+                    'Valor Total (R$)': vlr_mercado
+                })
+                
+    if not itens_venda:
+        st.warning("Nenhum ativo encontrado nas classes selecionadas com saldo em carteira.")
+        return
+        
+    df_venda = pd.DataFrame(itens_venda)
+    total_vender = df_venda['Valor Total (R$)'].sum()
+    
+    st.markdown(f"### Resumo da Origem")
+    st.markdown(f"**Total estimado para migração:** R$ {total_vender:,.2f} ({len(itens_venda)} ativos)")
+    with st.expander("Ver ativos que serão liquidados"):
+        st.dataframe(df_venda, use_container_width=True)
+        
+    if st.button("🔄 Gerar Plano de Migração Mensal", type="primary"):
+        # Ordena por menor valor para limpar o "rabo" da carteira primeiro (menos ativos na custódia)
+        df_venda = df_venda.sort_values(by='Valor Total (R$)')
+        
+        meses = []
+        mes_atual_vendas = []
+        mes_atual_total = 0.0
+        
+        for _, row in df_venda.iterrows():
+            ativo = row['Ativo']
+            qtd_restante = row['Qtd Atual']
+            preco = row['Preço Atual']
+            
+            while qtd_restante > 0:
+                capacidade_restante = limite_mensal - mes_atual_total
+                
+                if preco > limite_mensal and mes_atual_total == 0:
+                    # Caso extremo: 1 única cota já estoura o limite (ex: BRK.A BDR)
+                    qtd_vender = 1
+                elif capacidade_restante < preco:
+                    # Fecha o mês e inicia um novo se não couber nem 1 cota
+                    meses.append({'vendas': mes_atual_vendas, 'total': mes_atual_total})
+                    mes_atual_vendas = []
+                    mes_atual_total = 0.0
+                    continue
+                else:
+                    max_qtd_possivel = int(capacidade_restante // preco)
+                    qtd_vender = min(qtd_restante, max_qtd_possivel)
+                    
+                vlr_venda = qtd_vender * preco
+                mes_atual_vendas.append({
+                    'Ativo': ativo,
+                    'Qtd Vender': int(qtd_vender),
+                    'Preço Ref.': preco,
+                    'Valor (R$)': vlr_venda
+                })
+                mes_atual_total += vlr_venda
+                qtd_restante -= qtd_vender
+                
+        if mes_atual_vendas:
+            meses.append({'vendas': mes_atual_vendas, 'total': mes_atual_total})
+            
+        st.success(f"Plano gerado com sucesso! A migração levará cerca de **{len(meses)} meses** para isenção total.")
+        
+        # Exibição do Plano
+        for i, mes in enumerate(meses):
+            total_mes = mes['total']
+            
+            with st.container(border=True):
+                st.markdown(f"#### Mês {i+1} | Total de Venda: R$ {total_mes:,.2f}")
+                
+                col_v, col_c = st.columns(2)
+                with col_v:
+                    st.markdown("🔴 **O que VENDER**")
+                    df_mes_venda = pd.DataFrame(mes['vendas'])
+                    st.dataframe(df_mes_venda, hide_index=True, use_container_width=True)
+                    
+                with col_c:
+                    st.markdown("🟢 **O que COMPRAR**")
+                    compras = [
+                        {"Ativo": "B5P211", "Alocação": f"{peso_b5p2}%", "Valor Alvo (R$)": total_mes * (peso_b5p2/100)},
+                        {"Ativo": "VWRA11", "Alocação": f"{peso_vwra}%", "Valor Alvo (R$)": total_mes * (peso_vwra/100)},
+                        {"Ativo": "BITH11", "Alocação": f"{peso_bith}%", "Valor Alvo (R$)": total_mes * (peso_bith/100)}
+                    ]
+                    compras = [c for c in compras if c["Valor Alvo (R$)"] > 0]
+                    st.dataframe(pd.DataFrame(compras), hide_index=True, use_container_width=True)
+
 # --- Função Principal do App ---
 def main():
     # Configura o logger para o webapp. O 'debug=True' pode ser controlado por um checkbox ou var de ambiente.
@@ -576,6 +721,14 @@ def main():
     logger.info("="*50)
     logger.info("Iniciando nova sessão do WebApp de Investimentos V3.")
     st.title("📊 Dashboard de Investimentos V3")
+    
+    app_mode = st.sidebar.radio("Navegação", ["Análise de Rentabilidade", "Migração de Carteira (IR)"])
+    st.sidebar.markdown("---")
+    
+    if app_mode == "Migração de Carteira (IR)":
+        render_migration_tool()
+        return
+        
     st.markdown("---")
 
     # Inicializa variáveis
@@ -587,7 +740,7 @@ def main():
 
     # --- Sidebar ---
     with st.sidebar:
-        st.header("Configurações")
+        st.header("Configurações da Análise")
         
         # 1. Seleção de Ativos (Nova Função)
         selected_assets = render_sidebar_asset_selection()
