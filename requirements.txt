@@ -8,3 +8,4 @@ python-bcb
 adjustText
 streamlit
 altair
+openpyxl
