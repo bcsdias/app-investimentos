@@ -6,5 +6,5 @@ matplotlib
 yfinance
 python-bcb
 adjustText
-selenium
-webdriver-manager
+streamlit
+altair

@@ -1,19 +1,48 @@
-# Arquivo de variáveis de ambiente (contém segredos)
-.env
-
-# Pasta do ambiente virtual Python
-.venv/
-
-# Cache e arquivos compilados do Python
+# Byte-compiled / optimized / DLL files
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
 
-# Arquivos
-graficos/
+# External packages
+.venv/
+venv/
+ENV/
+env/
+
+# Data files
+data/raw/
+data/downloads/
+*.csv
+!data/static/*.csv
+
+# Streamlit specific
+.streamlit/secrets.toml
+
+# Environment variables
+.env
+.env.local
 
 # Logs
+*.log
 log/
-log/main.log
 
-# Relatorios
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Reports
 reports/
+reports.zip
+
+# IDEs
+.vscode/
+.idea/
+
+# Custom old/backup files
+*.old
+apoio/
