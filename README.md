@@ -1,8 +1,14 @@
-# App de Investimentos e Análise de Portfólio
-
-Este projeto é uma ferramenta completa para análise de rentabilidade de carteiras de investimentos, comparação com benchmarks de mercado, cálculo de risco e simulação de estratégias de alocação.
-
 O sistema consome dados de uma API proprietária de histórico de investimentos e cruza com dados de mercado de diversas fontes (Yahoo Finance, B3, Banco Central, Tesouro Direto) para gerar relatórios detalhados.
+
+## 📝 Changelog (Recente)
+
+### v3.1.0 (Refatoração Global - Fase 1)
+- ♻️ **Arquitetura Modular:** Separação total entre Interface (UI), Lógica Financeira (Engine) e Acesso a Dados (Data).
+- 🚀 **B3 Crawler 2.0:** Novo extrator paralelo (3 workers) com atualização incremental inteligente (sem Selenium no runtime).
+- 📱 **Nova Interface Streamlit:** Dashboard migrado de script único para aplicação multipáginas (`src/ui/app.py`).
+- 📂 **Estrutura Profissional:** Organização seguindo padrões modernos de projetos Python (`src/`, `tests/`, `scripts/`).
+- 🔒 **Logging Global:** Rastreabilidade completa via `st.session_state` salvando em `log/main.log`.
+- 🧹 **Limpeza de Débito Técnico:** Remoção de pastas legadas, dados pessoais e dependências pesadas.
 
 ## 🚀 Funcionalidades Principais
 
@@ -27,7 +33,7 @@ O sistema integra dados de múltiplas fontes automaticamente:
 
 ### Pré-requisitos
 *   Python 3.10+
-*   Google Chrome instalado (para o scraper da B3)
+*   Google Chrome (apenas para execução local do script de cache da B3)
 
 ### Passo a Passo
 
@@ -61,61 +67,31 @@ O sistema integra dados de múltiplas fontes automaticamente:
 
 ## 🖥️ Como Usar
 
-O ponto de entrada é o script `app/main.py`. Você pode executá-lo de diferentes formas dependendo do objetivo.
+O sistema agora é uma aplicação **Streamlit**. O ponto de entrada principal é o `src/ui/app.py`.
 
-### Argumentos Disponíveis
+### Executando o Web App
 
-| Argumento | Descrição |
-| :--- | :--- |
-| `--ativo <COD>` | Analisa um ativo específico da sua carteira (ex: `KLBN11`). |
-| `--classe <NOME>` | Analisa uma classe de ativos da sua carteira (ex: `AÇÃO`, `FII`, `R.FIXA`). |
-| `--historico <ANOS>` | Define a janela de tempo para análise (ex: `5` para os últimos 5 anos). Se usado sem `--ativo` ou `--classe`, gera apenas um panorama de mercado. |
-| `--aporte <VALOR>` | Valor do aporte mensal para simulações (ex: `1000`). |
-| `--rebalanceamento <MESES>` | Intervalo em meses para rebalanceamento nas simulações (ex: `6`). |
-| `--debug` | Ativa logs detalhados no terminal. |
-
-### Exemplos de Uso
-
-**1. Analisar uma classe de ativos específica (ex: Ações):**
-Gera gráficos de TWR, Evolução Patrimonial e Comparativo com Benchmarks para suas ações.
+Para iniciar o dashboard interativo:
 ```bash
-python app/main.py --classe "AÇÃO"
+streamlit run src/ui/app.py
 ```
 
-**2. Analisar um ativo específico com recorte de tempo:**
-Analisa apenas o ativo `PETR4` nos últimos 2 anos.
-```bash
-python app/main.py --ativo PETR4 --historico 2
-```
+### Atualizando Cache da B3 (Local-only)
 
-**3. Panorama de Mercado (Modo Standalone):**
-Gera gráficos comparativos de todos os benchmarks configurados e carteiras sintéticas para os últimos 10 anos, sem ler dados da sua carteira pessoal.
+Para baixar novos dados da B3 de forma otimizada e paralela:
 ```bash
-python app/main.py --historico 10
-```
-
-**4. Simulação de Investimentos:**
-Simula como teriam performado diversas carteiras teóricas (definidas em `config.py`) nos últimos 10 anos, considerando aportes de R$ 2.000,00 e rebalanceamento semestral.
-```bash
-python app/main.py --historico 10 --aporte 2000 --rebalanceamento 6
+python scripts/update_b3_cache.py
 ```
 
 ## 📂 Estrutura do Projeto
 
-*   **`app/`**: Código fonte principal.
-    *   `main.py`: Orquestrador e gerador de gráficos.
-    *   `config.py`: Configuração de benchmarks, carteiras sintéticas e listas de exibição.
-*   **`utils/`**: Módulos utilitários.
-    *   `market_data.py`: Lógica de download, cache e processamento de dados de mercado (YF, B3, BCB).
-    *   `logger.py`: Configuração de logs.
-*   **`data/`**: Armazenamento local.
-    *   `raw/`: Cache de arquivos CSV baixados e processados.
-    *   `downloads/`: Pasta temporária para downloads do Selenium.
-*   **`reports/`**: Saída do sistema.
-    *   `twr/`: Gráficos e CSVs de Rentabilidade (Time-Weighted Return).
-    *   `evolucao/`: Gráficos de Evolução Patrimonial e Percentual.
-    *   `risco/`: Gráficos de Risco x Retorno e métricas.
-    *   `simulacao/`: Resultados das simulações de aportes.
+*   **`src/engine/`**: Lógica de cálculo (TWR, IRR, Métricas de Risco).
+*   **`src/data/`**: Camada de dados, configurações de benchmarks e fontes (DLP, YF, BCB).
+*   **`src/ui/`**: Interface Streamlit (Páginas, Componentes e Temas).
+*   **`data/static/`**: Histórico consolidado de índices B3 (mantido via script/CI).
+*   **`scripts/`**: Utilitários de manutenção (Update B3 Cache).
+*   **`tests/`**: Testes automatizados (pytest).
+*   **`log/`**: Registros de execução.
 
 ## ⚙️ Personalização
 
