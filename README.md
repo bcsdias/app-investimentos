@@ -16,6 +16,11 @@ O sistema consome dados de uma API proprietária de histórico de investimentos 
 - ☁️ **Persistência Cloud:** Uso de Supabase para perfis de usuário e Upstash Redis para cache global de mercado.
 - 🔧 **Página de Configurações:** Interface para o usuário gerenciar seu próprio token DLP de forma segura.
 
+### v3.3.0 (Planejamento de Migração e Eficiência Fiscal)
+- ✨ **Planejador de Migração:** Implementa ferramenta para transição gradual de carteira respeitando o limite de isenção de IR (R$ 20k/mês).
+- 🐛 **Correção de API:** Corrige erro de variável indefinida (`NameError`) ao buscar resumo da carteira no módulo `market_data`.
+- 💄 **Melhorias de UI:** Ajuste de contraste e cores nos componentes de métrica para garantir legibilidade em diferentes temas.
+
 ### v3.2.1 (Ajustes de Telemetria e Estabilidade)
 - 🐛 **Correção de Proxy:** Corrigido erro de variável indefinida ao buscar índices via Yahoo Finance.
 - 🔍 **Telemetria de Mercado:** Inclusão de nomes amigáveis nos logs de busca de benchmarks (BCB e YF).
