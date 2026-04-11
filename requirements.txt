@@ -9,3 +9,7 @@ adjustText
 streamlit
 altair
 openpyxl
+authlib
+supabase
+upstash-redis
+cryptography

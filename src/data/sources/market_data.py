@@ -13,11 +13,17 @@ from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
+from src.data.cache import cache_get, cache_set
+from src.utils.logger import logger
 
-# Define o diretório raiz do projeto (assumindo que utils está um nível abaixo da raiz)
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# Define o diretório raiz do projeto (4 níveis acima de src/data/sources/file.py)
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 DATA_RAW_DIR = os.path.join(BASE_DIR, "data", "raw")
 DATA_DOWNLOADS_DIR = os.path.join(BASE_DIR, "data", "downloads")
+
+# Garante que as pastas de dados existam
+os.makedirs(DATA_RAW_DIR, exist_ok=True)
+os.makedirs(DATA_DOWNLOADS_DIR, exist_ok=True)
 
 # Configurações de Cache
 CACHE_EXPIRY = 86400  # 24 horas em segundos
@@ -52,7 +58,7 @@ def _ensure_series(x) -> pd.Series | None:
     except Exception:
         return None
 
-def buscar_historico(token: str, logger, ativo: str = None, classe: str = None, corretora: str = None) -> pd.DataFrame | None:    
+def buscar_historico(token: str, ativo: str = None, classe: str = None, corretora: str = None) -> pd.DataFrame | None:    
     """
     Busca o histórico de investimentos na API e retorna como um DataFrame do pandas.
     """
@@ -60,108 +66,125 @@ def buscar_historico(token: str, logger, ativo: str = None, classe: str = None, 
     headers = {"Content-Type": "application/json", "Authorization": token}
     
     # Monta os parâmetros de consulta apenas com os valores que foram fornecidos
-    params = {
-        "ativo": ativo,
-        "classe": classe,
-        "corretora": corretora
-    }
-    # Filtra para não enviar parâmetros vazios
+    params = {"ativo": ativo, "classe": classe, "corretora": corretora}
     params = {k: v for k, v in params.items() if v is not None}
 
-    # Adiciona uma linha separadora com quebras de linha para melhor visualização no log
+    # --- CACHE ---
+    import hashlib
+    import json
+    token_hash = hashlib.sha256(token.encode()).hexdigest()[:12]
+    params_str = json.dumps(params, sort_keys=True)
+    cache_key = f"dlp:hist:{token_hash}:{hashlib.sha256(params_str.encode()).hexdigest()[:12]}"
+    
+    cached_df = cache_get(cache_key)
+    if cached_df is not None:
+        # Normalização de nomes de colunas no cache (caso tenha sido salvo com nome antigo)
+        if isinstance(cached_df, pd.DataFrame):
+            rename_map = {col: 'date' for col in cached_df.columns if col.lower() in ['date', 'data']}
+            if rename_map:
+                cached_df.rename(columns=rename_map, inplace=True)
+        return cached_df
+
     logger.info(f"\n\n==================== NOVA ANÁLISE ====================")
     logger.info(f"Buscando histórico na API com os parâmetros: {params}")
     try:
         response = requests.get(url, headers=headers, params=params)
-        response.raise_for_status()  # Lança um erro para status HTTP 4xx/5xx
+        response.raise_for_status()
         
         dados_json = response.json()
-        
-        # Converte a lista 'historico' do JSON em um DataFrame
         df = pd.DataFrame(dados_json.get("historico", []))
         
         if df.empty:
             logger.warning("Nenhum dado de histórico encontrado para os filtros aplicados.")
             return None
+        
+        # Normalização de nomes de colunas
+        rename_map = {col: 'date' for col in df.columns if col.lower() in ['date', 'data']}
+        if rename_map:
+            df.rename(columns=rename_map, inplace=True)
             
+        cache_set(cache_key, df, 600) # 10 min
         return df
-
-    except RequestException as e:
+    except Exception as e:
         logger.error(f"Erro na requisição à API: {e}")
         return None
-    except ValueError: # Erro de decodificação do JSON
-        logger.error("Erro ao processar a resposta da API. Não é um JSON válido.")
-        return None
 
-def buscar_resumo_carteira(token: str, logger) -> dict | None:
+def buscar_resumo_carteira(token: str) -> dict | None:
     """
     Busca o resumo da carteira (ativos, classes, wallet) na API.
-    Retorna o JSON completo com listas de ativos operados e posição atual.
     """
     url = "https://users.dlombelloplanilhas.com/resumo?summary=true&wallet=true&multiwallet=false&notifications=false"
     headers = {"Content-Type": "application/json", "Authorization": token}
     
+    # --- CACHE ---
+    import hashlib
+    token_hash = hashlib.sha256(token.encode()).hexdigest()[:12]
+    cache_key = f"dlp:resumo:{token_hash}"
+    
+    cached_resumo = cache_get(cache_key)
+    if cached_resumo is not None:
+        return cached_resumo
+
     try:
         response = requests.get(url, headers=headers)
         response.raise_for_status()
-        return response.json()
+        cache_set(cache_key, resumo, 600) # 10 min
+        return resumo
     except Exception as e:
         logger.error(f"Erro ao buscar resumo da carteira: {e}")
         return None
 
-def buscar_dados_benchmark(ticker: str, start_date: str, end_date: str, logger) -> pd.Series | None:
+def buscar_dados_benchmark(ticker: str, start_date: str, end_date: str, nome: str = None) -> pd.Series | None:
+    display_name = f"{nome} ({ticker})" if nome else ticker
     """
     Busca dados históricos de fechamento para um ticker de benchmark.
     """
     try:
+        # --- CACHE NÍVEL 1 & 2: Memória & Redis ---
+        cache_key = f"yf:{ticker}"
+        cached_series = cache_get(cache_key)
+        if cached_series is not None:
+            mask = (cached_series.index >= start_date) & (cached_series.index <= end_date)
+            return cached_series.loc[mask]
+
         # Sanitiza o ticker para nome de arquivo
         safe_ticker = ticker.replace('^', '').replace('.', '_')
         cache_file = _get_cache_path(f"YF_{safe_ticker}.csv")
         
         df = None
+        # --- CACHE NÍVEL 3: CSV Local ---
         if _is_cache_valid(cache_file):
-            logger.info(f"Usando cache local para benchmark YF: {ticker}")
+            logger.info(f"Usando cache local (CSV) para benchmark YF: {display_name}")
             try:
                 df = pd.read_csv(cache_file, index_col=0, parse_dates=True, date_format='%Y-%m-%d')
-                # Se o CSV tiver cabeçalhos extras do yfinance (Price, Ticker), o índice pode ficar sujo.
-                # Tenta limpar convertendo o índice para datetime e removendo o que falhar.
                 df.index = pd.to_datetime(df.index, errors='coerce', format='%Y-%m-%d')
-                df = df.dropna(how='all') # Remove linhas onde o índice virou NaT
-                # Garante índice único e ordenado
-                df = df[~df.index.duplicated(keep='last')]
-                df = df.sort_index()
+                df = df.dropna(how='all')
+                df = df[~df.index.duplicated(keep='last')].sort_index()
             except Exception:
-                pass # Se falhar ao ler, baixa novamente
+                pass
         
         if df is None:
-            logger.info(f"Baixando dados YF para: {ticker} (Histórico Completo)...")
-            # Baixa histórico longo para popular o cache
+            logger.info(f"Baixando dados YF para: {display_name} (Histórico Completo)...")
             dados = yf.download(ticker, start=CACHE_START_DATE, progress=False, auto_adjust=True)
             if not dados.empty:
-                # Garante índice único e ordenado antes de salvar
-                dados = dados[~dados.index.duplicated(keep='last')]
-                dados = dados.sort_index()
+                dados = dados[~dados.index.duplicated(keep='last')].sort_index()
                 df = dados[['Close']]
                 df.to_csv(cache_file)
             else:
-                logger.warning(f"Nenhum dado encontrado para o benchmark {ticker}.")
+                logger.warning(f"Nenhum dado encontrado para o benchmark {display_name}.")
                 return None
 
-        # Filtra pelo período solicitado
-        # Garante que o índice é datetime para o slice funcionar
-        df.index = pd.to_datetime(df.index)
-        # Ordena novamente para garantir slice correto
-        df = df.sort_index()
-        # Slice seguro usando máscara booleana
-        mask = (df.index >= start_date) & (df.index <= end_date)
-        return df.loc[mask, 'Close'].dropna()
+        # Salva no Cloud Cache (24h)
+        full_series = df.iloc[:, 0]
+        cache_set(cache_key, full_series, 86400)
 
+        mask = (full_series.index >= start_date) & (full_series.index <= end_date)
+        return full_series.loc[mask]
     except Exception as e:
-        logger.error(f"Erro ao buscar dados do benchmark {ticker}: {e}")
-        logger.debug(f"Traceback YFinance {ticker}:", exc_info=True)
+        logger.error(f"Erro ao buscar dados do benchmark {display_name}: {e}")
         return None
 
-def buscar_dados_tesouro(titulo_nome: str, vencimento_str: str, start_date: str, end_date: str, logger) -> pd.Series | None:
+def buscar_dados_tesouro(titulo_nome: str, vencimento_str: str, start_date: str, end_date: str) -> pd.Series | None:
     """
     Busca dados históricos de títulos do Tesouro Direto via Tesouro Transparente.
     Faz download do CSV oficial e filtra pelo título e vencimento.
@@ -172,83 +195,71 @@ def buscar_dados_tesouro(titulo_nome: str, vencimento_str: str, start_date: str,
     arquivo_csv = os.path.join(DATA_RAW_DIR, "PrecoTaxaTesouroDireto.csv")
     url_tesouro = "https://www.tesourotransparente.gov.br/ckan/dataset/df56aa42-484a-4a59-8184-7676580c81e3/resource/796d2059-14e9-44e3-80c9-2d9e30b405c1/download/precotaxatesourodireto.csv"
 
-    # --- CACHE NÍVEL 2: Série Processada ---
-    # Verifica se já temos o arquivo processado deste título específico (muito mais rápido)
+    # --- CACHE NÍVEL 1 & 2 ---
+    cache_key = f"td:{titulo_nome}:{vencimento_str}"
+    cached_series = cache_get(cache_key)
+    if cached_series is not None:
+        return cached_series.loc[start_date:end_date]
+
+    # --- CACHE NÍVEL 3: CSV Processado ---
     safe_title = titulo_nome.replace(' ', '_').replace('+', 'mais')
     safe_venc = vencimento_str.replace('/', '-')
     cache_series_file = _get_cache_path(f"TD_{safe_title}_{safe_venc}.csv")
 
     if _is_cache_valid(cache_series_file):
-        logger.info(f"Usando cache processado para Tesouro: {titulo_nome} {vencimento_str}")
+        logger.info(f"Usando cache processado (CSV) para Tesouro: {titulo_nome} {vencimento_str}")
         try:
             s = pd.read_csv(cache_series_file, index_col=0, parse_dates=True, sep=';', decimal=',', date_format='%Y-%m-%d %H:%M:%S')
-            # Garante índice único e ordenado
-            s = s[~s.index.duplicated(keep='last')]
-            s = s.sort_index()
+            s = s[~s.index.duplicated(keep='last')].sort_index()
             if not s.empty:
-                return s.iloc[:, 0].loc[start_date:end_date]
+                full_series = s.iloc[:, 0]
+                cache_set(cache_key, full_series, 86400)
+                return full_series.loc[start_date:end_date]
         except Exception:
             pass
 
-    # Verifica se precisa baixar (se não existe ou se é mais antigo que 24h)
+    # ... (Download logic remains targetting arquivo_csv)
+    arquivo_csv = os.path.join(DATA_RAW_DIR, "PrecoTaxaTesouroDireto.csv")
+    url_tesouro = "https://www.tesourotransparente.gov.br/ckan/dataset/df56aa42-484a-4a59-8184-7676580c81e3/resource/796d2059-14e9-44e3-80c9-2d9e30b405c1/download/precotaxatesourodireto.csv"
+    
     precisa_baixar = not _is_cache_valid(arquivo_csv)
-    if not precisa_baixar:
-        logger.info("Usando cache local do arquivo mestre do Tesouro Direto.")
-
     if precisa_baixar:
-        logger.info("Baixando dados históricos do Tesouro Direto (pode demorar um pouco)...")
+        # (Download and save logic)
         try:
             response = requests.get(url_tesouro, stream=True)
             response.raise_for_status()
+            os.makedirs(DATA_RAW_DIR, exist_ok=True)
             with open(arquivo_csv, 'wb') as f:
-                for chunk in response.iter_content(chunk_size=8192):
-                    f.write(chunk)
-            logger.info("Download do Tesouro Direto concluído.")
+                for chunk in response.iter_content(chunk_size=8192): f.write(chunk)
         except Exception as e:
-            logger.error(f"Erro ao baixar dados do Tesouro Direto: {e}")
-            logger.debug("Traceback download Tesouro:", exc_info=True)
-            if not os.path.exists(arquivo_csv):
-                return None
+            logger.error(f"Erro ao baixar Tesouro: {e}")
+            if not os.path.exists(arquivo_csv): return None
 
     try:
-        logger.info(f"Processando dados do Tesouro: {titulo_nome} {vencimento_str}...")
-        # Lê apenas colunas necessárias para otimizar memória
-        df = pd.read_csv(
-            arquivo_csv, 
-            sep=';', 
-            decimal=',', 
-            encoding='latin-1',
-            usecols=['Tipo Titulo', 'Data Vencimento', 'Data Base', 'PU Base Manha']
-        )
-        
-        # Filtra pelo título e vencimento
+        df = pd.read_csv(arquivo_csv, sep=';', decimal=',', encoding='latin-1', usecols=['Tipo Titulo', 'Data Vencimento', 'Data Base', 'PU Base Manha'])
         df['Data Vencimento'] = pd.to_datetime(df['Data Vencimento'], dayfirst=True)
         df['Data Base'] = pd.to_datetime(df['Data Base'], dayfirst=True)
-        
         vencimento_dt = pd.to_datetime(vencimento_str, dayfirst=True)
         
         mask = (df['Tipo Titulo'] == titulo_nome) & (df['Data Vencimento'] == vencimento_dt)
         df_filtrado = df[mask].set_index('Data Base').sort_index()
-        
-        # Remove duplicatas se houver
         df_filtrado = df_filtrado[~df_filtrado.index.duplicated(keep='last')]
-
-        # Salva o cache processado para a próxima vez
-        full_series = df_filtrado['PU Base Manha']
-        full_series.to_csv(cache_series_file, sep=';', decimal=',')
-
-        # Retorna a série no período solicitado (PU Base Manha é o preço de referência)
-        return full_series.loc[start_date:end_date]
         
+        full_series = df_filtrado['PU Base Manha']
+        cache_set(cache_key, full_series, 86400)
+        return full_series.loc[start_date:end_date]
     except Exception as e:
-        logger.error(f"Erro ao processar dados do Tesouro Direto: {e}")
-        logger.debug("Traceback processamento Tesouro:", exc_info=True)
+        logger.error(f"Erro ao processar Tesouro: {e}")
         return None
 
-def buscar_dados_bcb(codigo_bcb: int, start_date: str, end_date: str, logger) -> pd.Series | None:
-    """
-    Busca uma série temporal do Banco Central do Brasil (BCB) e calcula o retorno acumulado.
-    """
+def buscar_dados_bcb(codigo_bcb: int, start_date: str, end_date: str, nome: str = None) -> pd.Series | None:
+    display_name = f"{nome} ({codigo_bcb})" if nome else f"BCB {codigo_bcb}"
+    # --- CACHE NÍVEL 1 & 2 ---
+    cache_key = f"bcb:{codigo_bcb}"
+    cached_series = cache_get(cache_key)
+    if cached_series is not None:
+        return cached_series.loc[start_date:end_date]
+
     try:
         cache_file = _get_cache_path(f"BCB_{codigo_bcb}.csv")
         df = None
@@ -273,12 +284,12 @@ def buscar_dados_bcb(codigo_bcb: int, start_date: str, end_date: str, logger) ->
             if last_date < (today - pd.Timedelta(days=5)):
                 update_needed = True
                 start_download = last_date + pd.Timedelta(days=1)
-                logger.info(f"Cache BCB {codigo_bcb} desatualizado (último dado: {last_date.date()}). Buscando atualizações...")
+                logger.info(f"Cache {display_name} desatualizado (último dado: {last_date.date()}). Buscando atualizações...")
             else:
-                logger.info(f"Usando cache local para série BCB: {codigo_bcb} (atualizado até {last_date.date()})")
+                logger.info(f"Usando cache local para série {display_name} (atualizado até {last_date.date()})")
         else:
             update_needed = True
-            logger.info(f"Buscando dados da série {codigo_bcb} do BCB (Histórico Completo)...")
+            logger.info(f"Buscando dados da série {display_name} do BCB (Histórico Completo)...")
             df = pd.DataFrame()
 
         # 3. Realiza o download incremental se necessário
@@ -291,14 +302,14 @@ def buscar_dados_bcb(codigo_bcb: int, start_date: str, end_date: str, logger) ->
                 if current_end > today:
                     current_end = today
                 
-                logger.debug(f"Buscando BCB {codigo_bcb} de {current_start.date()} a {current_end.date()}")
+                logger.debug(f"Buscando {display_name} de {current_start.date()} a {current_end.date()}")
                 try:
                     chunk_df = sgs.get({str(codigo_bcb): codigo_bcb}, start=current_start, end=current_end)
                     if chunk_df is not None and not chunk_df.empty:
                         chunk_df.index = pd.to_datetime(chunk_df.index)
                         dfs_new.append(chunk_df)
                 except Exception as e:
-                    logger.debug(f"Falha ao buscar chunk {current_start.date()}-{current_end.date()} para BCB {codigo_bcb}: {e}")
+                    logger.debug(f"Falha ao buscar chunk {current_start.date()}-{current_end.date()} para {display_name}: {e}")
 
                 current_start = current_end + pd.DateOffset(days=1)
             
@@ -308,9 +319,9 @@ def buscar_dados_bcb(codigo_bcb: int, start_date: str, end_date: str, logger) ->
                 df = df[~df.index.duplicated(keep='last')]
                 df = df.sort_index()
                 df.to_csv(cache_file)
-                logger.info(f"Cache BCB {codigo_bcb} atualizado com sucesso.")
+                logger.info(f"Cache {display_name} atualizado com sucesso.")
             elif df.empty:
-                logger.warning(f"Nenhum dado encontrado para a série {codigo_bcb} do BCB.")
+                logger.warning(f"Nenhum dado encontrado para a série {display_name} do BCB.")
                 return None
             else:
                 # Se não achou dados novos mas já tinha antigos, apenas atualiza mtime do arquivo
@@ -333,7 +344,7 @@ def buscar_dados_bcb(codigo_bcb: int, start_date: str, end_date: str, logger) ->
                     proxy_ticker = BCB_PROXIES.get(codigo_bcb)
                     
                     if proxy_ticker:
-                        logger.info(f"Série BCB {codigo_bcb} estagnada em {last_date.date()}. Tentando estender com proxy {proxy_ticker} via YFinance...")
+                        logger.info(f"Série {display_name} estagnada em {last_date.date()}. Tentando estender com proxy {proxy_ticker} via YFinance...")
                         try:
                             # Baixa dados do proxy a partir da última data válida
                             proxy_data = yf.download(proxy_ticker, start=last_date, progress=False, auto_adjust=True)
@@ -364,9 +375,9 @@ def buscar_dados_bcb(codigo_bcb: int, start_date: str, end_date: str, logger) ->
                                     
                                     # Salva o cache estendido
                                     df.to_csv(cache_file)
-                                    logger.info(f"Série BCB {codigo_bcb} estendida via proxy até {df.index[-1].date()}.")
+                                    logger.info(f"Série {display_name} estendida via proxy até {df.index[-1].date()}.")
                         except Exception as e:
-                            logger.warning(f"Falha ao estender série {codigo_bcb} com proxy {proxy_ticker}: {e}")
+                            logger.warning(f"Falha ao estender série {display_name} with proxy {proxy_ticker}: {e}")
 
         # Filtra pelo período solicitado antes de processar (para o cálculo de acumulado bater com o período)
         df = df.loc[start_date:end_date]
@@ -399,13 +410,15 @@ def buscar_dados_bcb(codigo_bcb: int, start_date: str, end_date: str, logger) ->
         # Renomeia o índice para 'Date' para consistência
         retorno_acumulado.index.name = 'Date'
 
+        cache_set(cache_key, retorno_acumulado, 86400)
+
         return retorno_acumulado
     except Exception as e:
-        logger.error(f"Erro ao buscar dados da série {codigo_bcb} do BCB: {e}")
-        logger.debug("Traceback detalhado do erro BCB:", exc_info=True)
+        logger.error(f"Erro ao buscar dados da série {display_name} do BCB: {e}")
+        logger.debug(f"Traceback detalhado do erro {display_name}:", exc_info=True)
         return None
 
-def download_b3_index_year(driver, index, year, download_folder, folder, logger):
+def download_b3_index_year(driver, index, year, download_folder, folder):
     logger.info(f"Iniciando download para o índice '{index}', ano {year}.")
     driver.get(f'https://sistemaswebb3-listados.b3.com.br/indexStatisticsPage/daily-evolution/{index}?language=pt-br')
     logger.debug(f"Navegou para a URL do índice {index}.")
@@ -445,7 +458,7 @@ def download_b3_index_year(driver, index, year, download_folder, folder, logger)
     os.rename(f'{download_folder}/Evolucao_Diaria.csv', destination_file)
     logger.info(f"Arquivo renomeado e movido para: {destination_file}")
 
-def run_b3_downloader(indices_anos: dict, logger):
+def run_b3_downloader(indices_anos: dict):
     """
     Orquestra o download de múltiplos arquivos de índices da B3 para diferentes anos.
     """
@@ -525,7 +538,7 @@ def run_b3_downloader(indices_anos: dict, logger):
 
             for year in final_years:
                 try:
-                    download_b3_index_year(driver, index, year, download_folder, destination_folder, logger)
+                    download_b3_index_year(driver, index, year, download_folder, destination_folder)
                 except Exception as e:
                     logger.error(f"Falha ao baixar dados para o índice '{index}' ano {year}. Erro: {e}")
 
@@ -538,7 +551,7 @@ def run_b3_downloader(indices_anos: dict, logger):
             driver.quit()
             logger.info("Driver do Chrome encerrado.")
 
-def buscar_dados_b3(indice: str, start_date: str, end_date: str, logger) -> pd.Series | None:
+def buscar_dados_b3(indice: str, start_date: str, end_date: str) -> pd.Series | None:
     """
     Orquestra o download e o processamento de dados de índices da B3.
     """
@@ -562,7 +575,7 @@ def buscar_dados_b3(indice: str, start_date: str, end_date: str, logger) -> pd.S
     if anos_para_baixar:
         logger.info(f"Arquivos não encontrados para os anos: {anos_para_baixar}. Iniciando download...")
         indices_para_baixar = {indice: anos_para_baixar}
-        run_b3_downloader(indices_para_baixar, logger)
+        run_b3_downloader(indices_para_baixar)
     else:
         logger.info(f"Todos os arquivos necessários para o índice '{indice}' já existem localmente. Download pulado.")
 
@@ -644,7 +657,7 @@ def buscar_dados_b3(indice: str, start_date: str, end_date: str, logger) -> pd.S
     logger.info(f"Dados do índice '{indice}' da B3 processados com sucesso.")
     return serie_final
 
-def buscar_dolar_bcb(start_date: str, end_date: str, logger) -> pd.Series | None:
+def buscar_dolar_bcb(start_date: str, end_date: str) -> pd.Series | None:
     """
     Busca a cotação do dólar (PTAX venda) na API do Banco Central (Olinda).
     Retorna uma série com as cotações diárias.
@@ -684,7 +697,7 @@ def buscar_dolar_bcb(start_date: str, end_date: str, logger) -> pd.Series | None
         logger.debug("Traceback Dolar BCB:", exc_info=True)
         return None
 
-def processar_benchmarks(start_date: str, end_date: str, benchmarks_yf: dict, benchmarks_b3: dict, benchmarks_bcb: dict, benchmarks_td: dict, carteiras_config: dict, logger, ativos_brl: set = None) -> dict:
+def processar_benchmarks(start_date: str, end_date: str, benchmarks_yf: dict, benchmarks_b3: dict, benchmarks_bcb: dict, benchmarks_td: dict, carteiras_config: dict, ativos_brl: set = None) -> dict:
     """
     Centraliza a busca e cálculo de benchmarks e índices sintéticos.
     """
@@ -692,19 +705,19 @@ def processar_benchmarks(start_date: str, end_date: str, benchmarks_yf: dict, be
 
     # 1. Busca YF
     for nome, ticker in benchmarks_yf.items():
-        benchmarks_data[nome] = buscar_dados_benchmark(ticker, start_date, end_date, logger)
+        benchmarks_data[nome] = buscar_dados_benchmark(ticker, start_date, end_date, nome=nome)
 
     # 2. Busca B3
     for nome, indice in benchmarks_b3.items():
-        benchmarks_data[nome] = buscar_dados_b3(indice, start_date, end_date, logger)
+        benchmarks_data[nome] = buscar_dados_b3(indice, start_date, end_date)
 
     # 3. Busca BCB
     for nome, codigo in benchmarks_bcb.items():
-        benchmarks_data[nome] = buscar_dados_bcb(codigo, start_date, end_date, logger)
+        benchmarks_data[nome] = buscar_dados_bcb(codigo, start_date, end_date, nome=nome)
 
     # 4. Busca Tesouro Direto
     for nome, config in benchmarks_td.items():
-        benchmarks_data[nome] = buscar_dados_tesouro(config['titulo'], config['vencimento'], start_date, end_date, logger)
+        benchmarks_data[nome] = buscar_dados_tesouro(config['titulo'], config['vencimento'], start_date, end_date)
 
     # 4. Dolar & Conversões para BRL
     brl_targets = set(ativos_brl) if ativos_brl else set()
@@ -719,7 +732,7 @@ def processar_benchmarks(start_date: str, end_date: str, benchmarks_yf: dict, be
             brl_targets.add(hardcoded)
             
     if brl_targets:
-        dolar_ptax = buscar_dolar_bcb(start_date, end_date, logger)
+        dolar_ptax = buscar_dolar_bcb(start_date, end_date)
         if dolar_ptax is not None:
             for base_asset in brl_targets:
                 if base_asset in benchmarks_data and benchmarks_data[base_asset] is not None:
