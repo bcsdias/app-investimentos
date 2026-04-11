@@ -16,6 +16,12 @@ O sistema consome dados de uma API proprietária de histórico de investimentos 
 - ☁️ **Persistência Cloud:** Uso de Supabase para perfis de usuário e Upstash Redis para cache global de mercado.
 - 🔧 **Página de Configurações:** Interface para o usuário gerenciar seu próprio token DLP de forma segura.
 
+### v3.4.0 (Redis como Single Source of Truth)
+- ☁️ **Redis SSOT:** Estabelece o Redis como fonte única de verdade para todos os dados de mercado (B3, YF, BCB, TD).
+- 🚀 **Script de Sincronização Total:** Adiciona `scripts/sync_to_redis.py` com suporte a `--download` forçado, pré-scan de itens e relatórios detalhados.
+- ⚡ **Performance:** Integração total do Redis na camada de dados, reduzindo drasticamente o tempo de carregamento ao priorizar o cache em nuvem sobre arquivos locais.
+- 🛠️ **Resiliência:** Novo sistema de cache com tratamento automático de MultiIndex e suporte a armazenamento permanente para metadados.
+
 ### v3.3.0 (Planejamento de Migração e Eficiência Fiscal)
 - ✨ **Planejador de Migração:** Implementa ferramenta para transição gradual de carteira respeitando o limite de isenção de IR (R$ 20k/mês).
 - 🐛 **Correção de API:** Corrige erro de variável indefinida (`NameError`) ao buscar resumo da carteira no módulo `market_data`.
