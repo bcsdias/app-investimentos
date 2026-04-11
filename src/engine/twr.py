@@ -19,7 +19,29 @@ def calculate_twr(df: pd.DataFrame, start_date: str = None, end_date: str = None
     # Garante cópia para não alterar o original
     df = df.copy()
     
-    # Tratamento TWR extraído
+    # Garante que temos uma coluna 'date'
+    if 'date' not in df.columns:
+        if df.index.name and df.index.name.lower() in ['date', 'data']:
+            df = df.reset_index()
+            # Se após reset_index o nome não for 'date' (ex: era 'Data'), renomeia
+            if 'date' not in df.columns:
+                for col in df.columns:
+                    if col.lower() in ['date', 'data']:
+                        df.rename(columns={col: 'date'}, inplace=True)
+                        break
+        else:
+            for col in df.columns:
+                if col.lower() in ['date', 'data']:
+                    df.rename(columns={col: 'date'}, inplace=True)
+                    break
+    
+    if 'date' not in df.columns:
+        # Se ainda não encontramos, mas o índice é Datetime, usamos ele
+        if isinstance(df.index, pd.DatetimeIndex):
+            df = df.reset_index().rename(columns={df.index.name: 'date'} if df.index.name else {df.columns[0]: 'date'})
+        else:
+            return pd.Series(dtype=float)
+
     df['date'] = pd.to_datetime(df['date'])
     df = df.sort_values('date')
     

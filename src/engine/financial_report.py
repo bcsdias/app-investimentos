@@ -9,16 +9,16 @@ from src.engine.twr import calculate_twr
 from src.engine.irr import calculate_xirr
 from src.engine.metrics import calculate_drawdown, calculate_rolling_volatility, calculate_rolling_sharpe
 
-# Importação Legada (ainda usa a base antiga até que data_loader assuma tudo)
-from utils.market_data import processar_benchmarks, buscar_historico
-from app.benchmarks_config import CATALOGO_YF, CATALOGO_B3, CATALOGO_BCB, CATALOGO_TD, BENCHMARKS_ATIVOS
+# Importação Refatorada (Phase 1)
+from src.data.sources.market_data import processar_benchmarks, buscar_historico
+from src.data.benchmarks_config import CATALOGO_YF, CATALOGO_B3, CATALOGO_BCB, CATALOGO_TD, BENCHMARKS_ATIVOS
+from src.utils.logger import logger
 import re
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 class FinancialReport:
-    def __init__(self, logger, output_dir="reports"):
-        self.logger = logger
+    def __init__(self, output_dir="reports"):
         self.base_output_dir = os.path.join(BASE_DIR, output_dir)
         self.df_combined = pd.DataFrame() 
         self.risk_free_rate = 0.0 
@@ -31,15 +31,29 @@ class FinancialReport:
         return os.path.join(folder, filename)
 
     def fetch_user_portfolio(self, token, ativo=None, classe=None, start_date=None, end_date=None):
-        self.logger.info("Buscando histórico da carteira do usuário...")
-        df = buscar_historico(token, self.logger, ativo=ativo, classe=classe)
+        logger.info("Buscando histórico da carteira do usuário...")
+        df = buscar_historico(token, ativo=ativo, classe=classe)
         
         if df is None or df.empty:
-            self.logger.warning("Nenhum dado retornado pela API ou DataFrame vazio.")
+            logger.warning("Nenhum dado retornado pela API ou DataFrame vazio.")
             return None
             
-        # Usa o novo motor puro
-        # Calculamos TWR, mas guardamos o df agrupado para a TIR
+        # Garante que temos uma coluna 'date'
+        if 'date' not in df.columns:
+            if df.index.name and df.index.name.lower() in ['date', 'data']:
+                df = df.reset_index()
+                if 'date' not in df.columns and 'Data' in df.columns: # Caso reset_index use o nome original
+                     df.rename(columns={'Data': 'date'}, inplace=True)
+            else:
+                for col in df.columns:
+                    if col.lower() in ['date', 'data']:
+                        df.rename(columns={col: 'date'}, inplace=True)
+                        break
+        
+        if 'date' not in df.columns:
+             logger.error("Coluna 'date' não encontrada no DataFrame de histórico.")
+             return None
+
         df['date'] = pd.to_datetime(df['date'])
         df_grp = df.groupby('date')[['vlr_mercado', 'vlr_investido', 'proventos']].sum().reset_index()
         df_grp['fluxo'] = df_grp['vlr_investido'].diff().fillna(df_grp['vlr_investido'].iloc[0]) - df_grp['proventos']
@@ -105,11 +119,11 @@ class FinancialReport:
         bcb_filtered = {k: v for k, v in CATALOGO_BCB.items() if k in final_needed}
         td_filtered = {k: v for k, v in CATALOGO_TD.items() if k in final_needed}
 
-        self.logger.info("Processando Benchmarks...")
+        logger.info("Processando Benchmarks...")
         bench_data = processar_benchmarks(
             start_date, end_date,
             yf_filtered, b3_filtered, bcb_filtered,
-            td_filtered, carteiras_sinteticas, self.logger,
+            td_filtered, carteiras_sinteticas,
             ativos_brl=ativos_brl_needed
         )
 

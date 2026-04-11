@@ -2,7 +2,7 @@ import os
 import pandas as pd
 import logging
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 DATA_STATIC_DIR = os.path.join(BASE_DIR, "data", "static")
 
 def get_b3_index(ticker: str, start_date: str, end_date: str) -> pd.Series | None:

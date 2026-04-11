@@ -5,7 +5,7 @@ import sys
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 sys.path.append(BASE_DIR)
 
-from app.benchmarks_config import CATALOGO_YF, CATALOGO_B3, CATALOGO_BCB, CATALOGO_TD, CATALOGO_CRYPTO
+from src.data.benchmarks_config import CATALOGO_YF, CATALOGO_B3, CATALOGO_BCB, CATALOGO_TD, CATALOGO_CRYPTO
 import pandas as pd
 
 @st.cache_data
@@ -76,6 +76,10 @@ def get_asset_categories():
     return categories
 
 def render_sidebar_asset_selection():
+    # Garantir que o estado da sessão esteja inicializado (necessário para navegação direta entre páginas)
+    if "custom_indices" not in st.session_state:
+        st.session_state.custom_indices = []
+        
     st.sidebar.header("1. Seleção de Ativos Base")
     categories = get_asset_categories()
     selected_assets = []

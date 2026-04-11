@@ -1,91 +1,66 @@
 import logging
 import os
-from datetime import datetime
+import sys
+from logging.handlers import RotatingFileHandler
 
-def setup_logger(hostname=None, level=None, debug=False, tipo=None, vendor=None, log_file=None):
+# --- Configuração de Caminhos ---
+# Assume que este arquivo está em src/utils/logger.py
+# O root do projeto é 2 níveis acima
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+LOG_DIR = os.path.join(ROOT_DIR, 'log')
+
+# --- Detecção de Modo Debug ---
+# Checa se '--debug' ou '-d' foi passado no terminal (através do Streamlit ou direto)
+DEBUG_MODE = "--debug" in sys.argv or "-d" in sys.argv
+
+def setup_logger(name="invest_app"):
     """
-    Configura e retorna um logger configurado.
-    O nível de log é determinado pelo parâmetro 'debug', a menos que 'level' seja especificado manualmente.
+    Configura um logger único (Singleton) com rotação de arquivos
+    e detecção automática de nível baseado nos argumentos de linha de comando.
+    """
+    logger = logging.getLogger(name)
     
-    Args:
-        hostname (str): Nome do CMTS para criar arquivo de log específico.
-        tipo (str): Tipo do equipamento (ex: 'cmts', 'olt') para criar subdiretório.
-        vendor (str): Vendor do equipamento (ex: 'cisco', 'huawei') para criar subdiretório.
-        debug (bool): Se True, define o nível de log para DEBUG.
-        level (int): Nível de log para override manual (ex: logging.DEBUG).
-        log_file (str): Nome específico para o arquivo de log, sobrescreve a lógica padrão.
-    """
-    logger_name = hostname if hostname else 'main'
-    logger = logging.getLogger(logger_name)
-
-    # Se o logger já estiver configurado (tem handlers), apenas o retorna.
-    # Isso evita a duplicação de handlers em cenários de multithreading e
-    # torna a função segura para ser chamada múltiplas vezes.
-    if logger.hasHandlers():
+    # Se o logger já tiver handlers, significa que já foi configurado (evita duplicidade)
+    if logger.handlers:
         return logger
 
-    # A configuração abaixo só será executada na primeira vez que o logger for solicitado.
-    if level is None: # Se um nível de log não for passado manualmente, determina-o automaticamente
-        if debug:
-            level = logging.DEBUG
-            # Apenas para feedback no console ao iniciar, não irá para o arquivo de log a menos que o logger principal já esteja configurado
-            print(f"INFO: MODO DEBUG ATIVADO. Nível de log definido para DEBUG.")
-        else:
-            level = logging.INFO
-
-    # Obter o diretório raiz do projeto (um nível acima do utils)
-    root_dir = os.path.dirname(os.path.dirname(__file__))
-    
-    # Define o diretório base para os logs
-    base_log_dir = os.path.join(root_dir, 'log')
-
-    if log_file:
-        # Se um nome de arquivo de log específico for fornecido, use-o
-        log_dir = base_log_dir
-        log_filename = log_file
-    elif hostname:
-        # Se tipo e vendor forem fornecidos, cria a estrutura de subpastas
-        if tipo and vendor:
-            # Garante que tipo e vendor estejam em minúsculas para os nomes das pastas
-            log_dir = os.path.join(base_log_dir, tipo.lower(), vendor.lower())
-        else:
-            log_dir = base_log_dir
-        
-        data_atual = datetime.now().strftime('%d%m%Y')
-        log_filename = f"{hostname} - {data_atual}.log"
-    else:
-        # Para o log principal, usa o diretório base
-        log_dir = base_log_dir
-        log_filename = "main.log"
-    
-    # Cria o diretório de log (incluindo subpastas) se não existir e define o caminho completo
-    os.makedirs(log_dir, exist_ok=True)
-    log_path = os.path.join(log_dir, log_filename)
-    
-    # Impede propagação para o logger raiz (evita duplicação no console)
-    logger.propagate = False
-
-    # Habilita o log de depuração do Paramiko para um arquivo separado apenas se o modo debug estiver ativo
-    # if debug:
-    #     paramiko_log_path = os.path.join(base_log_dir, 'paramiko.log')
-    #     paramiko_logger = logging.getLogger("paramiko")
-    #     paramiko_logger.setLevel(logging.DEBUG)
-    #     paramiko_logger.addHandler(logging.FileHandler(paramiko_log_path))
-    #     logger.info("Log de depuração do Paramiko está ATIVADO (paramiko.log).")
-    # Configura o nível de log (agora dinâmico)
+    # Nível de Log
+    level = logging.DEBUG if DEBUG_MODE else logging.INFO
     logger.setLevel(level)
     
-    # Criar formatter
-    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    # Garante que a pasta de logs existe
+    os.makedirs(LOG_DIR, exist_ok=True)
+    log_path = os.path.join(LOG_DIR, 'web_app.log')
     
-    # Configurar o handler de arquivo
-    file_handler = logging.FileHandler(log_path)
+    # Formato do Log
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - [%(filename)s:%(lineno)d] - %(message)s')
+    
+    # --- Handler: Rotação de Arquivo (10MB, 5 backups) ---
+    file_handler = RotatingFileHandler(
+        log_path, 
+        maxBytes=10 * 1024 * 1024, # 10MB
+        backupCount=5,
+        encoding='utf-8'
+    )
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
     
-    # Configurar handler de console
+    # --- Handler: Console ---
     console_handler = logging.StreamHandler()
     console_handler.setFormatter(formatter)
     logger.addHandler(console_handler)
     
+    # Impede que os logs sejam propagados para o logger raiz (evita logs duplicados no Streamlit)
+    logger.propagate = False
+    
+    if DEBUG_MODE:
+        logger.debug("MODO DEBUG ATIVADO via flag de linha de comando.")
+        
+    return logger
+
+# Expondo a instância global para fácil importação nas outras classes
+logger = setup_logger()
+
+def get_logger():
+    """Retorna a instância global configurada."""
     return logger
