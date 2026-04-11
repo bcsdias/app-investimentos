@@ -126,10 +126,15 @@ def buscar_resumo_carteira(token: str) -> dict | None:
         return cached_resumo
 
     try:
+        logger.info(f"Fazendo requisição ao DLP Resumo para token {token[:4]}...")
         response = requests.get(url, headers=headers)
         response.raise_for_status()
-        cache_set(cache_key, resumo, 600) # 10 min
-        return resumo
+        
+        # Atribuição explícita do JSON para evitar NameError
+        resumo_json = response.json()
+        
+        cache_set(cache_key, resumo_json, 600) # 10 min
+        return resumo_json
     except Exception as e:
         logger.error(f"Erro ao buscar resumo da carteira: {e}")
         return None
