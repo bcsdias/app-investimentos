@@ -559,7 +559,16 @@ def run_b3_downloader(indices_anos: dict):
 def buscar_dados_b3(indice: str, start_date: str, end_date: str) -> pd.Series | None:
     """
     Orquestra o download e o processamento de dados de índices da B3.
+    Tenta primeiro o Cloud Cache (Redis).
     """
+    # --- CACHE NÍVEL 1 & 2: Memória & Redis ---
+    cache_key = f"b3:{indice}"
+    cached_series = cache_get(cache_key)
+    if cached_series is not None:
+        # Filtra pelo período solicitado
+        mask = (cached_series.index >= start_date) & (cached_series.index <= end_date)
+        return cached_series.loc[mask]
+
     logger.info(f"Iniciando processo de obtenção de dados da B3 para o índice '{indice}'.")
     
     # 1. Determinar os anos necessários para o download
@@ -656,9 +665,13 @@ def buscar_dados_b3(indice: str, start_date: str, end_date: str) -> pd.Series | 
 
     # Finaliza o processamento
     dados_completos = dados_completos.sort_values('Date').set_index('Date')
+    full_series = dados_completos['Close']
+
+    # Salva no Cloud Cache para as próximas consultas
+    cache_set(cache_key, full_series, 86400)
     
     # Filtra novamente pelo período exato e retorna a série
-    serie_final = dados_completos.loc[start_date:end_date, 'Close']
+    serie_final = full_series.loc[start_date:end_date]
     logger.info(f"Dados do índice '{indice}' da B3 processados com sucesso.")
     return serie_final
 

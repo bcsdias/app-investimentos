@@ -50,7 +50,7 @@ MAPA_MESES = {
     'Set': 9, 'Out': 10, 'Nov': 11, 'Dez': 12,
 }
 
-logger = setup_logger(log_file="update_b3_cache.log")
+logger = setup_logger("update_b3")
 
 # ─── Helpers ───────────────────────────────────────────────────────────────
 
