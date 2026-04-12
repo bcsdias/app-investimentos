@@ -2,7 +2,15 @@ O sistema consome dados de uma API proprietária de histórico de investimentos 
 
 ## 📝 Changelog (Recente)
 
-### v3.1.0 (Refatoração Global - Fase 1)
+### v3.5.0 (Interface Premium e Experiência do Usuário)
+- ✨ **Reformulação Visual Premium:** Interface renovada com estética moderna, *glassmorphism* e cards de informação.
+- 🌓 **Theme Engine:** Suporte nativo a **Modo Escuro** (Padrão) e **Modo Claro** com alternância em tempo real.
+- 🚀 **Dashboard Executivo:** Tela inicial transformada em um resumo de performance com KPIs e atalhos.
+- 📊 **Headers Padronizados:** Todas as páginas agora exibem métricas críticas (TWR, Drawdown, Volatilidade) no topo.
+- 💄 **Componentes UI:** Implementação de `theme.py` e `headers.py` para garantir consistência visual.
+- 🐛 **Estabilidade:** Correção de IDs duplicados e chamadas redundantes na ferramenta de migração.
+
+### v3.4.0 (Redis como Single Source of Truth)
 - ♻️ **Arquitetura Modular:** Separação total entre Interface (UI), Lógica Financeira (Engine) e Acesso a Dados (Data).
 - 🚀 **B3 Crawler 2.0:** Novo extrator paralelo (3 workers) com atualização incremental inteligente (sem Selenium no runtime).
 - 📱 **Nova Interface Streamlit:** Dashboard migrado de script único para aplicação multipáginas (`src/ui/app.py`).
