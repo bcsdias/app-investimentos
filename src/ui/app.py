@@ -37,7 +37,10 @@ if "dlp_token" not in st.session_state:
     st.session_state.dlp_token = None
 
 # Authentication Guard
-if not st.user.is_logged_in:
+is_logged_in = st.user.is_logged_in if hasattr(st.user, "is_logged_in") else False
+dev_mode = st.session_state.get("dev_mode", False)
+
+if not is_logged_in and not dev_mode:
     st.markdown("<br><br>", unsafe_allow_html=True)
     c1, c2, c3 = st.columns([1, 2, 1])
     with c2:
@@ -56,7 +59,7 @@ if not st.user.is_logged_in:
     st.stop()
 
 # --- Authenticated Area ---
-is_authenticated = st.user.is_logged_in or st.session_state.get("dev_mode", False)
+is_authenticated = is_logged_in or dev_mode
 if not is_authenticated:
     st.stop()
 
