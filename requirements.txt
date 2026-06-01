@@ -13,3 +13,4 @@ authlib
 supabase
 upstash-redis
 cryptography
+fpdf2
