@@ -23,6 +23,52 @@ with st.sidebar:
         st.info("Insira seu token da DLP para carregar a carteira atual.")
         st.stop()
 
+def calcular_compras_rebalanceadas(total_aporte, pesos_alvo, valores_atuais):
+    """
+    Calcula o valor de compra para cada ativo alvo baseado em rebalanceamento.
+    Evita vendas de ativos alvo (rebalanceamento apenas com aportes).
+    """
+    ativos = list(pesos_alvo.keys())
+    soma_pesos = sum(pesos_alvo.values())
+    if soma_pesos == 0:
+        return {a: 0.0 for a in ativos}
+    
+    w_alvo = {a: pesos_alvo[a] / soma_pesos for a in ativos}
+    valores_pos = {a: valores_atuais.get(a, 0.0) for a in ativos}
+    
+    ativos_ativos = set(ativos)
+    while True:
+        soma_w_ativos = sum(w_alvo[a] for a in ativos_ativos)
+        if soma_w_ativos == 0:
+            for a in ativos:
+                valores_pos[a] = valores_atuais.get(a, 0.0)
+            break
+            
+        soma_v_ativos = sum(valores_atuais.get(a, 0.0) for a in ativos_ativos)
+        total_alocado_ativos = soma_v_ativos + total_aporte
+        
+        diferencas = {}
+        for a in ativos_ativos:
+            v_alvo = (w_alvo[a] / soma_w_ativos) * total_alocado_ativos
+            diferencas[a] = v_alvo - valores_atuais.get(a, 0.0)
+            
+        excesso = [a for a, diff in diferencas.items() if diff < 0]
+        if not excesso:
+            for a in ativos:
+                if a in ativos_ativos:
+                    valores_pos[a] = valores_atuais.get(a, 0.0) + diferencas[a]
+                else:
+                    valores_pos[a] = valores_atuais.get(a, 0.0)
+            break
+        else:
+            ativos_ativos -= set(excesso)
+            
+    compras = {}
+    for a in ativos:
+        compras[a] = max(0.0, valores_pos[a] - valores_atuais.get(a, 0.0))
+        
+    return compras
+
 def render_migration_tool():
     logger.info("Página Migração IR acessada")
     
@@ -37,6 +83,19 @@ def render_migration_tool():
         
     wallet_items = wallet_data.get('wallet', [])
     classes_disponiveis = sorted(list(set([item.get('classe', 'Outros') for item in wallet_items])))
+    
+    # Obter saldos atuais dos ativos alvo na carteira
+    valores_atuais_iniciais = {
+        "IMAB11": 0.0,
+        "VWRA11": 0.0,
+        "BITH11": 0.0
+    }
+    for item in wallet_items:
+        ativo = item.get('ativo')
+        if ativo in valores_atuais_iniciais:
+            qtd = item.get('quantidade', item.get('qtd', 0))
+            preco = item.get('price', 0.0)
+            valores_atuais_iniciais[ativo] = qtd * preco
     
     # Header
     render_page_header(
@@ -58,13 +117,19 @@ def render_migration_tool():
         with col2:
             st.markdown("**Alocação Alvo (%)**")
             c1, c2, c3 = st.columns(3)
-            with c1: peso_b5p2 = st.number_input("B5P211", min_value=0, max_value=100, value=60, key="mig_peso_b5p2")
-            with c2: peso_vwra = st.number_input("VWRA11", min_value=0, max_value=100, value=35, key="mig_peso_vwra")
-            with c3: peso_bith = st.number_input("BITH11", min_value=0, max_value=100, value=5, key="mig_peso_bith")
+            with c1: 
+                peso_imab = st.number_input("IMAB11", min_value=0, max_value=100, value=60, key="mig_peso_imab")
+                st.caption(f"Atual: R$ {valores_atuais_iniciais['IMAB11']:,.2f}")
+            with c2: 
+                peso_vwra = st.number_input("VWRA11", min_value=0, max_value=100, value=35, key="mig_peso_vwra")
+                st.caption(f"Atual: R$ {valores_atuais_iniciais['VWRA11']:,.2f}")
+            with c3: 
+                peso_bith = st.number_input("BITH11", min_value=0, max_value=100, value=5, key="mig_peso_bith")
+                st.caption(f"Atual: R$ {valores_atuais_iniciais['BITH11']:,.2f}")
             
         with col3:
             st.markdown("**Validação**")
-            soma = peso_b5p2 + peso_vwra + peso_bith
+            soma = peso_imab + peso_vwra + peso_bith
             if soma == 100:
                 st.success(f"**Soma: {soma}%** ✅")
             else:
@@ -134,6 +199,31 @@ def render_migration_tool():
                 mes_atual_total += vlr_v
                 qtd_restante -= qtd_vender
         if mes_atual_vendas: meses.append({'vendas': mes_atual_vendas, 'total': mes_atual_total})
+        
+        # Inicializar os valores acumulados para a projeção de rebalanceamento
+        valores_atuais_proj = valores_atuais_iniciais.copy()
+        pesos_alvo = {
+            "IMAB11": peso_imab,
+            "VWRA11": peso_vwra,
+            "BITH11": peso_bith
+        }
+        
+        for mes in meses:
+            # Calcular compras para este mês usando rebalanceamento dinâmico
+            compras_sugeridas = calcular_compras_rebalanceadas(
+                mes['total'],
+                pesos_alvo,
+                valores_atuais_proj
+            )
+            
+            # Registrar saldos finais projetados para exibição
+            saldos_finais = {}
+            for ativo, v_compra in compras_sugeridas.items():
+                valores_atuais_proj[ativo] += v_compra
+                saldos_finais[ativo] = valores_atuais_proj[ativo]
+                
+            mes['compras'] = compras_sugeridas
+            mes['saldos_finais'] = saldos_finais
             
         # 6. Exibição do Plano Gerado
         st.markdown(f"### 📅 Plano de Migração ({len(meses)} meses)")
@@ -144,12 +234,27 @@ def render_migration_tool():
                     st.markdown("**🔴 VENDER**")
                     st.table(pd.DataFrame(mes['vendas']))
                 with cc:
-                    st.markdown("**🟢 COMPRAR**")
-                    compras = []
-                    if peso_b5p2 > 0: compras.append({"Ativo": "B5P211", "Valor": mes['total'] * (peso_b5p2/100)})
-                    if peso_vwra > 0: compras.append({"Ativo": "VWRA11", "Valor": mes['total'] * (peso_vwra/100)})
-                    if peso_bith > 0: compras.append({"Ativo": "BITH11", "Valor": mes['total'] * (peso_bith/100)})
-                    st.table(pd.DataFrame(compras))
+                    st.markdown("**🟢 COMPRAR (Sugestão Rebalanceada)**")
+                    compras_data = []
+                    soma_valores = sum(mes['saldos_finais'].values())
+                    
+                    for ativo in ["IMAB11", "VWRA11", "BITH11"]:
+                        valor_compra = mes['compras'].get(ativo, 0.0)
+                        saldo_final = mes['saldos_finais'].get(ativo, 0.0)
+                        part_final = (saldo_final / soma_valores * 100) if soma_valores > 0 else 0.0
+                        
+                        if valor_compra > 0 or saldo_final > 0:
+                            compras_data.append({
+                                "Ativo": ativo,
+                                "Valor Compra (R$)": f"R$ {valor_compra:,.2f}",
+                                "Saldo Final (R$)": f"R$ {saldo_final:,.2f}",
+                                "Part. Final (%)": f"{part_final:.1f}%"
+                            })
+                    
+                    if compras_data:
+                        st.table(pd.DataFrame(compras_data))
+                    else:
+                        st.info("Nenhuma compra sugerida para este mês.")
 
 if __name__ == "__main__":
     render_migration_tool()

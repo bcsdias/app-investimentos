@@ -1,0 +1,57 @@
+(.venv) n5674662@ribscpdev01:~/app-investimentos$ streamlit  run src/ui/app.py 
+
+Collecting usage statistics. To deactivate, set browser.gatherUsageStats to false.
+
+2026-06-01 14:16:08.880 Uvicorn server started on 0.0.0.0:8501
+
+  You can now view your Streamlit app in your browser.
+
+  Local URL: http://localhost:8501
+  Network URL: http://172.16.20.48:8501
+  External URL: http://189.5.192.36:8501
+
+2026-06-01 14:16:22,018 - invest_app - INFO - [app.py:16] - Iniciando Aplicação Investimentos V3
+────────────────────────── Traceback (most recent call last) ───────────────────────────
+  /home/n5674662/app-investimentos/.venv/lib/python3.10/site-packages/streamlit/user_i  
+  nfo.py:663 in __getattr__                                                             
+────────────────────────────────────────────────────────────────────────────────────────
+KeyError: 'is_logged_in'
+
+During handling of the above exception, another exception occurred:
+
+────────────────────────── Traceback (most recent call last) ───────────────────────────
+  /home/n5674662/app-investimentos/.venv/lib/python3.10/site-packages/streamlit/runtim  
+  e/scriptrunner/exec_code.py:129 in exec_func_with_error_handling                      
+                                                                                        
+  /home/n5674662/app-investimentos/.venv/lib/python3.10/site-packages/streamlit/runtim  
+  e/scriptrunner/script_runner.py:787 in code_to_exec                                   
+                                                                                        
+  /home/n5674662/app-investimentos/.venv/lib/python3.10/site-packages/streamlit/runtim  
+  e/scriptrunner/script_runner.py:171 in _mpa_v1                                        
+                                                                                        
+  /home/n5674662/app-investimentos/.venv/lib/python3.10/site-packages/streamlit/naviga  
+  tion/page.py:490 in run                                                               
+                                                                                        
+  /home/n5674662/app-investimentos/src/ui/app.py:40 in <module>                         
+                                                                                        
+     37 │   st.session_state.dlp_token = None                                           
+     38                                                                                 
+     39 # Authentication Guard                                                          
+  ❱  40 if not st.user.is_logged_in:                                                    
+     41 │   st.markdown("<br><br>", unsafe_allow_html=True)                             
+     42 │   c1, c2, c3 = st.columns([1, 2, 1])                                          
+     43 │   with c2:                                                                    
+                                                                                        
+  /home/n5674662/app-investimentos/.venv/lib/python3.10/site-packages/streamlit/user_i  
+  nfo.py:665 in __getattr__                                                             
+────────────────────────────────────────────────────────────────────────────────────────
+AttributeError: st.user has no attribute "is_logged_in".
+
+***********************************
+
+AttributeError: st.user has no attribute "is_logged_in".
+Traceback:
+File "/home/n5674662/app-investimentos/src/ui/app.py", line 40, in <module>
+    if not st.user.is_logged_in:
+File "/home/n5674662/app-investimentos/.venv/lib/python3.10/site-packages/streamlit/user_info.py", line 665, in __getattr__
+    raise AttributeError(f'st.user has no attribute "{key}".')
