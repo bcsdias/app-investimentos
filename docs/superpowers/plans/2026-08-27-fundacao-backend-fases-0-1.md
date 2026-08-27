@@ -30,6 +30,19 @@ Todo task herda implicitamente esta seção.
 
 ---
 
+## Ferramentas recomendadas nesta fase
+
+Ver o guia completo em `docs/ferramentas-de-desenvolvimento.md`. Para as Fases 0 + 1:
+
+- **`context7`** (MCP) — travar as versões exatas de patch de Django 5.2 / django-ninja 1.4 / psycopg 3 / django-redis / cryptography antes de preencher o `requirements.txt` (Task 2 Step 1).
+- **`pyright-lsp`** — diagnóstico contínuo em `settings.py`, `models.py` e `security.py`.
+- **`semgrep`** (MCP) — `get_semgrep_secrets_findings` após a Task 2 (garantir que `FERNET_KEY` e credenciais não vazaram para arquivos versionados); `get_semgrep_supply_chain_findings` no `requirements.txt`.
+- **`pr-review-toolkit` → `type-design-analyzer`** — revisar `UserToken` / `MarketSeries` ao fim da Task 4.
+- **`code-review`** + **`code-simplifier`** — ao fechar a Task 5, sobre todo o diff de `backend/`.
+- **`claude-md-management`** — criar `backend/CLAUDE.md` com as convenções após a Fase 1 concluída.
+
+---
+
 ## Estrutura de arquivos
 
 **Fase 0 (infra — fora do repo git, exceto o script):**

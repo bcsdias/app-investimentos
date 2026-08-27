@@ -9,6 +9,7 @@ Documentação da reformulação arquitetural (migração Streamlit → Django +
 | [`consolidacao_arquitetura_e_migracao.md`](consolidacao_arquitetura_e_migracao.md) | **Documento mestre.** Estado atual do repo, decisões de arquitetura, roteiro de fases (0 → 6). |
 | [`superpowers/specs/`](superpowers/specs/) | Specs de design, um por incremento (`AAAA-MM-DD-<tema>-design.md`). |
 | [`superpowers/plans/`](superpowers/plans/) | Planos de implementação passo a passo, um por incremento. |
+| [`ferramentas-de-desenvolvimento.md`](ferramentas-de-desenvolvimento.md) | Quais plugins/skills do Claude Code usar em cada fase (geração de código, revisão, segurança). |
 | [`historico/`](historico/README.md) | Drafts e revisões anteriores, substituídos pelo documento mestre. |
 
 ## Fluxo de trabalho
