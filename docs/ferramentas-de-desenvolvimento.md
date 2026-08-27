@@ -80,13 +80,23 @@ revisão e segurança. Plugins instalados (marketplace `claude-plugins-official`
 
 ---
 
+## Pré-requisitos do host
+
+| Item | Versão / método | Para quê |
+|---|---|---|
+| **Node.js** | 22 LTS via NodeSource (`deb.nodesource.com/setup_22.x`), arm64, system-wide | `npx` no PATH → destrava os MCP `playwright` e `chrome-devtools-mcp`; build do frontend (Fase 4, dev). Em produção o `frontend/Dockerfile` fixa a própria versão. |
+| **Chromium** | `apt install chromium-browser` ou `npx playwright install --with-deps chromium` | `chrome-devtools-mcp` (Fase 4) e Selenium da ingestão B3 (Fase 2, container). |
+| **Docker + acesso ao daemon** | já presente | `lab-postgres` / `lab-redis` / `bootstrap_db.sh`. |
+| **Python** | 3.12 (host) | `backend/` roda no host nas Fases 1–3. |
+
 ## Pendências de conexão (MCP que falharam no boot)
 
 | Servidor | Erro | Como resolver |
 |---|---|---|
-| `chrome-devtools-mcp` | `ENOENT: npx` | Node.js não está no PATH. Instalar Node (necessário de qualquer forma na Fase 4) destrava. |
+| `chrome-devtools-mcp` | `ENOENT: npx` | Instalar Node (ver "Pré-requisitos do host") e **reiniciar o Claude Code** — MCP reconecta só no startup. |
 | `playwright` | `ENOENT: npx` | Idem. |
-| `github` | `Authorization header is badly formatted` | Configurar token válido (`gh auth login` ou variável de ambiente esperada pelo servidor). Só necessário se adotar fluxo de PR. |
+| `github` | `Authorization header is badly formatted` | Configurar token válido (`gh auth login` ou a variável de ambiente esperada pelo servidor). Só necessário se adotar fluxo de PR. |
+| `semgrep` (hook PostToolUse) | `Not logged into Semgrep Guardian` | Logar no guardian MCP, ou remover/condicionar o hook no `settings.json`. As ferramentas `mcp__plugin_semgrep_guardian__*` (SAST/secrets) seguem utilizáveis. |
 
 ---
 
