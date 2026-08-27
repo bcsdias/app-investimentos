@@ -2,7 +2,7 @@
 
 > **Data:** 2026-08-27
 > **Branch:** `lab-dev`
-> **Documento mestre:** `/home/ubuntu/LAB/plan/consolidacao_arquitetura_e_migracao_v2.md`
+> **Documento mestre:** [`../../consolidacao_arquitetura_e_migracao.md`](../../consolidacao_arquitetura_e_migracao.md)
 > **Escopo deste design:** primeiro incremento da migração — infraestrutura local (Fase 0) e
 > esqueleto do backend Django (Fase 1). As demais fases (serviços de mercado, refatoração do
 > engine, API, React, dockerização, paridade) terão cada uma seu próprio ciclo design → plano →
@@ -13,7 +13,7 @@
 ## 1. Contexto
 
 O `app-investimentos` hoje é um app Streamlit monолítico que depende de serviços cloud pagos
-(Supabase para tokens, Upstash Redis para cache) e OIDC do Google. O documento mestre v2 define
+(Supabase para tokens, Upstash Redis para cache) e OIDC do Google. O documento mestre define
 a migração para **PostgreSQL local + Redis local + Django 5 + Django Ninja + React SPA**, rodando
 no "Docker LAB" (`/data/projetos/`).
 
