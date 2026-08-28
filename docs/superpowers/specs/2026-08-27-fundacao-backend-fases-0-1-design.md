@@ -1,7 +1,7 @@
 # Design — Fundação Backend: Fases 0 + 1
 
 > **Data:** 2026-08-27
-> **Branch:** `lab-dev`
+> **Branch:** `migracao-django`
 > **Documento mestre:** [`../../consolidacao_arquitetura_e_migracao.md`](../../consolidacao_arquitetura_e_migracao.md)
 > **Escopo deste design:** primeiro incremento da migração — infraestrutura local (Fase 0) e
 > esqueleto do backend Django (Fase 1). As demais fases (serviços de mercado, refatoração do
@@ -64,7 +64,7 @@ dados), validação de paridade (6).
 
 ### Definition of Done
 
-A partir de um checkout limpo da `lab-dev`, seguindo o plano de implementação:
+A partir de um checkout limpo da `migracao-django`, seguindo o plano de implementação:
 
 1. `docker network inspect lab-net` existe; `lab-postgres` e `lab-redis` de pé, *healthy*, na
    `lab-net`, acessíveis do host (`pg_isready`, `redis-cli ping`).
@@ -423,7 +423,7 @@ exercitados.
 | Topologia de infra | Abordagem 1 — `lab-postgres` / `lab-redis` compartilhados via `lab-net`; database `appinvest` dedicado |
 | `lab-nginx` de teste | Remover |
 | Mover / reestruturar o repo | Não mover; `backend/` e `frontend/` são aditivos; `src/` fica até a Fase 6 |
-| Prefixo `lab-` | Containers mantêm `lab-*` (infra do LAB); database e código usam nome de projeto (`appinvest`). Merge de `lab-dev` → `main` é decisão à parte, não bloqueia |
+| Prefixo `lab-` | Containers mantêm `lab-*` (infra do LAB); database e código usam nome de projeto (`appinvest`). Merge de `migracao-django` → `main` é decisão à parte, não bloqueia |
 | Modelo de usuário | `accounts.User(AbstractUser)` customizado desde o dia 1 |
 | Driver Postgres | `psycopg[binary]` 3.x |
 | `django-ninja` | Já no `requirements.txt` da Fase 1 (stub em `urls.py`) |

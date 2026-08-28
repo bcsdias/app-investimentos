@@ -52,7 +52,7 @@ revisão e segurança. Plugins instalados (marketplace `claude-plugins-official`
 | **`semgrep`** (MCP) — `get_semgrep_sast_findings` | SAST nos endpoints: injeção, exposição de dados, auth ausente em rota. |
 | **`security-guidance`** | Decisões de auth de sessão, CSRF, isolamento de carteira por usuário. |
 | **`pr-review-toolkit`** → `code-reviewer` + `type-design-analyzer` | Revisar rotas e schemas Pydantic in/out. |
-| **`github`** (MCP) | Abrir PR da fase, se adotar fluxo de PR (hoje o padrão é commit direto na `lab-dev`). ⚠️ ver "Pendências" abaixo. |
+| **`github`** (MCP) | Abrir PR da fase, se adotar fluxo de PR (hoje o padrão é commit direto na `migracao-django`). ⚠️ ver "Pendências" abaixo. |
 
 ---
 
@@ -74,7 +74,7 @@ revisão e segurança. Plugins instalados (marketplace `claude-plugins-official`
 | Ferramenta | Uso |
 |---|---|
 | **`claude-code-setup`** (automation-recommender) | Depois que a estrutura estabilizar: sugerir hooks (rodar `pytest` + `pyright` a cada edição no `backend/`, lint no pre-commit) e um `run` skill para subir o LAB. |
-| **`/security-review`** (built-in) | Varredura de segurança do diff completo antes de fechar a `lab-dev`. |
+| **`/security-review`** (built-in) | Varredura de segurança do diff completo antes de fechar a `migracao-django`. |
 | **`code-review`** `ultra` | Revisão multi-agente na nuvem do branch inteiro antes do merge. |
 | **`skill-creator`** | Opcional: criar skills do repo — "subir o LAB", "rodar a suíte de paridade". |
 
