@@ -96,14 +96,36 @@ benchmarks de mercado e avaliação de risco financeiro.
 ## 2. Diagnóstico do Estado Atual (auditado em 2026-08-27)
 
 > A v1 descrevia um "estado anterior" baseado na branch `dev` + Streamlit. Esta seção descreve
-> o **estado real do repositório hoje**, na branch `migracao-django` (que é local, rastreia `origin/dev`,
-> ainda não publicada; `origin/dev` está 11 commits à frente de `origin/main`).
+> o **estado real do repositório hoje**, na branch `migracao-django` (publicada em
+> `origin/migracao-django`; `main` e `dev` intactas).
+>
+> **Fases 0 + 1 concluídas em 2026-08-28** — ver §2.0. As decisões travadas estão em
+> [`adr/`](adr/README.md); a orientação de trabalho no backend em [`../backend/CLAUDE.md`](../backend/CLAUDE.md).
 
-### 2.1. O que existe
+### 2.0. Já implementado — Fases 0 + 1 (2026-08-28)
 
 | Camada | Local | Situação |
 |---|---|---|
-| **UI** | `src/ui/app.py` + `src/ui/pages/1..4` + `src/ui/components/{theme,headers,sidebar,charts}.py` | App **Streamlit multipágina** (v3.5.0). Única interface. |
+| **Infra LAB** | `/data/projetos/lab-postgres/`, `/data/projetos/lab-redis/` (fora do repo) | `lab-postgres` + `lab-redis` compartilhados, *healthy*, na rede externa `lab-net`. `lab-nginx` de teste removido. [ADR 0001](adr/0001-infra-lab-compartilhada.md). |
+| **Database do app** | `lab-postgres` → database + role `appinvest` (`CREATEDB`) | Criado por `backend/scripts/bootstrap_db.sh` (idempotente, versionado). Nenhuma tabela do app no `banco_lab`. [ADR 0006](adr/0006-prefixo-lab-containers-appinvest-codigo.md). |
+| **Projeto Django** | `backend/config/` | `settings.py` dual host/container: DB `appinvest`, cache `django-redis`, Fernet, logging stdout ([ADR 0008](adr/0008-logging-stdout-apenas.md)), TZ `America/Sao_Paulo`. `urls.py` só `/admin/` + stub `/api/` ([ADR 0009](adr/0009-django-ninja-stub-desde-fase-1.md)). |
+| **Usuário** | `backend/apps/accounts/` | `User(AbstractUser)` customizado; `AUTH_USER_MODEL = "accounts.User"`. [ADR 0002](adr/0002-modelo-user-customizado-dia-1.md). |
+| **Cripto** | `backend/apps/core/security.py` | `encrypt()` / `decrypt()` Fernet sobre `settings.FERNET_KEY` — **mesma chave do app legado**, compat. testada nos dois sentidos. [ADR 0003](adr/0003-reuso-da-chave-fernet-do-legado.md). |
+| **Modelos** | `backend/apps/core/models.py` | `UserToken` (OneToOne, token cifrado em repouso, `set_token`/`get_token`) e `MarketSeries` (`UniqueConstraint(series_key, reference_date)`). Migration `core.0001`. [ADR 0007](adr/0007-modelagem-usertoken-marketseries.md). |
+| **Admin** | `backend/apps/core/admin.py` | `UserToken` sem "add", `encrypted_token` read-only; `MarketSeries` com filtro por `source` e navegação por data. |
+| **Testes** | `backend/apps/*/tests/` + `backend/pytest.ini` | `pytest-django`, 15 testes verdes (usuário, security, modelos, smoke de DB/cache). `--reuse-db`. |
+| **Scripts** | `backend/scripts/` | `bootstrap_db.sh` (cria role/database) e `rotate_db_password.sh` (rotaciona a senha). |
+| **Docs** | `backend/README.md`, `backend/CLAUDE.md`, `docs/adr/` | Setup/rodar, convenções do agente, e ADRs. |
+
+> Driver Postgres: `psycopg[binary]` 3.x ([ADR 0004](adr/0004-psycopg-binary-3.md)). Sem
+> `django-cors-headers` ([ADR 0005](adr/0005-sem-django-cors-headers.md)). Env via
+> `python-dotenv` puro ([ADR 0010](adr/0010-python-dotenv-puro.md)).
+
+### 2.1. O que existe — legado Streamlit (coexiste até a Fase 6)
+
+| Camada | Local | Situação |
+|---|---|---|
+| **UI** | `src/ui/app.py` + `src/ui/pages/1..4` + `src/ui/components/{theme,headers,sidebar,charts}.py` | App **Streamlit multipágina** (v3.5.0). Única interface **de usuário** ainda. |
 | **Engine de cálculo** | `src/engine/{twr,irr,metrics}.py` | **NumPy/pandas puros, zero acoplamento a framework, com testes unitários** (`tests/`, ~150 linhas). Reuso direto. |
 | **Orquestrador** | `src/engine/financial_report.py` (417 linhas) | Classe `FinancialReport`. **Importa `matplotlib` no topo**; 7 métodos `plot_*` **misturam cálculo + plotagem** e retornam `(fig, DataFrame)`. |
 | **Camada de dados** | `src/data/sources/market_data.py` (**796 linhas**) | Um único arquivo com: cliente DLP, `yfinance`, BCB (`python-bcb`), Tesouro (CSV), PTAX Olinda, **e scraping B3 via Selenium**. |
@@ -117,11 +139,14 @@ benchmarks de mercado e avaliação de risco financeiro.
 
 ### 2.2. O que **não** existe ainda
 
-- **Nada de Django**: sem `manage.py`, `settings.py`, `apps/`, migrations, `django` no `requirements.txt`.
-- **Nada de Docker**: sem `Dockerfile`, sem `docker-compose.yml` (nem no histórico git).
-- **Nada do "Docker LAB"**: os serviços `lab-postgres`, `lab-redis`, `lab-nginx`, `lab-backend`,
-  `lab-frontend` **não existem**. "lab" só aparece no nome da branch.
-- **Sem `backend/`, sem `frontend/`, sem `package.json`** — zero JS/Node no repositório.
+- **Sem serviços de mercado** (`apps/market/`): a ingestão agendada (`ingest_market_data`),
+  o port de `src/data/sources/market_data.py` e a gravação em `MarketSeries` são a Fase 2.
+- **Sem API HTTP**: `django-ninja` está instalado mas é só stub em `config/urls.py` (Fase 3).
+- **Sem `frontend/`, sem `package.json`** — zero JS/Node no repositório (Fase 4).
+- **Sem Dockerfiles do app** nem compose final/nginx único — o backend roda no host (Fase 5).
+  Só os containers de **infra** (`lab-postgres`, `lab-redis`) existem.
+- **Dados ainda no legado**: os tokens continuam no Supabase e o cache no Upstash; a
+  migração das linhas (`user_tokens` → `UserToken`) e a troca do `cache.py` não foram feitas.
 - `.devcontainer/devcontainer.json` aponta para `app/web_app_v2.py` (**caminho stale**, não existe mais).
 
 ### 2.3. Dívida técnica / lixo a resolver **durante** a migração (não carregar adiante)
