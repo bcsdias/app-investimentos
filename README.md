@@ -1,5 +1,19 @@
 O sistema consome dados de uma API proprietária de histórico de investimentos e cruza com dados de mercado de diversas fontes (Yahoo Finance, B3, Banco Central, Tesouro Direto) para gerar relatórios detalhados.
 
+## 🚧 Estado do projeto — migração em andamento
+
+O repositório está migrando de **Streamlit + serviços em nuvem** para
+**Django + React no Docker LAB**. As duas bases coexistem:
+
+| | Onde | Estado |
+|---|---|---|
+| **App atual (Streamlit)** | `src/` | Em uso. Única interface de usuário. Instruções abaixo. |
+| **Backend novo (Django)** | `backend/` | Fundação pronta — Fases 0 + 1. Ver [`backend/README.md`](backend/README.md). |
+
+Arquitetura, decisões e roteiro: [`docs/`](docs/README.md) — o
+[documento mestre](docs/consolidacao_arquitetura_e_migracao.md) e os
+[ADRs](docs/adr/README.md). Desenvolvimento na branch `migracao-django`.
+
 ## 📝 Changelog (Recente)
 
 ### v3.5.0 (Interface Premium e Experiência do Usuário)
@@ -12,9 +26,13 @@ O sistema consome dados de uma API proprietária de histórico de investimentos 
 
 ### v3.4.0 (Redis como Single Source of Truth)
 - ♻️ **Arquitetura Modular:** Separação total entre Interface (UI), Lógica Financeira (Engine) e Acesso a Dados (Data).
+- ☁️ **Redis SSOT:** Redis como fonte única de verdade para todos os dados de mercado (B3, YF, BCB, TD).
+- 🚀 **Script de Sincronização Total:** `scripts/sync_to_redis.py` com `--download` forçado, pré-scan de itens e relatórios detalhados.
 - 🚀 **B3 Crawler 2.0:** Novo extrator paralelo (3 workers) com atualização incremental inteligente (sem Selenium no runtime).
 - 📱 **Nova Interface Streamlit:** Dashboard migrado de script único para aplicação multipáginas (`src/ui/app.py`).
 - 📂 **Estrutura Profissional:** Organização seguindo padrões modernos de projetos Python (`src/`, `tests/`, `scripts/`).
+- ⚡ **Performance:** Integração total do Redis na camada de dados, priorizando o cache em nuvem sobre arquivos locais.
+- 🛠️ **Resiliência:** Cache com tratamento automático de MultiIndex e armazenamento permanente de metadados.
 - 🔒 **Logging Global:** Rastreabilidade completa via `st.session_state` salvando em `log/main.log`.
 - 🧹 **Limpeza de Débito Técnico:** Remoção de pastas legadas, dados pessoais e dependências pesadas.
 
@@ -23,12 +41,6 @@ O sistema consome dados de uma API proprietária de histórico de investimentos 
 - 🛡️ **Segurança Avançada:** Armazenamento de tokens DLP com criptografia AES-256 (Fernet) em repouso.
 - ☁️ **Persistência Cloud:** Uso de Supabase para perfis de usuário e Upstash Redis para cache global de mercado.
 - 🔧 **Página de Configurações:** Interface para o usuário gerenciar seu próprio token DLP de forma segura.
-
-### v3.4.0 (Redis como Single Source of Truth)
-- ☁️ **Redis SSOT:** Estabelece o Redis como fonte única de verdade para todos os dados de mercado (B3, YF, BCB, TD).
-- 🚀 **Script de Sincronização Total:** Adiciona `scripts/sync_to_redis.py` com suporte a `--download` forçado, pré-scan de itens e relatórios detalhados.
-- ⚡ **Performance:** Integração total do Redis na camada de dados, reduzindo drasticamente o tempo de carregamento ao priorizar o cache em nuvem sobre arquivos locais.
-- 🛠️ **Resiliência:** Novo sistema de cache com tratamento automático de MultiIndex e suporte a armazenamento permanente para metadados.
 
 ### v3.3.0 (Planejamento de Migração e Eficiência Fiscal)
 - ✨ **Planejador de Migração:** Implementa ferramenta para transição gradual de carteira respeitando o limite de isenção de IR (R$ 20k/mês).
@@ -71,7 +83,7 @@ O sistema utiliza uma pilha moderna de serviços em nuvem para garantir escalabi
 ## 🛠️ Instalação e Configuração
 
 ### Pré-requisitos
-*   Python 3.10+
+*   Python 3.12 (o repo padronizou nesta versão para a migração; o app Streamlit roda em 3.10+)
 *   Google Chrome (apenas para execução local do script de cache da B3)
 
 ### Passo a Passo
@@ -141,12 +153,10 @@ python scripts/update_b3_cache.py
 
 ## ⚙️ Personalização
 
-Você pode adicionar novos benchmarks ou criar novas carteiras teóricas editando o arquivo `app/config.py`:
+Benchmarks e carteiras sintéticas são configurados em `src/data/benchmarks_config.py`:
 
-*   **`BENCHMARKS_YF`**: Adicione tickers do Yahoo Finance.
-*   **`BENCHMARKS_BCB`**: Adicione códigos de séries do Banco Central.
-*   **`CARTEIRAS_SINTETICAS`**: Defina combinações de ativos e pesos para simulação.
-*   **`BENCHMARKS_EXIBIR`**: Controle quais índices aparecem nos gráficos finais.
+*   **`CATALOGO_YF` / `CATALOGO_B3` / `CATALOGO_BCB` / `CATALOGO_TD` / `CATALOGO_CRYPTO`**: catálogos de fontes disponíveis (nome → ticker YF / código de série BCB / etc.). Edite para adicionar novas fontes.
+*   **`BENCHMARKS_ATIVOS`**: lista unificada do que é calculado e exibido nos gráficos. Cada item é uma **string** (nome presente nos catálogos ou derivado, ex.: `'S&P 500 BRL'`, `'IPCA + 6%'`) ou um **dicionário** de carteira sintética (`{'nome': ..., 'composicao': {...}}`). Comente a linha para ocultar o item.
 
 ## 📝 Créditos
 
