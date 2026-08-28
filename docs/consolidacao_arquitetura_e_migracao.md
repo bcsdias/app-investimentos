@@ -1,5 +1,5 @@
 # Documento Mestre de Consolidação Arquitetural e Roteiro de Migração
-## Projeto: `app-investimentos` | Ambiente: Docker LAB | Branch: `lab-dev`
+## Projeto: `app-investimentos` | Ambiente: Docker LAB | Branch: `migracao-django`
 
 > **Data de Consolidação:** 2026-08-27
 > **Status:** Aprovado — base para os ciclos design → plano → implementação por fase
@@ -96,7 +96,7 @@ benchmarks de mercado e avaliação de risco financeiro.
 ## 2. Diagnóstico do Estado Atual (auditado em 2026-08-27)
 
 > A v1 descrevia um "estado anterior" baseado na branch `dev` + Streamlit. Esta seção descreve
-> o **estado real do repositório hoje**, na branch `lab-dev` (que é local, rastreia `origin/dev`,
+> o **estado real do repositório hoje**, na branch `migracao-django` (que é local, rastreia `origin/dev`,
 > ainda não publicada; `origin/dev` está 11 commits à frente de `origin/main`).
 
 ### 2.1. O que existe
@@ -270,7 +270,7 @@ flowchart TD
 
 ## 4. Estrutura de Diretórios Alvo
 
-> Tudo dentro de `/data/projetos/app-investimentos`, branch `lab-dev`. O `src/` atual
+> Tudo dentro de `/data/projetos/app-investimentos`, branch `migracao-django`. O `src/` atual
 > (Streamlit) permanece durante a transição para **validação de paridade** (§Fase 6) e é
 > removido apenas ao final.
 
@@ -537,7 +537,7 @@ mercado é comum a todos).
 
 ### 7.3. Nome do banco / prefixo `lab-`
 A v1 mistura `banco_lab` e nomes genéricos. **Decidir:** se a stack LAB vai virar a mainline
-(merge de `lab-dev` em `dev`/`main`), remover o prefixo `lab-` de containers e banco antes de
+(merge de `migracao-django` em `dev`/`main`), remover o prefixo `lab-` de containers e banco antes de
 consolidar. Se for fork paralelo permanente, manter.
 
 ### 7.4. Agendador da ingestão
@@ -606,4 +606,4 @@ python scripts/parity_check.py --token <TOKEN> --start 2020-01-01 --end 2024-12-
 7. [ ] **Fase 5** — Dockerfiles (backend / ingestion-com-Chrome / frontend), compose final, nginx único.
 8. [ ] **Migração de dados** — import dos tokens do Supabase; `ingest_market_data` inicial.
 9. [ ] **Fase 6** — validação de paridade; só então remover `src/` e libs legadas.
-10. [ ] Decidir prefixo `lab-` / merge de `lab-dev` (§7.3).
+10. [ ] Decidir prefixo `lab-` / merge de `migracao-django` (§7.3).

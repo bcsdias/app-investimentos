@@ -14,7 +14,7 @@
 
 Todo task herda implicitamente esta seção.
 
-- **Branch:** trabalhar na `lab-dev` (branch dedicada da migração). Não commitar em `main`/`dev`.
+- **Branch:** trabalhar na `migracao-django` (branch dedicada da migração). Não commitar em `main`/`dev`.
 - **Python:** 3.12 (host). Ambiente virtual em `backend/.venv/`.
 - **Pins de dependência (runtime):** `django~=5.2`, `django-ninja~=1.4`, `psycopg[binary]~=3.2`, `django-redis~=5.4`, `redis~=5.2`, `cryptography~=43.0`, `python-dotenv~=1.0`, `gunicorn~=23.0`.
 - **Pins de dependência (dev/test):** `pytest~=8.3`, `pytest-django~=4.9`, `pytest-cov~=5.0`, `model-bakery~=1.19`.

@@ -15,6 +15,6 @@ Documentação da reformulação arquitetural (migração Streamlit → Django +
 ## Fluxo de trabalho
 
 Cada fase do roteiro do documento mestre passa por: **design** (`superpowers/specs/`) →
-**plano** (`superpowers/plans/`) → **implementação** (TDD, commits por task na branch `lab-dev`).
+**plano** (`superpowers/plans/`) → **implementação** (TDD, commits por task na branch `migracao-django`).
 
 Incremento atual: **Fases 0 + 1** — infraestrutura LAB + esqueleto do backend Django.
