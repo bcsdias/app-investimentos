@@ -46,3 +46,8 @@ reports.zip
 # Custom old/backup files
 *.old
 apoio/
+
+# Backend Django
+.pytest_cache/
+backend/staticfiles/
+.coverage
