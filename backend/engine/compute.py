@@ -38,13 +38,15 @@ def compute_risk_return(df_combined: pd.DataFrame) -> pd.DataFrame:
     days = (df_combined.index[-1] - df_combined.index[0]).days
     total_ret = df_combined.iloc[-1] / df_combined.iloc[0]
     cagr = (total_ret ** (365.25 / days)) - 1 if days > 0 else total_ret * 0
+    # volatilidade zero (série constante/achatada) -> Sharpe indefinido, não inf
+    sharpe = (cagr - 0.10) / volatility.where(volatility != 0)
     return pd.DataFrame(
         {
             "Volatilidade": volatility,
             "Retorno (CAGR)": cagr,
-            "Sharpe": (cagr - 0.10) / volatility,
+            "Sharpe": sharpe,
         }
-    ).dropna()
+    ).replace([np.inf, -np.inf], np.nan).dropna()
 
 
 def compute_rolling_metrics(

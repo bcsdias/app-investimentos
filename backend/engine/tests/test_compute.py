@@ -37,6 +37,20 @@ def test_risk_return_columns_and_sharpe_formula():
     )
 
 
+def test_risk_return_drops_constant_series_instead_of_infinite_sharpe():
+    idx = pd.bdate_range("2022-01-03", periods=520)
+    df = pd.concat(
+        [
+            pd.Series(np.linspace(100, 130, len(idx)), index=idx, name="Carteira"),
+            pd.Series(100.0, index=idx, name="Flat"),  # volatilidade zero
+        ],
+        axis=1,
+    )
+    rr = compute.compute_risk_return(df)
+    assert "Flat" not in rr.index  # linha com vol=0 sai, não vira Sharpe = inf
+    assert np.isfinite(rr["Sharpe"]).all()
+
+
 def test_rolling_metrics_returns_both_frames():
     df = _combined()
     out = compute.compute_rolling_metrics(df, rf_series=None, window=252)
