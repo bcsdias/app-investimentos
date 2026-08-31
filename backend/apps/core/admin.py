@@ -17,8 +17,8 @@ class UserTokenAdmin(admin.ModelAdmin):
 
 @admin.register(MarketSeries)
 class MarketSeriesAdmin(admin.ModelAdmin):
-    list_display = ("series_key", "source", "reference_date", "value")
-    list_filter = ("source",)
+    list_display = ("series_key", "source", "kind", "reference_date", "value")
+    list_filter = ("source", "kind")
     date_hierarchy = "reference_date"
     search_fields = ("series_key",)
     ordering = ("series_key", "reference_date")

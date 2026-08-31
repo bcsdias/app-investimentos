@@ -32,6 +32,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "apps.accounts",
     "apps.core",
+    "apps.market",
 ]
 
 MIDDLEWARE = [
@@ -115,3 +116,7 @@ LOGGING = {
     },
     "root": {"handlers": ["console"], "level": _env("LOG_LEVEL", "INFO")},
 }
+
+# Fase 2 — a ingestão B3 via Selenium só roda no container com Chrome (Fase 5).
+# No host, ingest_market_data usa o fallback de CSV estático.
+B3_INGEST_USE_SELENIUM = _env("B3_INGEST_USE_SELENIUM", "0") == "1"

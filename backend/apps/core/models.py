@@ -31,6 +31,7 @@ class MarketSeries(models.Model):
 
     series_key = models.CharField(max_length=120, db_index=True)  # ex.: "bcb:12", "yf:^BVSP"
     source = models.CharField(max_length=16)  # BCB | YF | TD | B3 | PTAX
+    kind = models.CharField(max_length=8, default="level")  # "rate" (cumprod) | "level"
     reference_date = models.DateField()
     value = models.DecimalField(max_digits=20, decimal_places=8)
     updated_at = models.DateTimeField(auto_now=True)
