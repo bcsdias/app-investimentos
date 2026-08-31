@@ -55,3 +55,60 @@ def test_backfill_skips_unmapped_files(tmp_path):
     call_command("backfill_market_data", "--raw-dir", str(tmp_path), "--static-dir", str(tmp_path), stdout=out)
     assert MarketSeries.objects.filter(series_key="bcb:12").exists()
     assert "IBLV-2005.csv" in out.getvalue() or "pulad" in out.getvalue().lower()
+
+
+# --- ingest_market_data ---
+
+from apps.market.services.sources.base import FetchError, RawPoint
+
+
+def test_ingest_incremental_from_last_date(monkeypatch, db):
+    from apps.core.models import MarketSeries
+    from apps.market import repository
+
+    repository.upsert_points("bcb:12", "BCB", "rate", [RawPoint(dt.date(2024, 1, 2), 0.04)])
+
+    seen = {}
+
+    def fake_fetch(sdef, start, end):
+        seen[sdef.series_key] = (start, end)
+        return [RawPoint(dt.date(2024, 1, 3), 0.05)]
+
+    from apps.market.management.commands import ingest_market_data as cmd
+
+    monkeypatch.setattr(cmd, "_fetch", fake_fetch)
+    monkeypatch.setattr(cmd, "_warm_cache", lambda *a, **k: None)
+    call_command("ingest_market_data", "--only", "bcb:12")
+    assert seen["bcb:12"][0] == dt.date(2024, 1, 3)  # last_date + 1
+    assert MarketSeries.objects.filter(series_key="bcb:12").count() == 2
+
+
+def test_ingest_full_starts_from_1995(monkeypatch, db):
+    seen = {}
+    from apps.market.management.commands import ingest_market_data as cmd
+
+    def fake_fetch(sdef, start, end):
+        seen[sdef.series_key] = start
+        return []
+
+    monkeypatch.setattr(cmd, "_fetch", fake_fetch)
+    monkeypatch.setattr(cmd, "_warm_cache", lambda *a, **k: None)
+    call_command("ingest_market_data", "--only", "bcb:12", "--full")
+    assert seen["bcb:12"] == dt.date(1995, 1, 1)
+
+
+def test_ingest_one_source_fails_others_continue(monkeypatch, db):
+    from apps.core.models import MarketSeries
+    from apps.market.management.commands import ingest_market_data as cmd
+
+    def fake_fetch(sdef, start, end):
+        if sdef.series_key == "bcb:12":
+            raise FetchError("bcb down")
+        return [RawPoint(dt.date(2024, 6, 3), 1.0)]
+
+    monkeypatch.setattr(cmd, "_fetch", fake_fetch)
+    monkeypatch.setattr(cmd, "_warm_cache", lambda *a, **k: None)
+    with pytest.raises(SystemExit) as ei:
+        call_command("ingest_market_data", "--only", "bcb:12,bcb:11")
+    assert ei.value.code == 1
+    assert MarketSeries.objects.filter(series_key="bcb:11").exists()  # a outra passou
