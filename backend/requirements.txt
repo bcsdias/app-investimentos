@@ -17,6 +17,9 @@ requests~=2.32
 selenium~=4.25
 webdriver-manager~=4.0
 
+# --- Fase 2.5: export CLI de relatório (NÃO usado pela API) ---
+matplotlib~=3.9
+
 # --- dev / test ---
 pytest~=8.3
 pytest-django~=4.9
