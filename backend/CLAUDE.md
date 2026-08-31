@@ -67,6 +67,10 @@ implementar, rodar e ver passar. Os passos "ver falhar" não são opcionais.
 ## Ao fechar uma fase
 
 1. Rodar o checklist de verificação do plano (Definition of Done).
-2. Atualizar `../docs/consolidacao_arquitetura_e_migracao.md` §2 (estado atual).
-3. Se a fase travou alguma decisão nova: novo ADR em `../docs/adr/`.
-4. Atualizar este arquivo se surgiram convenções novas.
+2. Rodar o **checklist de atualização de documentação** em
+   [`../docs/README.md`](../docs/README.md#checklist-de-atualização-ao-fechar-uma-fase) —
+   cobre `consolidacao_arquitetura_e_migracao.md` (§2.0/§2.2/§2.3/§4/§9), `docs/README.md`,
+   `backend/README.md` (Estado + Estrutura + contagem de testes), ADRs e este arquivo.
+   A última task de todo plano deve incluir esse checklist explicitamente.
+3. Se a fase travou alguma decisão nova: novo ADR em `../docs/adr/` + linha no índice.
+4. Atualizar este arquivo se surgiram convenções novas de código/estrutura.

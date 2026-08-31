@@ -99,10 +99,11 @@ benchmarks de mercado e avaliação de risco financeiro.
 > o **estado real do repositório hoje**, na branch `migracao-django` (publicada em
 > `origin/migracao-django`; `main` e `dev` intactas).
 >
-> **Fases 0 + 1 concluídas em 2026-08-28** — ver §2.0. As decisões travadas estão em
-> [`adr/`](adr/README.md); a orientação de trabalho no backend em [`../backend/CLAUDE.md`](../backend/CLAUDE.md).
+> **Fases 0 + 1 concluídas em 2026-08-28; Fases 2 + 2.5 em 2026-08-31** — ver §2.0. As
+> decisões travadas estão em [`adr/`](adr/README.md); a orientação de trabalho no backend em
+> [`../backend/CLAUDE.md`](../backend/CLAUDE.md).
 
-### 2.0. Já implementado — Fases 0 + 1 (2026-08-28)
+### 2.0. Já implementado — Fases 0 + 1 (2026-08-28) e Fases 2 + 2.5 (2026-08-31)
 
 | Camada | Local | Situação |
 |---|---|---|
@@ -113,11 +114,12 @@ benchmarks de mercado e avaliação de risco financeiro.
 | **Cripto** | `backend/apps/core/security.py` | `encrypt()` / `decrypt()` Fernet sobre `settings.FERNET_KEY` — **mesma chave do app legado**, compat. testada nos dois sentidos. [ADR 0003](adr/0003-reuso-da-chave-fernet-do-legado.md). |
 | **Modelos** | `backend/apps/core/models.py` | `UserToken` (OneToOne, token cifrado em repouso, `set_token`/`get_token`) e `MarketSeries` (`UniqueConstraint(series_key, reference_date)`). Migration `core.0001`. [ADR 0007](adr/0007-modelagem-usertoken-marketseries.md). |
 | **Admin** | `backend/apps/core/admin.py` | `UserToken` sem "add", `encrypted_token` read-only; `MarketSeries` com filtro por `source` e navegação por data. |
-| **Testes** | `backend/apps/*/tests/` + `backend/pytest.ini` | `pytest-django`, 15 testes verdes (usuário, security, modelos, smoke de DB/cache). `--reuse-db`. |
+| **Testes** | `backend/{apps,engine}/*/tests/` + `backend/pytest.ini` | `pytest-django`, `--reuse-db`, marker `integration` desmarcado por padrão. Base Fases 0+1: 15 testes (usuário, security, modelos, smoke). **Total atual: 125** (Fase 2 ~65, Fase 2.5 ~30, + correções de revisão). |
 | **Scripts** | `backend/scripts/` | `bootstrap_db.sh` (cria role/database) e `rotate_db_password.sh` (rotaciona a senha). |
 | **Docs** | `backend/README.md`, `backend/CLAUDE.md`, `docs/adr/` | Setup/rodar, convenções do agente, e ADRs. |
-| **Serviços de Mercado (Fase 2)** | `backend/apps/market/` | App `apps.market` (sources, repository, cache, catalog, synthetics, transforms, series), migration `core.0002` (`kind`), comandos `ingest_market_data` / `backfill_market_data`, 77 testes do app (92 totais). [ADR 0011](adr/0011-marketseries-valor-cru-kind.md). |
-| **Engine de Cálculo (Fase 2.5)** | `backend/engine/` | Pacote puro `engine` (`twr`, `irr`, `metrics` com `fill_method=None`, `compute.py`, `dataset.py`, `report_legacy.py`), bug `self.logger` corrigido, 28 testes do engine (120 totais); `pytest.ini` (`testpaths = apps engine`). [ADR 0012](adr/0012-engine-copia-literal-fase-2-5.md). |
+| **Serviços de Mercado (Fase 2)** | `backend/apps/market/` | App `apps.market`: `services/sources/{base,bcb,ptax,yahoo,tesouro,b3,dlp}.py`, `repository.py` (acesso exclusivo a `core.MarketSeries`), `cache.py` (envelope pandas sobre `django-redis`), `catalog.py` (`SeriesDef`), `synthetics.py` (`SyntheticSpec` + parser legado), `transforms.py` (derivações puras), `series.py` (fachada de leitura). Migration `core.0002` (`kind`), comandos `ingest_market_data` / `backfill_market_data`. [ADR 0011](adr/0011-marketseries-valor-cru-kind.md). |
+| **Engine de Cálculo (Fase 2.5)** | `backend/engine/` | Pacote puro `engine` (irmão de `apps/`, sem `models.py`): `twr.py` / `irr.py` cópia literal de `src/engine/`; `metrics.py` idem + `pct_change(fill_method=None)`; `compute.py` (7 funções puras extraídas dos `plot_*`); `dataset.py` (`fetch_user_portfolio` + `build_dataset`, consome `apps.market.series`); `report_legacy.py` (export CLI Matplotlib, nunca importado pela API). Bug `self.logger` corrigido. `pytest.ini` → `testpaths = apps engine`. [ADR 0012](adr/0012-engine-copia-literal-fase-2-5.md). |
+| **Correções de revisão (Fases 2 / 2.5)** | `backend/apps/market/`, `backend/engine/` | Revisão pós-implementação (`code-review` + manual, 2026-08-31): 6 defeitos corrigidos com TDD — ver §2.3. **125 testes verdes** no total (`.venv/bin/pytest -q`), `manage.py check` limpo, sem migrations pendentes. |
 
 > Driver Postgres: `psycopg[binary]` 3.x ([ADR 0004](adr/0004-psycopg-binary-3.md)). Sem
 > `django-cors-headers` ([ADR 0005](adr/0005-sem-django-cors-headers.md)). Env via
@@ -152,6 +154,18 @@ benchmarks de mercado e avaliação de risco financeiro.
 
 - `financial_report.py` referenciava `self.logger` (inexistente) no branch de dados vazios — **corrigido** em `engine/dataset.py` na Fase 2.5 (mantido o registro histórico).
 - Algoritmos numéricos do engine (`irr.py`, `twr.py`, `metrics.py`) copiados literalmente na Fase 2.5 para manter validade de paridade da Fase 6; revisão profunda agendada para **pós-Fase 6** ([ADR 0012](adr/0012-engine-copia-literal-fase-2-5.md)).
+- **Revisão pós-Fases 2/2.5 (2026-08-31, `code-review` + manual) — 6 defeitos corrigidos com TDD** (commits `a15fcf1` market, `e1214a4` engine):
+  1. `transforms.synthetic_from_spec` anualizava o spread do operador `+` por `1/252` fixo; numa série mensal (`IPCA + 6%`, benchmark default) isso rendia ~0.28% a.a. em vez de 6%. Passou a detectar a cadência da base (12 passos/ano p/ mensal, 252 p/ diária) — casa com o `processar_benchmarks` legado (`1.06 ** (1/12)`).
+  2. `services/sources/yahoo.fetch_yahoo`: `yf.download` engole erro de rede e devolve DataFrame vazio; retorno vazio virou `FetchError` (o `ingest` marca `failed_keys` e sai 1) em vez de `[]` silencioso.
+  3. `repository.upsert_points`: dedup de `reference_date` repetido no lote — `bulk_create(update_conflicts=True)` levantava *"cannot affect row a second time"* com CSV/PTAX de dia duplicado.
+  4. `ingest_market_data`: `upsert_points` movido para dentro do `try` (um `DatabaseError` numa série não aborta mais o lote); `_warm_cache` usa `hoje - 5*365 dias` em vez de `date.replace(year=…)`, que levantava `ValueError` em 29/fev.
+  5. `engine/compute.compute_risk_return`: série de volatilidade zero (benchmark achatado por `ffill`) dava Sharpe `±inf` que o `.dropna()` não removia — agora a linha cai da tabela.
+  6. Homóglifo cirílico (`о`) numa string de log de `backfill_market_data.py`.
+- **Pendências de baixo impacto assumidas de propósito** (candidatas a limpeza futura, não bloqueiam a Fase 3):
+  - `apps.market.cache.make_key` não sanitiza a chave: nomes com espaço/`&`/`/` (`"S&P 500"`) geram `CacheKeyWarning`. Tolerado pelo Redis (`django-redis`); quebraria com memcached.
+  - `CATALOGO_TD` **vazio de propósito** — `services/sources/tesouro.py` + ramos `td:` de `catalog`/`backfill` são caminho dormente, testados só com fixture. Renda fixa hoje é modelada pelos índices ANBIMA (IMA-B/IRF-M/IMA-S via BCB SGS + emenda com ETF), não por PU de título individual.
+  - `test_sources_b3.py::test_fetch_b3_selenium_*` fica verde porque `ChromeDriverManager().install()` falha antes do mock — cobre o `raise FetchError`, mas pelo motivo errado.
+  - Alguns testes de `engine/tests/test_dataset.py` usam `@pytest.mark.django_db` sem tocar o banco (monkeypatch total).
 - `redis.py` na raiz (script solto de 12 linhas) faz *shadow* do pacote `redis`.
 - `ativos.csv` duplicado (raiz + `data/`).
 - Arquivos de scratch do Gemini/Antigravity commitados (`.gemini/antigravity/.../scratch/*.py`).
@@ -298,6 +312,12 @@ flowchart TD
 > Tudo dentro de `/data/projetos/app-investimentos`, branch `migracao-django`. O `src/` atual
 > (Streamlit) permanece durante a transição para **validação de paridade** (§Fase 6) e é
 > removido apenas ao final.
+>
+> **Nota:** os blocos `apps/market/` e `engine/` abaixo refletem o que foi **efetivamente
+> construído** nas Fases 2 / 2.5 (o layout divergiu do esboço original — `services/sources/*`
+> em vez de `services/*`, sem `benchmarks.py`, com `series.py` + `transforms.py` + `repository.py`).
+> `apps/api/`, `apps/accounts/api.py`, `apps/migration_ir/` e `frontend/` seguem sendo **alvo**
+> das Fases 3–4. Estrutura viva e detalhada do backend em [`../backend/README.md`](../backend/README.md).
 
 ```
 /data/projetos/app-investimentos/
@@ -332,33 +352,44 @@ flowchart TD
 │   │   │   ├── schemas.py                # schemas Pydantic in/out
 │   │   │   └── serializers.py            # pd.Series/DataFrame -> JSON (porta do envelope de cache.py)
 │   │   │
-│   │   ├── market/
-│   │   │   ├── services/
-│   │   │   │   ├── dlp.py                # buscar_historico, buscar_resumo_carteira
-│   │   │   │   ├── bcb.py                # SGS + PTAX Olinda
-│   │   │   │   ├── tesouro.py
-│   │   │   │   ├── yahoo.py
-│   │   │   │   ├── b3.py                 # Selenium + fallback b3_source
-│   │   │   │   └── benchmarks.py         # processar_benchmarks + séries sintéticas (regex)
-│   │   │   ├── cache.py                  # porta de src/data/cache.py -> redis-py/django-redis
-│   │   │   ├── catalog.py               # porta de benchmarks_config.py + ativos.csv
+│   │   ├── market/                       # [FASE 2] serviços de mercado
+│   │   │   ├── services/sources/         # cada fonte fala só com a origem externa; levanta FetchError
+│   │   │   │   ├── base.py               # RawPoint, FetchError, DLPError
+│   │   │   │   ├── bcb.py                # SGS (chunking de 5 anos, valor cru)
+│   │   │   │   ├── ptax.py               # PTAX venda via Olinda
+│   │   │   │   ├── yahoo.py              # yf.download (Close ajustado); vazio -> FetchError
+│   │   │   │   ├── tesouro.py            # PU Base Manhã (caminho dormente — CATALOGO_TD vazio)
+│   │   │   │   ├── b3.py                 # read_b3_static (host) + fetch_b3_selenium (só ingestão)
+│   │   │   │   └── dlp.py                # buscar_historico / buscar_resumo_carteira (ao vivo, por-usuário)
+│   │   │   ├── repository.py             # único acesso a core.MarketSeries (upsert em lote + dedup, load_series)
+│   │   │   ├── cache.py                  # envelope pandas sobre django-redis (falha loga e engole)
+│   │   │   ├── catalog.py                # SeriesDef em Python puro (cruas + derivadas) + DEFAULT_BENCHMARKS
+│   │   │   ├── synthetics.py             # SyntheticSpec{base,operador,valor} + parse_legacy_string
+│   │   │   ├── transforms.py             # derivações puras: accumulate, splice_proxy, to_brl, synthetic_from_spec, composite, rebase_100
+│   │   │   ├── series.py                 # fachada de leitura: Redis -> repository + transforms (catálogo) -> Redis
 │   │   │   └── management/commands/
-│   │   │       └── ingest_market_data.py
+│   │   │       ├── ingest_market_data.py   # ingestão incremental ao vivo -> MarketSeries + aquece cache
+│   │   │       └── backfill_market_data.py # bootstrap offline dos CSVs do repo legado (descartável)
 │   │   │
-│   │   └── migration_ir/                 # [NOVO] Planejador de Isenção de IR
+│   │   ├── api/                          # [FASE 3 — alvo]
+│   │   │   ├── router.py                 # rotas /api/v1/...
+│   │   │   ├── schemas.py                # schemas Pydantic in/out
+│   │   │   └── serializers.py            # pd.Series/DataFrame -> JSON (porta do envelope de cache.py)
+│   │   │
+│   │   └── migration_ir/                 # [FASE 3 — alvo] Planejador de Isenção de IR
 │   │       ├── services.py               # calcular_compras_rebalanceadas, obter_preco_atual
 │   │       ├── pdf.py                    # gerar_pdf_plano (fpdf2) — porta de 3_migracao_ir.py
 │   │       └── api.py                    # endpoints do planejador
 │   │
-│   └── engine/                           # [MIGRADO] Núcleo de cálculo
-│       ├── twr.py                        # sem alteração
-│       ├── irr.py                        # sem alteração
-│       ├── metrics.py                    # sem alteração
-│       ├── compute.py                    # [NOVO] compute_twr_evolution, compute_drawdown,
-│       │                                 #        compute_rolling_metrics, compute_risk_return,
-│       │                                 #        compute_shadow, compute_yearly_summary,
-│       │                                 #        compute_irr_evolution  (lógica extraída dos plot_*)
-│       └── report_legacy.py              # os plot_* Matplotlib preservados p/ export CLI
+│   └── engine/                           # [FASE 2.5] pacote puro, irmão de apps/ (sem models.py)
+│       ├── twr.py                        # cópia literal de src/engine/twr.py
+│       ├── irr.py                        # cópia literal de src/engine/irr.py
+│       ├── metrics.py                    # cópia literal + pct_change(fill_method=None) (spec §5.4)
+│       ├── compute.py                    # 7 funções puras extraídas dos plot_*: compute_twr_evolution,
+│       │                                 #   compute_drawdown, compute_rolling_metrics, compute_risk_return,
+│       │                                 #   compute_shadow, compute_yearly_summary, compute_irr_evolution
+│       ├── dataset.py                    # fetch_user_portfolio (DLP -> TWR) + build_dataset (consome apps.market.series)
+│       └── report_legacy.py              # plot_* Matplotlib preservados p/ export CLI — a API NÃO importa
 │
 └── frontend/                             # [NOVO] React 18 SPA
     ├── Dockerfile                        # multi-stage: build Vite -> assets estáticos

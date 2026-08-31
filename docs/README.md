@@ -17,14 +17,37 @@ Documentação da reformulação arquitetural (migração Streamlit → Django +
 
 ## Documentação viva
 
-`consolidacao_arquitetura_e_migracao.md` §2 (estado atual) e `adr/` são atualizados **ao
-fechar cada fase**, como último passo da Definition of Done do plano — junto com
-`backend/CLAUDE.md` se surgirem convenções novas.
+Alguns documentos refletem o **estado atual** do repositório e são atualizados **ao fechar
+cada fase**, como último passo explícito da Definition of Done do plano. Ver o
+[checklist de pós-fase](#checklist-de-atualização-ao-fechar-uma-fase) abaixo — todo plano
+deve incluí-lo na última task para não deixar doc para trás (aconteceu nas Fases 2/2.5:
+`docs/README.md` e o §4 do documento mestre ficaram desatualizados e foram corrigidos depois).
+
+### Checklist de atualização ao fechar uma fase
+
+Rodar **todos** os itens abaixo antes de considerar a fase concluída. Marcar o que não se
+aplica com "n/a" no commit de docs.
+
+| # | Arquivo / seção | O que atualizar |
+|---|---|---|
+| 1 | `consolidacao_arquitetura_e_migracao.md` §2.0 ("Já implementado") | Linha nova (ou revisão) da camada entregue: local, situação, contagem de testes **total atual**, ADRs novos. Atualizar o título da seção com as fases cobertas. |
+| 2 | `consolidacao_arquitetura_e_migracao.md` §2.2 ("O que **não** existe ainda") | Remover o que passou a existir. |
+| 3 | `consolidacao_arquitetura_e_migracao.md` §2.3 ("Dívida técnica") | Marcar itens resolvidos (mantendo o registro histórico); **acrescentar** dívida nova assumida de propósito (pendências de revisão adiadas, decisões "por enquanto"). |
+| 4 | `consolidacao_arquitetura_e_migracao.md` §4 ("Estrutura de Diretórios Alvo") | Reconciliar o desenho com o que **de fato** foi construído quando o layout divergir do plano original. |
+| 5 | `consolidacao_arquitetura_e_migracao.md` §9 (checklist de ordem) | Marcar `[x]` a(s) fase(s) fechada(s). |
+| 6 | `docs/README.md` (este arquivo) — "Fluxo de trabalho" | Atualizar a linha de fases concluídas e o "próximo incremento". |
+| 7 | `docs/adr/` + `docs/adr/README.md` | ADR novo por decisão de arquitetura travada na fase; linha correspondente no índice. |
+| 8 | `backend/README.md` | Bloco **"Estado"** (topo), seção **"Estrutura"** (novos módulos/pacotes) e a contagem de testes no bloco **"Rodar"** (`# N testes`). |
+| 9 | `backend/CLAUDE.md` | Só se surgiram convenções novas de código/estrutura. |
+| 10 | `ferramentas-de-desenvolvimento.md` | Só se a fase mudou quais skills/plugins usar dali em diante. |
+| 11 | Specs/planos consumidos | Se a implementação divergiu do plano de forma relevante, anotar no commit e (se afeta fases seguintes) no spec correspondente. |
 
 ## Fluxo de trabalho
 
 Cada fase do roteiro do documento mestre passa por: **design** (`superpowers/specs/`) →
 **plano** (`superpowers/plans/`) → **implementação** (TDD, commits por task na branch `migracao-django`).
 
-Fases 0 + 1 (infra LAB + esqueleto do backend Django) **concluídas em 2026-08-28**.
-Próximo incremento: **Fase 2** — serviços de mercado (`apps/market/`, ingestão agendada).
+Fases **0 + 1** (infra LAB + esqueleto do backend Django) concluídas em 2026-08-28.
+Fases **2 + 2.5** (serviços de mercado `apps/market/` + engine puro `backend/engine/`)
+concluídas em 2026-08-31, com correções de revisão aplicadas na sequência.
+Próximo incremento: **Fase 3** — endpoints da API (Django Ninja).
