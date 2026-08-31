@@ -50,6 +50,18 @@ def test_synthetic_spread_matches_legacy_formula():
     pd.testing.assert_series_equal(out, expected, check_names=False)
 
 
+def test_synthetic_spread_annualizes_by_base_cadence_not_fixed_252():
+    # base mensal (~12 pontos/ano): 'IPCA + 6%' precisa render ~6% a.a. de spread
+    # composto mensalmente (como o legado, 1.06 ** (1/12)), e não os ~0.28% a.a.
+    # que sairiam de 1.06 ** (1/252) aplicado a cada ponto mensal.
+    idx = pd.date_range("2020-01-31", periods=25, freq="ME")  # 24 meses
+    base = pd.Series(100.0, index=idx)  # IPCA "parado" -> só o spread cresce
+    out = tf.synthetic_from_spec(SyntheticSpec("IPCA", "+", 6.0), base)
+    # a cada 12 passos mensais, o spread acumula ~6% (e não ~0.28%)
+    np.testing.assert_allclose(out.iloc[12] / out.iloc[0], 1.06, rtol=1e-6)
+    np.testing.assert_allclose(out.iloc[24] / out.iloc[12], 1.06, rtol=1e-6)
+
+
 def test_synthetic_percent_of_index():
     base = _s([100.0, 110.0, 121.0])
     spec = SyntheticSpec("CDI", "%", 50.0)

@@ -27,9 +27,12 @@ def test_fetch_yahoo_multiindex_columns(monkeypatch):
     assert pts == [RawPoint(dt.date(2024, 1, 2), 459.1)]
 
 
-def test_fetch_yahoo_empty_returns_empty_list(monkeypatch):
+def test_fetch_yahoo_empty_raises_fetcherror(monkeypatch):
+    # yf.download engole erro de rede e devolve DataFrame vazio sem levantar;
+    # tratar isso como 'sem dados' mascararia a falha (contrato base.py).
     monkeypatch.setattr(yahoo.yf, "download", lambda *a, **k: pd.DataFrame())
-    assert yahoo.fetch_yahoo("^GSPC", dt.date(2024, 1, 1), dt.date(2024, 1, 31)) == []
+    with pytest.raises(FetchError):
+        yahoo.fetch_yahoo("^GSPC", dt.date(2024, 1, 1), dt.date(2024, 1, 31))
 
 
 def test_fetch_yahoo_raises_on_failure(monkeypatch):

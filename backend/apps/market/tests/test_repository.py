@@ -37,6 +37,20 @@ def test_upsert_is_idempotent_and_updates_value():
     assert str(qs.get().value) == "0.09990000"
 
 
+def test_upsert_dedupes_same_date_in_one_batch_keeping_last():
+    # bulk_create(update_conflicts=True) levanta "cannot affect row a second time"
+    # se o mesmo reference_date aparecer duas vezes no lote (ex.: CSV com dia
+    # repetido, PTAX com duas cotações no dia). O último ponto vence.
+    n = repo.upsert_points(
+        "ptax:USDBRL", "PTAX", "level",
+        [P(dt.date(2024, 1, 2), 5.40), P(dt.date(2024, 1, 2), 5.42)],
+    )
+    assert n == 1
+    qs = MarketSeries.objects.filter(series_key="ptax:USDBRL", reference_date=dt.date(2024, 1, 2))
+    assert qs.count() == 1
+    assert str(qs.get().value) == "5.42000000"
+
+
 def test_upsert_drops_nan_and_inf_with_log(caplog):
     n = repo.upsert_points(
         "yf:^GSPC", "YF", "level",

@@ -36,6 +36,18 @@ def upsert_points(series_key: str, source: str, kind: str, points: Iterable) -> 
         )
     if dropped:
         logger.warning("%s: %d ponto(s) descartado(s) (NaN/inf)", series_key, dropped)
+
+    # bulk_create(update_conflicts=True) levanta "cannot affect row a second time"
+    # se o mesmo reference_date vier repetido no lote — dedup mantendo o último.
+    by_date = {row.reference_date: row for row in rows}
+    if len(by_date) != len(rows):
+        logger.warning(
+            "%s: %d data(s) repetida(s) no lote — mantido o último ponto de cada",
+            series_key,
+            len(rows) - len(by_date),
+        )
+    rows = list(by_date.values())
+
     if not rows:
         return 0
     MarketSeries.objects.bulk_create(

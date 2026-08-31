@@ -89,7 +89,7 @@ class Command(BaseCommand):
                 continue
             for p in sorted(d.glob("*.csv")):
                 if p.name not in seen_files:
-                    self.stdout.write(f"  puladо (não mapeado): {p.name}")
+                    self.stdout.write(f"  pulado (não mapeado): {p.name}")
 
         verb = "simularia" if dry else "gravou"
         self.stdout.write(

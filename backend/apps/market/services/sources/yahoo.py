@@ -30,7 +30,10 @@ def fetch_yahoo(ticker: str, start: dt.date, end: dt.date) -> list[RawPoint]:
         raise FetchError(f"Yahoo {ticker}: {exc}") from exc
 
     if raw is None or raw.empty:
-        return []
+        # yf.download não levanta em falha de rede/rate-limit — devolve vazio.
+        # Um ticker válido numa janela normal sempre traz dados; vazio aqui é
+        # falha a ser exposta (o ingest marca failed_keys e sai 1), não silêncio.
+        raise FetchError(f"Yahoo {ticker}: download vazio para {start}..{end}")
 
     close = raw["Close"]
     if isinstance(close, pd.DataFrame):  # colunas MultiIndex -> uma coluna por ticker

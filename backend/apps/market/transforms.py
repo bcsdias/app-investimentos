@@ -35,11 +35,28 @@ def to_brl(usd_series: pd.Series, ptax: pd.Series) -> pd.Series:
     return usd_series * aligned
 
 
+def _steps_per_year(index: pd.Index) -> float:
+    """Passos por ano da série base, para anualizar o spread do sintético '+'.
+    Casa com o legado: IPCA (mensal) -> 12; benchmarks diários -> 252. Sem isto,
+    um spread de 6% a.a. aplicado a cada ponto de uma série mensal renderia
+    ~0.28% a.a. (1.06 ** (1/252) doze vezes) em vez de 6%.
+    """
+    if len(index) < 3:
+        return 252.0
+    gap_days = pd.Series(index).diff().dropna().dt.days.median()
+    if gap_days >= 20:
+        return 12.0
+    if gap_days >= 5:
+        return 52.0
+    return 252.0
+
+
 def synthetic_from_spec(spec: SyntheticSpec, base: pd.Series) -> pd.Series:
     ret = base.pct_change(fill_method=None).fillna(0)
     if spec.operador == "+":
-        daily = (1 + ret) * (1 + spec.valor / 100.0) ** (1 / 252) - 1
-        return (1 + daily).cumprod() * 100
+        n = _steps_per_year(base.index)
+        step = (1 + ret) * (1 + spec.valor / 100.0) ** (1 / n) - 1
+        return (1 + step).cumprod() * 100
     if spec.operador == "%":
         return (1 + ret * (spec.valor / 100.0)).cumprod() * 100
     raise ValueError(f"operador sintético desconhecido: {spec.operador!r}")

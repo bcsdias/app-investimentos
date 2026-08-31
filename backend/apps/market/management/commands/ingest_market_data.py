@@ -13,6 +13,7 @@ import sys
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
+from django.db import DatabaseError
 
 from apps.market import catalog, repository, series
 from apps.market.services.sources import b3, bcb, ptax, tesouro, yahoo
@@ -43,8 +44,9 @@ def _fetch(sdef: catalog.SeriesDef, start: dt.date, end: dt.date) -> list[RawPoi
 
 
 def _warm_cache(today: dt.date) -> None:
+    five_years_ago = today - dt.timedelta(days=5 * 365)  # janela quente ~5 anos
     for name in catalog.DEFAULT_BENCHMARKS:
-        for start in (today.replace(year=today.year - 5), _EPOCH):
+        for start in (five_years_ago, _EPOCH):
             try:
                 series.get_series(name, start, today)
             except Exception as exc:  # noqa: BLE001
@@ -80,12 +82,14 @@ class Command(BaseCommand):
                 continue
             try:
                 points = _fetch(sdef, start, today)
-            except FetchError as exc:
+                n = repository.upsert_points(
+                    sdef.series_key, sdef.source, sdef.kind, points
+                )
+            except (FetchError, DatabaseError) as exc:
                 failed += 1
                 failed_keys.append(sdef.series_key)
                 logger.error("ingest %s falhou: %s", sdef.series_key, exc)
                 continue
-            n = repository.upsert_points(sdef.series_key, sdef.source, sdef.kind, points)
             ok += 1
             if n:
                 self.stdout.write(f"  ok {sdef.series_key}: +{n} pontos")
