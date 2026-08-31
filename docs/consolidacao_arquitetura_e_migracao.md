@@ -117,6 +117,7 @@ benchmarks de mercado e avaliação de risco financeiro.
 | **Scripts** | `backend/scripts/` | `bootstrap_db.sh` (cria role/database) e `rotate_db_password.sh` (rotaciona a senha). |
 | **Docs** | `backend/README.md`, `backend/CLAUDE.md`, `docs/adr/` | Setup/rodar, convenções do agente, e ADRs. |
 | **Serviços de Mercado (Fase 2)** | `backend/apps/market/` | App `apps.market` (sources, repository, cache, catalog, synthetics, transforms, series), migration `core.0002` (`kind`), comandos `ingest_market_data` / `backfill_market_data`, 77 testes do app (92 totais). [ADR 0011](adr/0011-marketseries-valor-cru-kind.md). |
+| **Engine de Cálculo (Fase 2.5)** | `backend/engine/` | Pacote puro `engine` (`twr`, `irr`, `metrics` com `fill_method=None`, `compute.py`, `dataset.py`, `report_legacy.py`), bug `self.logger` corrigido, 28 testes do engine (120 totais); `pytest.ini` (`testpaths = apps engine`). [ADR 0012](adr/0012-engine-copia-literal-fase-2-5.md). |
 
 > Driver Postgres: `psycopg[binary]` 3.x ([ADR 0004](adr/0004-psycopg-binary-3.md)). Sem
 > `django-cors-headers` ([ADR 0005](adr/0005-sem-django-cors-headers.md)). Env via
@@ -149,7 +150,8 @@ benchmarks de mercado e avaliação de risco financeiro.
 
 ### 2.3. Dívida técnica / lixo a resolver **durante** a migração (não carregar adiante)
 
-- `financial_report.py` referencia `self.logger` (inexistente) no branch de dados vazios — **quebra**.
+- `financial_report.py` referenciava `self.logger` (inexistente) no branch de dados vazios — **corrigido** em `engine/dataset.py` na Fase 2.5 (mantido o registro histórico).
+- Algoritmos numéricos do engine (`irr.py`, `twr.py`, `metrics.py`) copiados literalmente na Fase 2.5 para manter validade de paridade da Fase 6; revisão profunda agendada para **pós-Fase 6** ([ADR 0012](adr/0012-engine-copia-literal-fase-2-5.md)).
 - `redis.py` na raiz (script solto de 12 linhas) faz *shadow* do pacote `redis`.
 - `ativos.csv` duplicado (raiz + `data/`).
 - Arquivos de scratch do Gemini/Antigravity commitados (`.gemini/antigravity/.../scratch/*.py`).
@@ -623,7 +625,7 @@ python scripts/parity_check.py --token <TOKEN> --start 2020-01-01 --end 2024-12-
 1. [x] **Fase 0** — `docker-compose.yml` com Postgres + Redis; validar.
 2. [x] **Fase 1** — Django + `settings.py` (Fernet reusada) + `UserToken`/`MarketSeries` + Admin.
 3. [x] **Fase 2** — quebrar `market_data.py` em `apps/market/services/`; portar cache; `ingest_market_data` + `backfill_market_data`.
-4. [ ] **Fase 2.5** — `engine/compute.py` (extrair dos `plot_*`); `report_legacy.py`; corrigir `self.logger`.
+4. [x] **Fase 2.5** — `engine/compute.py` (extrair dos `plot_*`); `report_legacy.py`; corrigir `self.logger`.
 5. [ ] **Fase 3** — endpoints Ninja (auth, portfolio, benchmarks, migration_ir + PDF); Swagger.
 6. [ ] **Fase 4** — SPA React (auth, filtros, 5 gráficos ECharts, tabela anual, planejador de IR).
 7. [ ] **Fase 5** — Dockerfiles (backend / ingestion-com-Chrome / frontend), compose final, nginx único.

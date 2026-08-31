@@ -34,11 +34,12 @@ Instruções para agentes trabalhando neste diretório. Complementa
 - **Nunca** imprimir `FERNET_KEY` (nem trechos) em log, exceção, ou saída de teste.
 - **Nunca** commitar `backend/.env`.
 
-## Layout de apps
+## Layout de apps e pacotes
 
 - Um app por domínio em `apps/<nome>/`, com `apps.py` declarando `name = "apps.<nome>"`
   e `default_auto_field = "django.db.models.BigAutoField"`.
-- `tests/` como pacote dentro do app (`apps/<nome>/tests/test_*.py`).
+- `engine/` é um pacote Python puro (irmão de `apps/`), sem `models.py` e sem acoplamento a Django.
+- `tests/` como pacote dentro do app (`apps/<nome>/tests/test_*.py`) ou do pacote (`engine/tests/test_*.py`).
 
 ## TDD
 

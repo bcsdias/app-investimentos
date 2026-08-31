@@ -29,3 +29,4 @@ Complementam (não substituem) as tabelas "decisões travadas" dos specs em
 | [0009](0009-django-ninja-stub-desde-fase-1.md) | `django-ninja` já pinado na Fase 1, como stub | 1 |
 | [0010](0010-python-dotenv-puro.md) | Gerência de env com `python-dotenv` puro | 1 |
 | [0011](0011-marketseries-valor-cru-kind.md) | `MarketSeries` armazena valor cru por fonte + campo `kind` (`rate`/`level`) | 2 |
+| [0012](0012-engine-copia-literal-fase-2-5.md) | Cópia literal do engine de cálculo puro na Fase 2.5 e revisão pós-Fase 6 | 2.5 |

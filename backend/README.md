@@ -78,9 +78,10 @@ cp .env.example .env
 ```bash
 .venv/bin/python manage.py runserver 0.0.0.0:8000   # Admin em /admin/
 .venv/bin/python manage.py check
-.venv/bin/pytest -q                                 # 92 testes
+.venv/bin/pytest -q                                 # 120 testes
 .venv/bin/python manage.py backfill_market_data      # bootstrap: semeia MarketSeries dos CSVs do repo (uma vez)
 .venv/bin/python manage.py ingest_market_data        # ingestão ao vivo (incremental); agendamento é Fase 5
+.venv/bin/python manage.py shell -c "from engine import dataset, report_legacy; ..."  # export CLI dos gráficos
 ```
 
 ---
@@ -108,15 +109,23 @@ backend/
 │       ├── catalog.py       definição e resolução de séries (SeriesDef)
 │       ├── series.py        fachada de leitura (Redis -> Repo + Transforms -> Redis)
 │       └── management/commands/ backfill_market_data, ingest_market_data
+├── engine/                 núcleo de cálculo puro (Fase 2.5, ADR 0012)
+│   ├── twr.py               cópia literal: cálculo TWR base 100
+│   ├── irr.py               cópia literal: cálculo TIR / XIRR
+│   ├── metrics.py           cópia literal + pct_change(fill_method=None): drawdown, vol, sharpe
+│   ├── compute.py           7 funções puras extraídas dos plot_* de financial_report
+│   ├── dataset.py           fetch_user_portfolio + build_dataset (consome apps.market.series)
+│   └── report_legacy.py     export CLI dos gráficos históricos (Matplotlib)
 ├── scripts/
 │   ├── bootstrap_db.sh      cria role/database appinvest (idempotente)  — versionado
 │   └── rotate_db_password.sh rotaciona a senha: gera + aplica no PG + espelha no .env
 ├── requirements.txt        pins com ~= (runtime + dev/test)
-└── pytest.ini              DJANGO_SETTINGS_MODULE=config.settings, testpaths=apps, --reuse-db
+└── pytest.ini              DJANGO_SETTINGS_MODULE=config.settings, testpaths=apps engine, --reuse-db
 ```
 
 
 Convenções para trabalhar aqui: [`CLAUDE.md`](CLAUDE.md).
+
 
 ---
 
