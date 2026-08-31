@@ -116,6 +116,7 @@ benchmarks de mercado e avaliação de risco financeiro.
 | **Testes** | `backend/apps/*/tests/` + `backend/pytest.ini` | `pytest-django`, 15 testes verdes (usuário, security, modelos, smoke de DB/cache). `--reuse-db`. |
 | **Scripts** | `backend/scripts/` | `bootstrap_db.sh` (cria role/database) e `rotate_db_password.sh` (rotaciona a senha). |
 | **Docs** | `backend/README.md`, `backend/CLAUDE.md`, `docs/adr/` | Setup/rodar, convenções do agente, e ADRs. |
+| **Serviços de Mercado (Fase 2)** | `backend/apps/market/` | App `apps.market` (sources, repository, cache, catalog, synthetics, transforms, series), migration `core.0002` (`kind`), comandos `ingest_market_data` / `backfill_market_data`, 77 testes do app (92 totais). [ADR 0011](adr/0011-marketseries-valor-cru-kind.md). |
 
 > Driver Postgres: `psycopg[binary]` 3.x ([ADR 0004](adr/0004-psycopg-binary-3.md)). Sem
 > `django-cors-headers` ([ADR 0005](adr/0005-sem-django-cors-headers.md)). Env via
@@ -139,14 +140,11 @@ benchmarks de mercado e avaliação de risco financeiro.
 
 ### 2.2. O que **não** existe ainda
 
-- **Sem serviços de mercado** (`apps/market/`): a ingestão agendada (`ingest_market_data`),
-  o port de `src/data/sources/market_data.py` e a gravação em `MarketSeries` são a Fase 2.
 - **Sem API HTTP**: `django-ninja` está instalado mas é só stub em `config/urls.py` (Fase 3).
 - **Sem `frontend/`, sem `package.json`** — zero JS/Node no repositório (Fase 4).
 - **Sem Dockerfiles do app** nem compose final/nginx único — o backend roda no host (Fase 5).
   Só os containers de **infra** (`lab-postgres`, `lab-redis`) existem.
-- **Dados ainda no legado**: os tokens continuam no Supabase e o cache no Upstash; a
-  migração das linhas (`user_tokens` → `UserToken`) e a troca do `cache.py` não foram feitas.
+- **Dados ainda no legado**: os tokens continuam no Supabase (a migração `user_tokens` → `UserToken` ocorre na fase correspondente); o cache já está integrado no `lab-redis`.
 - `.devcontainer/devcontainer.json` aponta para `app/web_app_v2.py` (**caminho stale**, não existe mais).
 
 ### 2.3. Dívida técnica / lixo a resolver **durante** a migração (não carregar adiante)
@@ -622,9 +620,9 @@ python scripts/parity_check.py --token <TOKEN> --start 2020-01-01 --end 2024-12-
 
 ## 9. Ordem de execução recomendada (checklist)
 
-1. [ ] **Fase 0** — `docker-compose.yml` com Postgres + Redis; validar.
-2. [ ] **Fase 1** — Django + `settings.py` (Fernet reusada) + `UserToken`/`MarketSeries` + Admin.
-3. [ ] **Fase 2** — quebrar `market_data.py` em `apps/market/services/`; portar cache; `ingest_market_data`.
+1. [x] **Fase 0** — `docker-compose.yml` com Postgres + Redis; validar.
+2. [x] **Fase 1** — Django + `settings.py` (Fernet reusada) + `UserToken`/`MarketSeries` + Admin.
+3. [x] **Fase 2** — quebrar `market_data.py` em `apps/market/services/`; portar cache; `ingest_market_data` + `backfill_market_data`.
 4. [ ] **Fase 2.5** — `engine/compute.py` (extrair dos `plot_*`); `report_legacy.py`; corrigir `self.logger`.
 5. [ ] **Fase 3** — endpoints Ninja (auth, portfolio, benchmarks, migration_ir + PDF); Swagger.
 6. [ ] **Fase 4** — SPA React (auth, filtros, 5 gráficos ECharts, tabela anual, planejador de IR).

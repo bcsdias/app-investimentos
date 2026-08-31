@@ -28,3 +28,4 @@ Complementam (não substituem) as tabelas "decisões travadas" dos specs em
 | [0008](0008-logging-stdout-apenas.md) | Logging só `StreamHandler` (stdout), sem arquivo | 1 |
 | [0009](0009-django-ninja-stub-desde-fase-1.md) | `django-ninja` já pinado na Fase 1, como stub | 1 |
 | [0010](0010-python-dotenv-puro.md) | Gerência de env com `python-dotenv` puro | 1 |
+| [0011](0011-marketseries-valor-cru-kind.md) | `MarketSeries` armazena valor cru por fonte + campo `kind` (`rate`/`level`) | 2 |

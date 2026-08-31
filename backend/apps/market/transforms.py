@@ -19,6 +19,8 @@ def splice_proxy(bcb_level: pd.Series, etf_price: pd.Series) -> pd.Series:
     etf_price = etf_price.dropna().sort_index()
     if bcb_level.empty:
         return etf_price
+    if etf_price.empty:
+        return bcb_level
     last_date = bcb_level.index[-1]
     tail = etf_price[etf_price.index >= last_date]
     if tail.empty:

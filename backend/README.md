@@ -78,7 +78,9 @@ cp .env.example .env
 ```bash
 .venv/bin/python manage.py runserver 0.0.0.0:8000   # Admin em /admin/
 .venv/bin/python manage.py check
-.venv/bin/pytest -q                                 # 15 testes (o smoke de cache pode 'skip' sem Redis)
+.venv/bin/pytest -q                                 # 92 testes
+.venv/bin/python manage.py backfill_market_data      # bootstrap: semeia MarketSeries dos CSVs do repo (uma vez)
+.venv/bin/python manage.py ingest_market_data        # ingestão ao vivo (incremental); agendamento é Fase 5
 ```
 
 ---
@@ -93,16 +95,26 @@ backend/
 │   └── wsgi.py / asgi.py
 ├── apps/
 │   ├── accounts/           User(AbstractUser) — AUTH_USER_MODEL (ADR 0002)
-│   └── core/
-│       ├── security.py      wrapper Fernet: encrypt() / decrypt()  (ADR 0003)
-│       ├── models.py        UserToken (OneToOne, cifrado em repouso) + MarketSeries (ADR 0007)
-│       └── admin.py         UserToken sem "add", encrypted_token read-only
+│   ├── core/
+│   │   ├── security.py      wrapper Fernet: encrypt() / decrypt()  (ADR 0003)
+│   │   ├── models.py        UserToken (OneToOne, cifrado em repouso) + MarketSeries (ADR 0007, ADR 0011)
+│   │   └── admin.py         UserToken sem "add", encrypted_token read-only
+│   └── market/             serviços de mercado (Fase 2)
+│       ├── services/sources/ clientes de mercado (BCB, PTAX, Yahoo, Tesouro, B3, DLP)
+│       ├── repository.py    acesso exclusivo a core.MarketSeries (Postgres)
+│       ├── cache.py         envelope pandas sobre Redis (django-redis)
+│       ├── synthetics.py    contrato estruturado SyntheticSpec + parser legado
+│       ├── transforms.py    derivações puras (accumulate, splice, to_brl, composite)
+│       ├── catalog.py       definição e resolução de séries (SeriesDef)
+│       ├── series.py        fachada de leitura (Redis -> Repo + Transforms -> Redis)
+│       └── management/commands/ backfill_market_data, ingest_market_data
 ├── scripts/
 │   ├── bootstrap_db.sh      cria role/database appinvest (idempotente)  — versionado
 │   └── rotate_db_password.sh rotaciona a senha: gera + aplica no PG + espelha no .env
 ├── requirements.txt        pins com ~= (runtime + dev/test)
 └── pytest.ini              DJANGO_SETTINGS_MODULE=config.settings, testpaths=apps, --reuse-db
 ```
+
 
 Convenções para trabalhar aqui: [`CLAUDE.md`](CLAUDE.md).
 

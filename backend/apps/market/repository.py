@@ -57,7 +57,7 @@ def load_series(series_key: str, start: dt.date, end: dt.date) -> pd.Series:
     )
     pairs = list(qs)
     if not pairs:
-        return pd.Series(dtype=float, name=series_key)
+        return pd.Series(dtype=float, index=pd.DatetimeIndex([]), name=series_key)
     idx = pd.to_datetime([d for d, _ in pairs])
     vals = [float(v) for _, v in pairs]
     return pd.Series(vals, index=idx, name=series_key, dtype=float)

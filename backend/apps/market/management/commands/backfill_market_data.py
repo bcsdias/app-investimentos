@@ -16,7 +16,7 @@ from django.core.management.base import BaseCommand
 from apps.market import catalog, repository
 from apps.market.services.sources.base import RawPoint
 
-_REPO_ROOT = Path(__file__).resolve().parents[6]
+_REPO_ROOT = Path(__file__).resolve().parents[5]
 
 
 def _read_csv(path: Path, prefix: str) -> list[RawPoint]:
