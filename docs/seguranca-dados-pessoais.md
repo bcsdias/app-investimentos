@@ -70,10 +70,30 @@ Removidos de todo o histórico com `git-filter-repo`:
 - `log/`, `erros.txt`, `log.txt` (este expunha o usuário da máquina)
 
 O código exploratório antigo (`apoio/**/*.py`, `dlombello/*.py`, `app/`) foi preservado.
+
+Na sequência, uma segunda reescrita (`git filter-repo --mailmap`) trocou o autor/committer
+de **todos** os commits — 120 estavam com o e-mail corporativo, o resto com o e-mail
+pessoal — por `Bruno Dias <1091333+bcsdias@users.noreply.github.com>`. O conteúdo das
+branches ficou idêntico; só os metadados mudaram.
+
 **Todos os SHAs mudaram** — referências antigas a commits não valem mais:
 
-| Ref | Antes | Depois |
-|---|---|---|
-| `main` / tag `legado-pre-src` | `4d048a9` | `520771e` |
-| `legado` / tag `legado-streamlit-v3.5` | `d09e2a3` | `171b9f4` |
-| `migracao-django` | `13c8ccd` | `d7ca615` |
+| Ref | Original | Após remover arquivos | Após mailmap (atual) |
+|---|---|---|---|
+| `main` / tag `legado-pre-src` | `4d048a9` | `520771e` | `315893e` |
+| `legado` / tag `legado-streamlit-v3.5` | `d09e2a3` | `171b9f4` | `18f1015` |
+| `migracao-django` | `13c8ccd` | `d7ca615` | `e2a99f7` (+ commits seguintes) |
+
+## Identidade nos commits
+
+A conta do GitHub tem **"Keep my email addresses private"** e **"Block command line pushes
+that expose my email"** ativados: um push com commit assinado por e-mail real é **recusado**.
+Por isso, o git deve estar configurado com o e-mail noreply em toda máquina usada:
+
+```bash
+git config --global user.name  "Bruno Dias"
+git config --global user.email "1091333+bcsdias@users.noreply.github.com"
+git config user.email            # conferir dentro do repo (não deve haver override local)
+```
+
+Nunca commitar com a identidade da máquina do trabalho (e-mail corporativo).
