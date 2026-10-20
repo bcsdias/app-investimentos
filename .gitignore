@@ -47,6 +47,21 @@ reports.zip
 *.old
 apoio/
 
+# Dados pessoais — NUNCA versionar (repo público; ver docs/seguranca-dados-pessoais.md)
+privado/
+*.xlsx
+*.zip
+**/planilha_dlombello/
+**/graficos/
+historico*.txt
+hist.txt
+carteira*.json
+*movimentac*
+*Minha Carteira*
+*Bruno*
+erros.txt
+log.txt
+
 # Backend Django
 .pytest_cache/
 backend/staticfiles/

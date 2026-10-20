@@ -13,6 +13,7 @@ Documentação da reformulação arquitetural (migração Streamlit → Django +
 | [`superpowers/specs/`](superpowers/specs/) | Specs de design, um por incremento (`AAAA-MM-DD-<tema>-design.md`). |
 | [`superpowers/plans/`](superpowers/plans/) | Planos de implementação passo a passo, um por incremento. |
 | [`ferramentas-de-desenvolvimento.md`](ferramentas-de-desenvolvimento.md) | Quais plugins/skills do Claude Code usar em cada fase (geração de código, revisão, segurança). |
+| [`seguranca-dados-pessoais.md`](seguranca-dados-pessoais.md) | **Repo público:** o que nunca versionar (carteira, segredos, logs), checklist antes de commitar, como limpar o histórico se algo vazar, registro da limpeza de 2026-10-20. |
 | [`historico/`](historico/README.md) | Drafts e revisões anteriores, substituídos pelo documento mestre. |
 
 ## Documentação viva
