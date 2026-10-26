@@ -17,6 +17,14 @@ _BR = {"ACAO", "ETF", "ETF RF", "FI_INFRA", "FI_SET", "FIDC", "FII", "FIP", "FIP
 _INTL = {"ETF_GB", "ETF_US", "REIT", "STOCK"}
 _BRL_SUFFIX = " BRL"
 
+# Precedência quando duas linhas mapeiam para o mesmo ticker Yahoo (menor = melhor).
+# Bolsas fora da tabela valem _DEFAULT_EXCHANGE_RANK; empate -> vence a primeira linha.
+_EXCHANGE_RANK = {
+    "NYSE": 0, "NASDAQ": 0,
+    "NYSEAMERICAN": 1, "NYSEARCA": 1, "BATS": 1,
+}
+_DEFAULT_EXCHANGE_RANK = 2
+
 
 @dataclass(frozen=True)
 class Asset:
@@ -43,6 +51,7 @@ def _yf_ticker(sigla: str, market_cod: str) -> str:
 @lru_cache(maxsize=1)
 def load_universe() -> dict[str, Asset]:
     universe: dict[str, Asset] = {}
+    ranks: dict[str, int] = {}
     with open(settings.MARKET_ASSETS_CSV, encoding="utf-8-sig", newline="") as fh:
         for row in csv.DictReader(fh, delimiter=";"):
             sigla = (row.get("sigla") or "").strip()
@@ -55,10 +64,13 @@ def load_universe() -> dict[str, Asset]:
                 mercado = "INTL"
             else:
                 continue
-            yf = _yf_ticker(sigla, (row.get("market_cod") or "").strip())
-            universe.setdefault(
-                yf, Asset(sigla, (row.get("razao_social") or "").strip(), classe, mercado, yf)
-            )
+            market_cod = (row.get("market_cod") or "").strip()
+            yf = _yf_ticker(sigla, market_cod)
+            rank = _EXCHANGE_RANK.get(market_cod.split(":", 1)[0].upper(), _DEFAULT_EXCHANGE_RANK)
+            if yf in universe and rank >= ranks[yf]:
+                continue
+            universe[yf] = Asset(sigla, (row.get("razao_social") or "").strip(), classe, mercado, yf)
+            ranks[yf] = rank
     return universe
 
 

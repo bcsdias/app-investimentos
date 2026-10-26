@@ -36,3 +36,21 @@ def test_search_ranking_and_limit(assets_csv):
 def test_real_file_loads():
     assets.load_universe.cache_clear()
     assert len(assets.load_universe()) > 5000
+
+
+def test_collision_prefers_higher_ranked_exchange(assets_csv):
+    meta = assets.load_universe()["META"]
+    assert meta.nome == "META PLATFORMS INC"
+    assert meta.classe == "STOCK"
+
+
+def test_collision_tie_keeps_first_row(assets_csv):
+    assert assets.load_universe()["TIE"].nome == "TIE FIRST"
+
+
+def test_real_file_meta_is_meta_platforms():
+    assets.load_universe.cache_clear()
+    try:
+        assert assets.load_universe()["META"].nome == "META PLATFORMS INC."
+    finally:
+        assets.load_universe.cache_clear()
