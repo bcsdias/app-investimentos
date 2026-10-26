@@ -156,3 +156,80 @@ def test_default_base_url_is_dlpinvest():
     from django.conf import settings as dj
 
     assert dj.DLP_BASE_URL == "https://users.dlpinvest.com.br"
+
+
+_ROWS = [
+    {"data": "2024-01-02", "ativo": "PETR4", "classe": "ACAO", "corretora": "XP", "vlr_mercado": 100},
+    {"data": "2024-01-02", "ativo": "HGLG11", "classe": "FII", "corretora": "XP", "vlr_mercado": 50},
+    {"data": "2024-01-02", "ativo": "PETR4", "classe": "ACAO", "corretora": "BTG", "vlr_mercado": 10},
+]
+
+
+def test_filtered_calls_share_one_http_request(monkeypatch):
+    calls = []
+    monkeypatch.setattr(
+        dlp.requests, "get",
+        lambda url, headers=None, params=None, timeout=None: calls.append(params) or _Resp({"historico": _ROWS}),
+    )
+    full = dlp.buscar_historico("tok")
+    acoes = dlp.buscar_historico("tok", classe="ACAO")
+    petr_xp = dlp.buscar_historico("tok", ativo="PETR4", corretora="XP")
+    assert calls == [{}]
+    assert len(full) == 3
+    assert set(acoes["ativo"]) == {"PETR4"} and len(acoes) == 2
+    assert len(petr_xp) == 1 and petr_xp["vlr_mercado"].iloc[0] == 100
+    assert "date" in acoes.columns
+
+
+def test_filter_without_match_returns_none(monkeypatch):
+    monkeypatch.setattr(dlp.requests, "get", lambda *a, **k: _Resp({"historico": _ROWS}))
+    assert dlp.buscar_historico("tok", classe="CRIPTO") is None
+
+
+def test_filtered_first_call_still_caches_full_frame(monkeypatch):
+    calls = []
+    monkeypatch.setattr(
+        dlp.requests, "get",
+        lambda url, params=None, **k: calls.append(params) or _Resp({"historico": _ROWS}),
+    )
+    dlp.buscar_historico("tok", ativo="PETR4")
+    assert len(dlp.buscar_historico("tok")) == 3
+    assert calls == [{}]
+
+
+def test_invalidate_drops_single_key(monkeypatch):
+    calls = []
+    monkeypatch.setattr(dlp.requests, "get", lambda *a, **k: calls.append(1) or _Resp({"historico": _ROWS}))
+    dlp.buscar_historico("tok", classe="ACAO")
+    dlp.invalidate_user_cache("tok")
+    dlp.buscar_historico("tok", classe="FII")
+    assert len(calls) == 2
+
+
+def test_filtered_result_mutation_does_not_leak(monkeypatch):
+    monkeypatch.setattr(dlp.requests, "get", lambda *a, **k: _Resp({"historico": _ROWS}))
+    df = dlp.buscar_historico("tok", classe="ACAO")
+    df["vlr_mercado"] = 0
+    assert dlp.buscar_historico("tok", classe="ACAO")["vlr_mercado"].tolist() == [100, 10]
+
+
+def test_filter_strips_and_blank_means_no_filter():
+    df = pd.DataFrame(
+        _ROWS + [{"data": "2024-01-03", "ativo": None, "classe": "ACAO", "corretora": "XP", "vlr_mercado": 1}]
+    )
+    assert len(dlp._filter_historico(df, classe=" ACAO ")) == 3
+    assert len(dlp._filter_historico(df, ativo="", classe="   ")) == 4
+    assert dlp._filter_historico(df, ativo="nan") is None  # NaN/None nunca casa
+    assert dlp._filter_historico(df, ativo="None") is None
+
+
+def test_filter_column_lookup_is_case_insensitive():
+    df = pd.DataFrame([{"Ativo": "PETR4"}, {"Ativo": "VALE3"}])
+    assert dlp._filter_historico(df, ativo="VALE3")["Ativo"].tolist() == ["VALE3"]
+
+
+def test_filter_missing_column_is_ignored_and_logged(caplog):
+    df = pd.DataFrame([{"ativo": "PETR4"}])
+    out = dlp._filter_historico(df, corretora="XP")
+    assert len(out) == 1
+    assert "corretora" in caplog.text

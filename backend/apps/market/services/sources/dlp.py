@@ -7,7 +7,6 @@ Levanta DLPAuthError (401/403), DLPUnavailableError (rede/5xx/JSON inválido) ou
 from __future__ import annotations
 
 import hashlib
-import json
 import logging
 
 import pandas as pd
@@ -75,28 +74,47 @@ def _get(path: str, token: str, params: dict) -> dict:
         raise DLPUnavailableError(f"DLP {path}: resposta JSON inválida") from None
 
 
+_FILTER_COLUMNS = ("ativo", "classe", "corretora")
+
+
+def _filter_historico(df: pd.DataFrame, **filters) -> pd.DataFrame | None:
+    """Recorta o histórico completo em memória; None se nenhuma linha casar."""
+    lower_map = {str(c).lower(): c for c in df.columns}
+    mask = pd.Series(True, index=df.index)
+    for name in _FILTER_COLUMNS:
+        val = filters.get(name)
+        if val is None or str(val).strip() == "":
+            continue
+        col = lower_map.get(name)
+        if col is None:
+            logger.warning("coluna %s ausente no /historico; filtro ignorado", name)
+            continue
+        mask &= df[col].notna() & (df[col].astype(str).str.strip() == str(val).strip())
+    out = df[mask]
+    if out.empty:
+        return None
+    return out.reset_index(drop=True)
+
+
 def buscar_historico(token, ativo=None, classe=None, corretora=None):
-    params = {k: v for k, v in {"ativo": ativo, "classe": classe, "corretora": corretora}.items() if v}
-    pstr = json.dumps(params, sort_keys=True)
-    key = mc.make_key(
-        "dlp", "hist", _token_hash(token), _generation(token),
-        hashlib.sha256(pstr.encode()).hexdigest()[:12],
-    )
+    """Um único DataFrame por (usuário, geração) no cache; filtros aplicados em memória."""
+    filters = {"ativo": ativo, "classe": classe, "corretora": corretora}
+    key = mc.make_key("dlp", "hist", _token_hash(token), _generation(token))
     cached = mc.get_df(key)
     if cached is not None:
-        return _norm_date_col(cached) if isinstance(cached, pd.DataFrame) else cached
+        return _filter_historico(_norm_date_col(cached), **filters)
 
     with mc.single_flight(key):
         cached = mc.get_df(key)
         if cached is not None:
-            return _norm_date_col(cached) if isinstance(cached, pd.DataFrame) else cached
-        payload = _get("/historico", token, params)
+            return _filter_historico(_norm_date_col(cached), **filters)
+        payload = _get("/historico", token, {})
         df = pd.DataFrame(payload.get("historico", []))
         if df.empty:
             return None
         df = _norm_date_col(df)
         mc.set_df(key, df, ttl=mc.TTL_DLP)
-        return df
+        return _filter_historico(df, **filters)
 
 
 def buscar_resumo_carteira(token):
