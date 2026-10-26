@@ -4,14 +4,23 @@ validate_plan_input -> PlanInput; build_plan(PlanInput, preços) -> cronograma m
 """
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 from typing import Literal
 
+from apps.migration_ir.tax import (
+    ACAO_OVER_LIMIT_RATE,
+    EXEMPTION_LIMIT,
+    estimate_ir,
+    estimate_profit,
+    tax_treatment,
+)
 from apps.migration_ir.wallet import Holding
 
 MAX_TARGETS = 10
 MAX_CAP = 20_000.0
 _WEIGHT_TOL = 1e-6
+_EPS = 1e-6  # folga para comparar R$ em float
 
 
 class PlanError(Exception):
@@ -196,3 +205,183 @@ def calcular_compras_rebalanceadas(total_aporte, pesos_alvo, valores_atuais):
         compras[a] = max(0.0, valores_pos[a] - valores_atuais.get(a, 0.0))
 
     return compras
+
+
+# --- build_plan --------------------------------------------------------------
+
+
+@dataclass
+class _Lot:
+    holding: Holding
+    qtd: float
+
+    @property
+    def valor(self) -> float:
+        return self.qtd * self.holding.price
+
+
+def _initial_balances(inp: PlanInput) -> tuple[list[dict], dict[str, float], list[str]]:
+    warnings: list[str] = []
+    out: list[dict] = []
+    saldos: dict[str, float] = {}
+    for t in inp.targets:
+        h = target_holding(inp, t)
+        direct = h.saldo if h else 0.0
+        if h and h.saldo_source == "cost":
+            warnings.append(f"cost_basis:{h.ativo}")
+        counted = []
+        for a in inp.actions.values():
+            if a.action != "count_as" or a.target != t:
+                continue
+            ch = inp.wallet[a.ativo]
+            if a.saldo is not None:
+                saldo, source = float(a.saldo), "user"
+            else:
+                saldo, source = ch.saldo, ch.saldo_source
+                if source == "cost":
+                    warnings.append(f"cost_basis:{a.ativo}")
+            counted.append({"ativo": a.ativo, "saldo": saldo, "saldo_source": source})
+        total = direct + sum(c["saldo"] for c in counted)
+        out.append({"ticker": t, "direct": direct, "counted": counted, "total": total})
+        saldos[t] = total
+    return out, saldos, warnings
+
+
+def _schedule_stocks(inp: PlanInput, stocks: list[Holding]) -> list[list[_Lot]]:
+    """Guloso: enche cada mês até o teto com unidades inteiras (spec §7.2, D3, D12)."""
+    cap = inp.monthly_cap
+    months: list[list[_Lot]] = [[]]
+    remaining = max(0.0, cap - inp.already_sold)
+
+    def is_empty(i: int) -> bool:
+        return not months[i] and (i > 0 or inp.already_sold == 0)
+
+    def close() -> None:
+        nonlocal remaining
+        months.append([])
+        remaining = cap
+
+    for h in sorted(stocks, key=lambda x: (x.saldo, x.ativo)):
+        price, q, last = h.price, h.qtd, None
+        while q >= 1:
+            n = min(math.floor(remaining / price + _EPS), math.floor(q))
+            cur = len(months) - 1
+            if n >= 1:
+                last = _Lot(h, n)
+                months[cur].append(last)
+                remaining -= n * price
+                q -= n
+            elif is_empty(cur) and price > cap:
+                last = _Lot(h, 1)
+                months[cur].append(last)
+                q -= 1
+                close()
+            else:
+                close()
+        if q > _EPS:
+            if last is not None:
+                last.qtd += q
+            else:
+                last = _Lot(h, q)
+                months[-1].append(last)
+                remaining -= q * price
+
+    while len(months) > 1 and not months[-1]:
+        months.pop()
+    return months
+
+
+def _sale_record(lot: _Lot, over_limit: bool) -> dict:
+    h = lot.holding
+    treatment, rate = tax_treatment(h.classe)
+    lucro = estimate_profit(h.price, h.pm, lot.qtd)
+    if treatment == "taxed":
+        ir = estimate_ir(lucro, rate)
+    elif treatment == "exempt_20k":
+        ir = estimate_ir(lucro, ACAO_OVER_LIMIT_RATE) if over_limit else 0.0
+    else:
+        ir = None
+    return {
+        "ativo": h.ativo,
+        "classe": h.classe,
+        "qtd": lot.qtd,
+        "valor": lot.valor,
+        "tax_treatment": treatment,
+        "lucro_estimado": lucro,
+        "ir_estimado": ir,
+    }
+
+
+def _purchases(inp: PlanInput, valor: float, saldos: dict[str, float], prices: dict[str, float]) -> list[dict]:
+    compras = calcular_compras_rebalanceadas(valor, inp.targets, saldos)
+    for t in inp.targets:
+        saldos[t] += compras[t]
+    total = sum(saldos.values())
+    return [
+        {
+            "ticker": t,
+            "valor": compras[t],
+            "price": prices[t],
+            "qtd_sugerida": math.floor(compras[t] / prices[t] + 1e-9),
+            "saldo_final": saldos[t],
+            "participacao_final": saldos[t] / total if total else 0.0,
+        }
+        for t in inp.targets
+    ]
+
+
+def build_plan(inp: PlanInput, prices: dict[str, float]) -> tuple[dict, list[str]]:
+    """Cronograma mês a mês (spec §5.2/§7). Devolve (data sem `prices`, warnings globais)."""
+    initial_balances, saldos, warnings = _initial_balances(inp)
+
+    sells = [inp.wallet[a.ativo] for a in inp.actions.values() if a.action == "sell"]
+    taxed = [_Lot(h, h.qtd) for h in sells if tax_treatment(h.classe)[0] != "exempt_20k"]
+    stock_months = _schedule_stocks(inp, [h for h in sells if tax_treatment(h.classe)[0] == "exempt_20k"])
+
+    months: list[dict] = []
+    ir_not_estimated: list[str] = []
+    for i, exempt in enumerate(stock_months):
+        month_no = i + 1
+        outside = inp.already_sold if month_no == 1 else 0.0
+        exempt_total = sum(lot.valor for lot in exempt)
+        stock_total = exempt_total + outside
+        month_warnings: list[str] = []
+        if month_no == 1 and inp.already_sold > EXEMPTION_LIMIT:
+            month_warnings.append("already_over_exemption")
+        over = bool(exempt) and stock_total > EXEMPTION_LIMIT + _EPS
+        if exempt and stock_total > inp.monthly_cap + _EPS:
+            month_warnings.append("exceeds_cap")
+        if over:
+            month_warnings.append("exceeds_exemption")
+
+        month_taxed = taxed if month_no == 1 else []
+        sales = [_sale_record(lot, False) for lot in month_taxed] + [_sale_record(lot, over) for lot in exempt]
+        for s in sales:
+            if s["ir_estimado"] is None:
+                month_warnings.append(f"not_estimated:{s['ativo']}")
+                if s["ativo"] not in ir_not_estimated:
+                    ir_not_estimated.append(s["ativo"])
+
+        taxed_total = sum(lot.valor for lot in month_taxed)
+        cash_in = inp.initial_cash if month_no == 1 else 0.0
+        purchase_total = taxed_total + exempt_total + cash_in
+        months.append({
+            "month": month_no,
+            "sales": sales,
+            "exempt_sales_total": exempt_total,
+            "taxed_sales_total": taxed_total,
+            "cash_in": cash_in,
+            "purchase_total": purchase_total,
+            "purchases": _purchases(inp, purchase_total, saldos, prices),
+            "ir_estimado_total": sum(s["ir_estimado"] or 0.0 for s in sales),
+            "warnings": month_warnings,
+        })
+
+    totals = {
+        "months": len(months),
+        "sold": sum(s["valor"] for m in months for s in m["sales"]),
+        "bought": sum(p["valor"] for m in months for p in m["purchases"]),
+        "ir_estimado": sum(m["ir_estimado_total"] for m in months),
+        "ir_not_estimated": ir_not_estimated,
+    }
+    return {"initial_balances": initial_balances, "months": months, "totals": totals}, warnings
