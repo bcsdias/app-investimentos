@@ -1,13 +1,13 @@
 from ninja import NinjaAPI
-from ninja.security import django_auth
 
 from apps.accounts.api import router as accounts_router
+from apps.api.csrf import ApiSessionAuth
 from apps.api.errors import ApiError
 
 api = NinjaAPI(
     title="app-investimentos API",
     version="1",
-    auth=django_auth,
+    auth=ApiSessionAuth(),
     urls_namespace="api-v1",
     docs_url="/docs",
 )

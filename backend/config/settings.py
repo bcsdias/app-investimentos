@@ -126,3 +126,6 @@ B3_INGEST_USE_SELENIUM = _env("B3_INGEST_USE_SELENIUM", "0") == "1"
 CSRF_COOKIE_HTTPONLY = False
 
 MARKET_ASSETS_CSV = BASE_DIR / "apps" / "market" / "data" / "ativos.csv"
+
+# Falhas de CSRF sob /api/ usam o envelope JSON padrão; demais rotas, a página do Django.
+CSRF_FAILURE_VIEW = "apps.api.csrf.csrf_failure_view"
