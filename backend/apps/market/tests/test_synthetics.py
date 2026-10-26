@@ -1,6 +1,6 @@
 import pytest
 
-from apps.market.synthetics import SyntheticSpec, parse_legacy_string
+from apps.market.synthetics import SyntheticSpec, display_name, parse_legacy_string
 
 
 @pytest.mark.parametrize(
@@ -25,3 +25,9 @@ def test_parse_legacy_string_garbage_returns_none(text):
 def test_spec_is_frozen():
     with pytest.raises(Exception):
         SyntheticSpec("IPCA", "+", 6.0).valor = 7.0
+
+
+def test_display_name():
+    assert display_name(SyntheticSpec("IPCA", "+", 6.0)) == "IPCA + 6%"
+    assert display_name(SyntheticSpec("CDI", "%", 110.0)) == "110% do CDI"
+

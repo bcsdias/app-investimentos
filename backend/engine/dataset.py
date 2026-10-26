@@ -11,7 +11,7 @@ from dataclasses import dataclass
 
 import pandas as pd
 
-from apps.market import series, transforms
+from apps.market import series, synthetics, transforms
 from apps.market.services.sources import dlp
 from apps.market.synthetics import SyntheticSpec
 from engine.twr import calculate_twr
@@ -107,7 +107,7 @@ def build_dataset(
         if base is None or base.empty:
             continue
         syn = transforms.synthetic_from_spec(spec, base)
-        syn.name = f"{spec.base} + {spec.valor:g}%" if spec.operador == "+" else f"{spec.valor:g}% do {spec.base}"
+        syn.name = synthetics.display_name(spec)
         syn.index = pd.to_datetime(syn.index)
         frames.append(syn)
 

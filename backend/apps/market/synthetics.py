@@ -20,6 +20,13 @@ class SyntheticSpec:
     valor: float
 
 
+def display_name(spec: SyntheticSpec) -> str:
+    if spec.operador == "+":
+        return f"{spec.base} + {spec.valor:g}%"
+    return f"{spec.valor:g}% do {spec.base}"
+
+
+
 def parse_legacy_string(s: str) -> SyntheticSpec | None:
     if not s:
         return None
