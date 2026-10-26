@@ -118,3 +118,18 @@ def test_contributions_only_single_month():
     assert m1["sales"] == [] and m1["cash_in"] == 1000
     p = m1["purchases"][0]
     assert (p["ticker"], p["valor"], p["qtd_sugerida"], p["participacao_final"]) == ("IMAB11", 1000.0, 10, 1.0)
+
+
+def test_fractional_residual_moves_when_month_is_full():
+    hs = [_h("AAA3", "ACAO", 100.5, 100.0, 50.0), _h("BBB3", "ACAO", 1000, 10.0, 5.0)]
+    plan, _ = build_plan(_inp(hs, [Action("AAA3", "sell"), Action("BBB3", "sell")]), {"A": 10.0})
+    m1, m2 = plan["months"]
+    assert m1["exempt_sales_total"] == 20000 and m1["warnings"] == [] and m1["ir_estimado_total"] == 0
+    assert [(s["ativo"], s["qtd"]) for s in m2["sales"]] == [("AAA3", 0.5)]
+
+
+def test_fractional_residual_of_single_holding_never_breaks_cap():
+    hs = [_h("AAA3", "ACAO", 250.5, 80.0, 50.0)]
+    plan, _ = build_plan(_inp(hs, [Action("AAA3", "sell")]), {"A": 10.0})
+    assert [m["exempt_sales_total"] for m in plan["months"]] == [20000, 40]
+    assert all(m["warnings"] == [] for m in plan["months"])

@@ -279,12 +279,15 @@ def _schedule_stocks(inp: PlanInput, stocks: list[Holding]) -> list[list[_Lot]]:
             else:
                 close()
         if q > _EPS:
-            if last is not None:
+            # A fração vai junto da última venda só se couber no teto; senão, vira lote no próximo mês.
+            extra = q * price
+            if extra > remaining + _EPS:
+                close()
+            if last is not None and any(lot is last for lot in months[-1]):
                 last.qtd += q
             else:
-                last = _Lot(h, q)
-                months[-1].append(last)
-                remaining -= q * price
+                months[-1].append(_Lot(h, q))
+            remaining -= extra
 
     while len(months) > 1 and not months[-1]:
         months.pop()
