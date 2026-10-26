@@ -32,3 +32,75 @@ class AnalysisRequest(Schema):
 
 class RollingRequest(AnalysisRequest):
     window: int = 252
+
+
+class AnalysisMetaOut(Schema):
+    start: str
+    end: str
+    missing: list[str]
+
+
+class SerieOut(Schema):
+    name: str
+    data: list[list[str | float | None]]
+
+
+class TwrEvolutionDataOut(Schema):
+    series: list[SerieOut]
+    final_returns: dict[str, float | None]
+
+
+class TwrEvolutionOut(Schema):
+    data: TwrEvolutionDataOut
+    meta: AnalysisMetaOut
+
+
+class SeriesListDataOut(Schema):
+    series: list[SerieOut]
+
+
+class SeriesListOut(Schema):
+    data: SeriesListDataOut
+    meta: AnalysisMetaOut
+
+
+class RollingMetricsDataOut(Schema):
+    volatility: list[SerieOut]
+    sharpe: list[SerieOut]
+
+
+class RollingMetricsOut(Schema):
+    data: RollingMetricsDataOut
+    meta: AnalysisMetaOut
+
+
+class RiskReturnRowOut(Schema):
+    name: str
+    volatilidade: float | None = None
+    retorno_cagr: float | None = None
+    sharpe: float | None = None
+
+
+class RiskReturnDataOut(Schema):
+    rows: list[RiskReturnRowOut]
+
+
+class RiskReturnOut(Schema):
+    data: RiskReturnDataOut
+    meta: AnalysisMetaOut
+
+
+class YearlyRowOut(Schema):
+    name: str
+    values: dict[str, float | None]
+    total: float | None = None
+
+
+class YearlySummaryDataOut(Schema):
+    years: list[int]
+    rows: list[YearlyRowOut]
+
+
+class YearlySummaryOut(Schema):
+    data: YearlySummaryDataOut
+    meta: AnalysisMetaOut
