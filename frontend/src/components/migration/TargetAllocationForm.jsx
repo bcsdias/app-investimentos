@@ -5,6 +5,23 @@ import { Button } from '../common/Button';
 import { Badge } from '../common/Badge';
 import { assetsApi } from '../../api/assets';
 
+export function isTargetListValid(targets = []) {
+  if (!Array.isArray(targets) || targets.length === 0) return false;
+  const totalWeight = targets.reduce((acc, t) => acc + (Number(t.weight) || 0), 0);
+  if (Math.abs(totalWeight - 100) >= 0.01) return false;
+
+  const seen = new Set();
+  for (const t of targets) {
+    const ticker = String(t.ticker || '').trim().toUpperCase();
+    const weight = Number(t.weight);
+    if (!ticker || !Number.isFinite(weight) || weight <= 0 || seen.has(ticker)) {
+      return false;
+    }
+    seen.add(ticker);
+  }
+  return true;
+}
+
 export function TargetAllocationForm({
   targets = [],
   onChangeTargets,
@@ -19,7 +36,7 @@ export function TargetAllocationForm({
   const [suggestions, setSuggestions] = useState({});
 
   const totalWeight = targets.reduce((acc, t) => acc + (Number(t.weight) || 0), 0);
-  const isTotalValid = Math.abs(totalWeight - 100) < 0.01 && targets.length > 0;
+  const isTotalValid = isTargetListValid(targets);
   const diff = 100 - totalWeight;
 
   const handleUpdateRow = (index, field, value) => {
@@ -212,3 +229,4 @@ export function TargetAllocationForm({
 }
 
 export default TargetAllocationForm;
+

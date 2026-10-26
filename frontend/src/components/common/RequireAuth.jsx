@@ -25,3 +25,4 @@ export function RequireAuth({ children }) {
 }
 
 export default RequireAuth;
+

@@ -182,3 +182,4 @@ describe('Gráficos da Aba Risco e PortfolioPage', () => {
     expect(irrSpy).toHaveBeenCalledTimes(1);
   });
 });
+

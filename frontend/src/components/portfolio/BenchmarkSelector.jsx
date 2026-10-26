@@ -85,7 +85,7 @@ export function BenchmarkSelector() {
 
   const groups = catalog?.groups || [
     { name: 'Renda Fixa / Índices BCB', items: ['CDI', 'IPCA', 'SELIC'] },
-    { name: 'Índices B3', items: ['IBOV', 'IFIX', 'IDIV', 'SMLL'] },
+    { name: 'Índices B3', items: ['BOVA11', 'IFIX', 'IDIV', 'SMLL'] },
   ];
 
   return (
@@ -314,3 +314,4 @@ export function BenchmarkSelector() {
 }
 
 export default BenchmarkSelector;
+

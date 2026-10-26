@@ -236,4 +236,114 @@ describe('Módulo de Migração de IR e Exportação PDF', () => {
       expect(revokeUrlSpy).toHaveBeenCalledWith('blob:mock-pdf-url');
     });
   });
+
+  it('alinha planPayload com validate_plan_input (alvo na carteira vira ignore, sem cotação vira ignore e saldo manual só vai em count_as)', async () => {
+    vi.spyOn(migrationApi, 'getWallet').mockResolvedValue({
+      data: [
+        {
+          ativo: 'BOVA11',
+          classe: 'ETF',
+          qtd: 10,
+          pm: 100,
+          price: 110,
+          saldo: 1100,
+          saldo_source: 'market',
+          tax_treatment: 'taxed',
+        },
+        {
+          ativo: 'CDB BANCO X',
+          classe: 'RENDA FIXA',
+          qtd: 1,
+          pm: 5000,
+          price: null,
+          saldo: 5000,
+          saldo_source: 'cost',
+          tax_treatment: 'not_estimated',
+        },
+      ],
+      meta: { total: 6100, warnings: [] },
+    });
+    const planSpy = vi.spyOn(migrationApi, 'calculatePlan').mockResolvedValue({
+      data: { months: [], totals: { months: 0, sold: 0, bought: 0, ir_estimado: 0 } },
+      meta: { monthly_cap: 20000, disclaimer: '', warnings: [] },
+    });
+
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={qc}>
+        <MigrationPage />
+      </QueryClientProvider>
+    );
+
+    const manualInput = await screen.findByLabelText('Saldo manual para CDB BANCO X');
+    fireEvent.change(manualInput, { target: { value: '5500' } });
+
+    const calcBtn = screen.getByRole('button', { name: /Calcular Plano/i });
+    fireEvent.click(calcBtn);
+
+    await waitFor(() => {
+      expect(planSpy).toHaveBeenCalledTimes(1);
+    });
+
+    const sentPayload = planSpy.mock.calls[0][0];
+    const bovaHolding = sentPayload.holdings.find((h) => h.ativo === 'BOVA11');
+    const cdbHolding = sentPayload.holdings.find((h) => h.ativo === 'CDB BANCO X');
+
+    expect(bovaHolding).toEqual({
+      ativo: 'BOVA11',
+      action: 'ignore',
+      target: null,
+      saldo: null,
+    });
+    expect(cdbHolding).toEqual({
+      ativo: 'CDB BANCO X',
+      action: 'ignore',
+      target: null,
+      saldo: null,
+    });
+  });
+
+  it('TargetAllocationForm bloqueia simulação quando há ticker vazio, peso <= 0 ou tickers duplicados mesmo somando 100%', () => {
+    const { rerender } = render(
+      <TargetAllocationForm
+        targets={[
+          { ticker: 'IVVB11', weight: 100 },
+          { ticker: '', weight: 0 },
+        ]}
+        onChangeTargets={vi.fn()}
+        onSimulate={vi.fn()}
+      />
+    );
+    expect(screen.getByRole('button', { name: /Calcular Plano/i })).toBeDisabled();
+
+    rerender(
+      <TargetAllocationForm
+        targets={[
+          { ticker: 'IVVB11', weight: 50 },
+          { ticker: 'IVVB11', weight: 50 },
+        ]}
+        onChangeTargets={vi.fn()}
+        onSimulate={vi.fn()}
+      />
+    );
+    expect(screen.getByRole('button', { name: /Calcular Plano/i })).toBeDisabled();
+  });
+
+  it('ExportPdfButton captura erro de downloadPdf e exibe alerta sem unhandled rejection', async () => {
+    vi.spyOn(migrationApi, 'downloadPdf').mockRejectedValueOnce(new Error('Falha no PDF'));
+
+    render(
+      <ExportPdfButton
+        payload={{ targets: [{ ticker: 'IVVB11', weight: 100 }], holdings: [] }}
+        disabled={false}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /Baixar Relatório em PDF/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('alert')).toHaveTextContent(/Erro ao gerar PDF/i);
+    });
+  });
 });
+

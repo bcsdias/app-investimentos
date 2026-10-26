@@ -166,3 +166,4 @@ export function FiltersBar() {
 }
 
 export default FiltersBar;
+

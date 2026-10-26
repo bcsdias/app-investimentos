@@ -11,3 +11,4 @@ export function Skeleton({ className = 'h-6 w-full', ...props }) {
 }
 
 export default Skeleton;
+

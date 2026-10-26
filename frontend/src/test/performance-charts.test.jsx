@@ -179,3 +179,4 @@ describe('usePortfolioQueries e Componentes da Aba Performance', () => {
     expect(charts).toHaveLength(2);
   });
 });
+

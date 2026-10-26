@@ -83,3 +83,4 @@ describe('SummaryCards e BaseChart', () => {
     expect(mergedOption.series[0].name).toBe('Carteira');
   });
 });
+

@@ -67,3 +67,4 @@ export function ShadowChart({ data, isLoading = false }) {
 }
 
 export default ShadowChart;
+

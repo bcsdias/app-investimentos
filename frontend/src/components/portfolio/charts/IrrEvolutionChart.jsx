@@ -60,3 +60,4 @@ export function IrrEvolutionChart({ data, isLoading = false }) {
 }
 
 export default IrrEvolutionChart;
+

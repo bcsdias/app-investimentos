@@ -56,10 +56,16 @@ export function HoldingsTable({
             {holdings.map((h) => {
               const badge = getTaxBadge(h.tax_treatment);
               const cfg = actionsMap[h.ativo] || {};
-              const selectVal =
-                cfg.action === 'count_as' && cfg.target
-                  ? `count_as:${cfg.target}`
-                  : cfg.action || 'sell';
+              const isTargetHolding = validTargets.some(
+                (t) => t.ticker.trim().toUpperCase() === (h.ativo || '').toUpperCase()
+              );
+              const hasPrice = h.price !== null && h.price !== undefined;
+              const defaultAction = isTargetHolding || !hasPrice ? 'ignore' : 'sell';
+              const selectVal = isTargetHolding
+                ? 'ignore'
+                : cfg.action === 'count_as' && cfg.target
+                ? `count_as:${cfg.target}`
+                : cfg.action || defaultAction;
 
               return (
                 <tr key={h.ativo} className="hover:bg-zinc-800/30 transition-colors">
@@ -74,9 +80,7 @@ export function HoldingsTable({
                     {h.pm !== null && h.pm !== undefined ? formatCurrencyBRL(h.pm) : '—'}
                   </td>
                   <td className="py-3 px-3 text-right text-zinc-300 whitespace-nowrap">
-                    {h.price !== null && h.price !== undefined
-                      ? formatCurrencyBRL(h.price)
-                      : '—'}
+                    {hasPrice ? formatCurrencyBRL(h.price) : '—'}
                   </td>
                   <td className="py-3 px-3 text-right whitespace-nowrap">
                     {h.saldo_source === 'cost' ? (
@@ -104,16 +108,20 @@ export function HoldingsTable({
                     <select
                       aria-label={`Ação para ${h.ativo}`}
                       value={selectVal}
+                      disabled={isTargetHolding}
                       onChange={(e) => handleSelectChange(h.ativo, e.target.value)}
-                      className="bg-zinc-950 border border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      className="bg-zinc-950 border border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-60"
                     >
-                      <option value="sell">Vender</option>
-                      {validTargets.map((t) => (
-                        <option key={t.ticker} value={`count_as:${t.ticker}`}>
-                          Contar como {t.ticker}
-                        </option>
-                      ))}
-                      <option value="ignore">Ignorar</option>
+                      {hasPrice && !isTargetHolding && <option value="sell">Vender</option>}
+                      {!isTargetHolding &&
+                        validTargets.map((t) => (
+                          <option key={t.ticker} value={`count_as:${t.ticker}`}>
+                            Contar como {t.ticker}
+                          </option>
+                        ))}
+                      <option value="ignore">
+                        {isTargetHolding ? 'Ativo-Alvo (Saldo Direto)' : 'Ignorar'}
+                      </option>
                     </select>
                   </td>
                 </tr>
@@ -127,3 +135,4 @@ export function HoldingsTable({
 }
 
 export default HoldingsTable;
+

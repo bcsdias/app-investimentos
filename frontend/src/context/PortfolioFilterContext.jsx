@@ -37,7 +37,7 @@ export function formatSyntheticLabel(synth) {
 export function PortfolioFilterProvider({
   children,
   initialPeriod = 'Tudo',
-  initialBenchmarks = ['CDI', 'IBOV'],
+  initialBenchmarks = ['CDI', 'BOVA11'],
 }) {
   const initialDates = computePresetDates(initialPeriod);
   const [period, setPeriodState] = useState(initialPeriod);
@@ -175,3 +175,4 @@ export function usePortfolioFilters() {
 }
 
 export default PortfolioFilterContext;
+

@@ -18,3 +18,4 @@ export function EmptyState({ title, description, action, icon: Icon = Inbox }) {
 }
 
 export default EmptyState;
+

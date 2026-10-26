@@ -70,7 +70,7 @@ export function useMigrationPlan() {
     setActionsMap((prev) => ({
       ...prev,
       [ativo]: {
-        ...(prev[ativo] || { action: 'sell', target: null }),
+        ...(prev[ativo] || {}),
         saldo:
           saldoValue === '' || saldoValue === null || Number.isNaN(Number(saldoValue))
             ? null
@@ -87,23 +87,38 @@ export function useMigrationPlan() {
         weight: Number(t.weight),
       }));
 
+    const targetSet = new Set(validTargets.map((t) => t.ticker));
+
     const holdingsPayload = holdings.map((h) => {
       const cfg = actionsMap[h.ativo] || {};
-      const defaultAction = validTargets.some((t) => t.ticker === h.ativo.toUpperCase())
-        ? 'count_as'
-        : 'sell';
-      const defaultTarget =
-        defaultAction === 'count_as' ? h.ativo.toUpperCase() : null;
+      const isTargetHolding = targetSet.has((h.ativo || '').toUpperCase());
 
-      const resolvedAction = cfg.action || defaultAction;
-      const resolvedTarget =
-        resolvedAction === 'count_as' ? cfg.target || defaultTarget : null;
+      if (isTargetHolding) {
+        return {
+          ativo: h.ativo,
+          action: 'ignore',
+          target: null,
+          saldo: null,
+        };
+      }
+
+      const defaultAction = h.price === null || h.price === undefined ? 'ignore' : 'sell';
+      let resolvedAction = cfg.action || defaultAction;
+      if (resolvedAction === 'sell' && (h.price === null || h.price === undefined)) {
+        resolvedAction = 'ignore';
+      }
+
+      const resolvedTarget = resolvedAction === 'count_as' ? cfg.target || null : null;
+      const resolvedSaldo =
+        resolvedAction === 'count_as' && cfg.saldo !== undefined && cfg.saldo !== null
+          ? Number(cfg.saldo)
+          : null;
 
       return {
         ativo: h.ativo,
         action: resolvedAction,
         target: resolvedTarget,
-        saldo: cfg.saldo !== undefined && cfg.saldo !== null ? Number(cfg.saldo) : null,
+        saldo: resolvedSaldo,
       };
     });
 
@@ -144,3 +159,4 @@ export function useMigrationPlan() {
 }
 
 export default useMigrationPlan;
+

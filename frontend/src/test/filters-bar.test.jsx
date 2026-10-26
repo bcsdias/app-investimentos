@@ -67,6 +67,13 @@ describe('PortfolioFilterContext, FiltersBar e BenchmarkSelector', () => {
     ]);
   });
 
+  it('usa benchmarks padrão válidos no catálogo do backend (CDI e BOVA11, sem IBOV inválido)', () => {
+    renderFiltersBar();
+    const benchmarksList = JSON.parse(screen.getByTestId('benchmarks-val').textContent);
+    expect(benchmarksList).toEqual(['CDI', 'BOVA11']);
+    expect(benchmarksList).not.toContain('IBOV');
+  });
+
   it('calcula start de 365 dias atrás e end atual ao selecionar 1A, e null ao selecionar Tudo', async () => {
     renderFiltersBar();
 
@@ -155,3 +162,4 @@ describe('PortfolioFilterContext, FiltersBar e BenchmarkSelector', () => {
     expect(syntheticsList).toContainEqual({ base: 'CDI', operador: '+', valor: 2 });
   });
 });
+

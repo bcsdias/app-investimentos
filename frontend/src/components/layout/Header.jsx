@@ -46,6 +46,8 @@ export function Header() {
       await api.post('/portfolio/refresh');
       await queryClient.invalidateQueries({ queryKey: ['portfolio'] });
       await queryClient.invalidateQueries({ queryKey: ['migration'] });
+    } catch {
+      // Erros 401/409/422 já são interceptados globalmente em api/client.js
     } finally {
       setIsRefreshing(false);
     }
@@ -178,3 +180,4 @@ export function Header() {
 }
 
 export default Header;
+

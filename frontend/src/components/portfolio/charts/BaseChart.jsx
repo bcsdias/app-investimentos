@@ -82,3 +82,4 @@ export function BaseChart({ option, height = 360, isLoading = false, className =
 }
 
 export default BaseChart;
+

@@ -119,4 +119,22 @@ describe('Header, DlpTokenModal e Primitivas de UI', () => {
       expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['portfolio'] });
     });
   });
+
+  it('trata erro em POST /portfolio/refresh sem vazar promise rejeitada', async () => {
+    vi.spyOn(dlpApi, 'getTokenStatus').mockResolvedValue({
+      configured: false,
+      updated_at: null,
+    });
+    vi.spyOn(api, 'post').mockRejectedValueOnce(new Error('DLP Token Missing'));
+
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    renderHeader(qc);
+
+    const refreshBtn = await screen.findByRole('button', { name: /Atualizar Dados/i });
+    fireEvent.click(refreshBtn);
+
+    await waitFor(() => {
+      expect(refreshBtn).not.toBeDisabled();
+    });
+  });
 });

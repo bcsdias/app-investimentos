@@ -141,3 +141,4 @@ export function SummaryCards({ data, isLoading = false, isError = false }) {
 }
 
 export default SummaryCards;
+

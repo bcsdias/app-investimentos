@@ -105,3 +105,4 @@ export function RiskReturnChart({ data, isLoading = false }) {
 }
 
 export default RiskReturnChart;
+

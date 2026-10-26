@@ -20,3 +20,4 @@ export function Badge({ children, variant = 'neutral', className = '', ...props 
 }
 
 export default Badge;
+

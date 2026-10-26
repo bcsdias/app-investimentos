@@ -78,3 +78,4 @@ export function DrawdownChart({ data, isLoading = false }) {
 }
 
 export default DrawdownChart;
+

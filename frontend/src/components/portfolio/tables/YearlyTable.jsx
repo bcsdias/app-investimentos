@@ -97,3 +97,4 @@ export function YearlyTable({ data, isLoading = false }) {
 }
 
 export default YearlyTable;
+

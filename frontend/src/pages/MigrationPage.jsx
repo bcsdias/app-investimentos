@@ -1,7 +1,10 @@
 import React from 'react';
 import { useMigrationPlan } from '../hooks/useMigrationPlan';
 import { HoldingsTable } from '../components/migration/HoldingsTable';
-import { TargetAllocationForm } from '../components/migration/TargetAllocationForm';
+import {
+  TargetAllocationForm,
+  isTargetListValid,
+} from '../components/migration/TargetAllocationForm';
 import { MonthlyPurchasesTable } from '../components/migration/MonthlyPurchasesTable';
 import { ExportPdfButton } from '../components/migration/ExportPdfButton';
 import { Skeleton } from '../components/common/Skeleton';
@@ -28,8 +31,7 @@ export function MigrationPage() {
     walletQuery.error?.response?.status === 404 &&
     walletQuery.error?.response?.data?.code === 'portfolio_empty';
 
-  const totalWeight = targets.reduce((acc, t) => acc + (Number(t.weight) || 0), 0);
-  const isTotalValid = Math.abs(totalWeight - 100) < 0.01 && targets.length > 0;
+  const isTotalValid = isTargetListValid(targets);
 
   return (
     <div className="space-y-6">
@@ -94,3 +96,4 @@ export function MigrationPage() {
 }
 
 export default MigrationPage;
+

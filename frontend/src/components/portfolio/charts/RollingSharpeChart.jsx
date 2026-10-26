@@ -84,3 +84,4 @@ export function RollingSharpeChart({ data, isLoading = false }) {
 }
 
 export default RollingSharpeChart;
+
