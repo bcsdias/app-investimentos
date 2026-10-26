@@ -147,3 +147,43 @@ def test_ingest_db_error_on_one_series_does_not_abort_batch(monkeypatch, db):
         call_command("ingest_market_data", "--only", "bcb:12,bcb:11")
     assert ei.value.code == 1
     assert MarketSeries.objects.filter(series_key="bcb:11").exists()  # a outra gravou
+
+
+# --- ingest_market_data: tickers sob demanda (D9) ---
+
+
+def test_ingest_updates_on_demand_ticker(monkeypatch, db):
+    from apps.market import repository
+    from apps.market.management.commands import ingest_market_data as cmd_mod
+
+    repository.upsert_points("yf:AAPL", "YF", "level", [RawPoint(dt.date(2024, 1, 2), 1.0)])
+    fetched = []
+    monkeypatch.setattr(cmd_mod, "_fetch", lambda sdef, s, e: fetched.append(sdef.series_key) or [])
+    monkeypatch.setattr(cmd_mod, "_warm_cache", lambda *a, **k: None)
+    call_command("ingest_market_data", "--only", "yf:AAPL")
+    assert fetched == ["yf:AAPL"]
+
+
+def test_on_demand_failure_marks_failed(monkeypatch, db, capsys):
+    from apps.market import repository
+    from apps.market.management.commands import ingest_market_data as cmd_mod
+
+    repository.upsert_points("yf:AAPL", "YF", "level", [RawPoint(dt.date(2024, 1, 2), 1.0)])
+
+    def boom(sdef, s, e):
+        raise FetchError("yahoo down")
+
+    monkeypatch.setattr(cmd_mod, "_fetch", boom)
+    monkeypatch.setattr(cmd_mod, "_warm_cache", lambda *a, **k: None)
+    with pytest.raises(SystemExit) as ei:
+        call_command("ingest_market_data", "--only", "yf:AAPL")
+    assert ei.value.code == 1
+    assert "yf:AAPL" in capsys.readouterr().err
+
+
+def test_catalog_yf_key_not_duplicated(db):
+    from apps.market import repository
+    from apps.market.management.commands import ingest_market_data as cmd_mod
+
+    repository.upsert_points("yf:IVVB11.SA", "YF", "level", [RawPoint(dt.date(2024, 1, 2), 1.0)])
+    assert "yf:IVVB11.SA" not in {d.series_key for d in cmd_mod._on_demand_defs()}

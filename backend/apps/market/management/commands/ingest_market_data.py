@@ -43,6 +43,16 @@ def _fetch(sdef: catalog.SeriesDef, start: dt.date, end: dt.date) -> list[RawPoi
     raise FetchError(f"prefixo sem fonte: {prefix}")
 
 
+def _on_demand_defs() -> list[catalog.SeriesDef]:
+    """Chaves yf:* gravadas sob demanda (fora do catálogo), para manter atualizadas."""
+    known = {d.series_key for d in catalog.ingestible()}
+    return [
+        catalog.SeriesDef(key[3:], "YF", key, "level")
+        for key in sorted(repository.available_keys())
+        if key.startswith("yf:") and key not in known
+    ]
+
+
 def _warm_cache(today: dt.date) -> None:
     five_years_ago = today - dt.timedelta(days=5 * 365)  # janela quente ~5 anos
     for name in catalog.DEFAULT_BENCHMARKS:
@@ -67,7 +77,7 @@ class Command(BaseCommand):
         ok = failed = 0
         failed_keys: list[str] = []
 
-        for sdef in catalog.ingestible():
+        for sdef in [*catalog.ingestible(), *_on_demand_defs()]:
             if only and sdef.series_key not in only:
                 continue
             if opts["full"]:
