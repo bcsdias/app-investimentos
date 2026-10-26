@@ -33,6 +33,7 @@ INSTALLED_APPS = [
     "apps.accounts",
     "apps.core",
     "apps.market",
+    "apps.api",
 ]
 
 MIDDLEWARE = [
@@ -120,3 +121,8 @@ LOGGING = {
 # Fase 2 — a ingestão B3 via Selenium só roda no container com Chrome (Fase 5).
 # No host, ingest_market_data usa o fallback de CSV estático.
 B3_INGEST_USE_SELENIUM = _env("B3_INGEST_USE_SELENIUM", "0") == "1"
+
+# A SPA lê o cookie csrftoken e o reenvia no header X-CSRFToken.
+CSRF_COOKIE_HTTPONLY = False
+
+MARKET_ASSETS_CSV = BASE_DIR / "apps" / "market" / "data" / "ativos.csv"
