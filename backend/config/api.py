@@ -7,6 +7,7 @@ from apps.api.routers.assets import router as assets_router
 from apps.api.routers.benchmarks import router as benchmarks_router
 from apps.api.routers.dlp import router as dlp_router
 from apps.api.routers.portfolio import router as portfolio_router
+from apps.migration_ir.api import router as migration_router
 
 api = NinjaAPI(
     title="app-investimentos API",
@@ -30,5 +31,6 @@ api.add_router("/dlp/", dlp_router)
 api.add_router("/portfolio/", portfolio_router)
 api.add_router("/benchmarks/", benchmarks_router)
 api.add_router("/assets/", assets_router)
+api.add_router("/migration/", migration_router)
 
 

@@ -38,6 +38,23 @@ def auth_client(user):
 
 
 @pytest.fixture
+def user_with_token(user):
+    from apps.core.models import UserToken
+
+    ut = UserToken(user=user)
+    ut.set_token("tok-teste")
+    ut.save()
+    return user
+
+
+@pytest.fixture
+def user_with_token_client(user_with_token):
+    client = Client()
+    client.force_login(user_with_token)
+    return client
+
+
+@pytest.fixture
 def assets_csv(settings):
     from pathlib import Path
 
