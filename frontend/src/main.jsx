@@ -1,13 +1,13 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import { App } from './App';
 import './index.css';
 
-const rootEl = document.getElementById('root');
-if (rootEl) {
-  ReactDOM.createRoot(rootEl).render(
+const rootElement = document.getElementById('root');
+if (rootElement) {
+  ReactDOM.createRoot(rootElement).render(
     <React.StrictMode>
-      <div className="min-h-screen bg-zinc-950 text-zinc-100 p-4">App Investimentos</div>
+      <App />
     </React.StrictMode>
   );
 }
-
