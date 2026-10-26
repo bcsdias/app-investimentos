@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     "apps.core",
     "apps.market",
     "apps.api",
+    "apps.migration_ir",
 ]
 
 MIDDLEWARE = [
