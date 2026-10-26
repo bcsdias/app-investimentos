@@ -66,7 +66,8 @@ def _extract_distinct(df: pd.DataFrame, candidates: tuple[str, ...], label: str)
     for cand in candidates:
         col = lower_map.get(cand.lower())
         if col is not None:
-            vals = df[col].dropna().astype(str).map(str.strip)
+            raw_unique = pd.unique(df[col].dropna())
+            vals = (str(v).strip() for v in raw_unique)
             return sorted({v for v in vals if v})
     logger.warning(
         "Nenhuma coluna de %s (%s) encontrada no histórico DLP: %s",

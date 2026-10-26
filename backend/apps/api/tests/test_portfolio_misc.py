@@ -78,3 +78,10 @@ def test_refresh_invalidates_user_cache(user_with_token_client, monkeypatch):
 def test_refresh_without_token_409(auth_client):
     r = auth_client.post(f"{P}/refresh")
     assert r.status_code == 409 and r.json()["code"] == "dlp_token_missing"
+
+
+def test_extract_distinct_dedups_strips_and_drops_blanks():
+    from apps.api.routers.portfolio import _extract_distinct
+
+    df = pd.DataFrame({"Classe": ["ACAO", " ACAO", "FII ", None, float("nan"), "", "  ", "ETF", "ACAO"]})
+    assert _extract_distinct(df, ("classe",), "classe") == ["ACAO", "ETF", "FII"]
