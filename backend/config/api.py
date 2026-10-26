@@ -1,6 +1,7 @@
 from ninja import NinjaAPI
 from ninja.security import django_auth
 
+from apps.accounts.api import router as accounts_router
 from apps.api.errors import ApiError
 
 api = NinjaAPI(
@@ -19,3 +20,5 @@ def handle_api_error(request, exc: ApiError):
         {"code": exc.code, "message": exc.message, "details": exc.details},
         status=exc.status,
     )
+
+api.add_router("/auth/", accounts_router)
