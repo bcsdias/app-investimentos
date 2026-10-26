@@ -139,3 +139,20 @@ def test_concurrent_calls_hit_dlp_once(monkeypatch):
     [t.start() for t in threads]
     [t.join() for t in threads]
     assert len(calls) == 1
+
+
+def test_get_uses_settings_base_url(monkeypatch, settings):
+    settings.DLP_BASE_URL = "https://dlp.exemplo.test"
+    seen = []
+    monkeypatch.setattr(
+        dlp.requests, "get",
+        lambda url, **k: seen.append(url) or _Resp({"historico": [{"data": "2024-01-02"}]}),
+    )
+    dlp.buscar_historico("tok")
+    assert seen == ["https://dlp.exemplo.test/historico"]
+
+
+def test_default_base_url_is_dlpinvest():
+    from django.conf import settings as dj
+
+    assert dj.DLP_BASE_URL == "https://users.dlpinvest.com.br"

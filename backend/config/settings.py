@@ -127,5 +127,8 @@ CSRF_COOKIE_HTTPONLY = False
 
 MARKET_ASSETS_CSV = BASE_DIR / "apps" / "market" / "data" / "ativos.csv"
 
+# API da DLP Invest (carteira por usuário). Domínio oficial atual; override via .env.
+DLP_BASE_URL = _env("DLP_BASE_URL", "https://users.dlpinvest.com.br").rstrip("/")
+
 # Falhas de CSRF sob /api/ usam o envelope JSON padrão; demais rotas, a página do Django.
 CSRF_FAILURE_VIEW = "apps.api.csrf.csrf_failure_view"

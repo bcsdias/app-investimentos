@@ -12,6 +12,7 @@ import logging
 
 import pandas as pd
 import requests
+from django.conf import settings
 from django.core.cache import cache
 
 from apps.market import cache as mc
@@ -19,9 +20,6 @@ from apps.market import cache as mc
 from .base import DLPAuthError, DLPError, DLPUnavailableError
 
 logger = logging.getLogger(__name__)
-
-_BASE = "https://users.dlombelloplanilhas.com"
-
 
 def _token_hash(token: str) -> str:
     return hashlib.sha256(token.encode()).hexdigest()[:12]
@@ -57,7 +55,7 @@ def invalidate_user_cache(token: str) -> None:
 def _get(path: str, token: str, params: dict) -> dict:
     try:
         resp = requests.get(
-            f"{_BASE}{path}",
+            f"{settings.DLP_BASE_URL}{path}",
             headers={"Content-Type": "application/json", "Authorization": token},
             params=params,
             timeout=60,
