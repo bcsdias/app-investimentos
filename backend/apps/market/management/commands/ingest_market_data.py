@@ -21,7 +21,7 @@ from apps.market.services.sources.base import FetchError, RawPoint
 
 logger = logging.getLogger(__name__)
 
-_EPOCH = dt.date(1995, 1, 1)
+_EPOCH = catalog.EPOCH
 
 
 def _fetch(sdef: catalog.SeriesDef, start: dt.date, end: dt.date) -> list[RawPoint]:

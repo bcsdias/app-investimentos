@@ -5,9 +5,13 @@ cru (source/series_key) e como derivar a série servível (derivation).
 """
 from __future__ import annotations
 
+import datetime as dt
 from dataclasses import dataclass
 
 from apps.market.synthetics import SyntheticSpec
+
+
+EPOCH = dt.date(1995, 1, 1)
 
 
 @dataclass(frozen=True)

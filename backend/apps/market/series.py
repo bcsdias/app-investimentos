@@ -11,9 +11,17 @@ import logging
 
 import pandas as pd
 
-from apps.market import cache, catalog, repository, transforms
+from apps.market import assets, cache, catalog, repository, transforms
+from apps.market.services.sources import yahoo
+from apps.market.services.sources.base import FetchError
 
 logger = logging.getLogger(__name__)
+
+STALE_DAYS = 3
+
+
+def _today() -> dt.date:
+    return dt.date.today()
 
 
 def get_series(name: str, start: dt.date, end: dt.date) -> pd.Series | None:
@@ -21,13 +29,49 @@ def get_series(name: str, start: dt.date, end: dt.date) -> pd.Series | None:
     hit = cache.get_df(key)
     if hit is not None:
         return hit
-    sdef = catalog.resolve(name)
+    sdef, on_demand = _resolve(name)
+    if on_demand:
+        _ensure_fresh(sdef, _today())
     series = _materialize(sdef, start, end)
     if series is None or series.empty:
         logger.info("série '%s' vazia no período %s..%s", name, start, end)
         return None
     cache.set_df(key, series, ttl=cache.TTL_SERIES)
     return series
+
+
+def _resolve(name: str) -> tuple[catalog.SeriesDef, bool]:
+    """Catálogo primeiro; depois o universo de tickers (sob demanda)."""
+    try:
+        return catalog.resolve(name), False
+    except KeyError:
+        pass
+    sdef = assets.resolve(name)
+    if sdef is None:
+        raise KeyError(f"série desconhecida: {name!r}")
+    return sdef, True
+
+
+def _ensure_fresh(sdef: catalog.SeriesDef, today: dt.date) -> None:
+    """Garante histórico (primeira vez) ou atualização (defasado) de série crua sob demanda."""
+    if sdef.derivation is not None or sdef.series_key is None:
+        return
+    key = sdef.series_key
+    ticker = key.removeprefix("yf:")
+    with cache.single_flight(f"ondemand:{key}"):
+        last = repository.last_date(key)
+        if last is None:
+            start = catalog.EPOCH
+        elif last < today - dt.timedelta(days=STALE_DAYS):
+            start = last + dt.timedelta(days=1)
+        else:
+            return
+        try:
+            pts = yahoo.fetch_yahoo(ticker, start, today)
+        except FetchError as exc:
+            logger.warning("fetch sob demanda de '%s' falhou: %s", ticker, exc)
+            return
+        repository.upsert_points(key, "YF", "level", pts)
 
 
 def get_many(names: list[str], start: dt.date, end: dt.date) -> dict[str, pd.Series]:

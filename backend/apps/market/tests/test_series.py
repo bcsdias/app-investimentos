@@ -91,3 +91,100 @@ def test_get_many_skips_missing(monkeypatch):
     monkeypatch.setattr(sr.repository, "load_series", fake_load)
     out = sr.get_many(["CDI", "S&P 500"], S, E)
     assert set(out) == {"CDI"}
+
+
+# --- tickers sob demanda (Task 6) ---------------------------------------------
+from apps.market import catalog, repository  # noqa: E402
+from apps.market.services.sources.base import FetchError, RawPoint  # noqa: E402
+
+TODAY = dt.date(2024, 6, 30)
+
+
+@pytest.fixture
+def ondemand(monkeypatch, locmem_cache, assets_csv):
+    monkeypatch.setattr(sr, "_today", lambda: TODAY)
+    calls = []
+
+    class Box:
+        pass
+
+    box = Box()
+    box.calls = calls
+    box.result = lambda t, s, e: []
+
+    def fake(t, s, e):
+        calls.append((t, s, e))
+        r = box.result(t, s, e)
+        if isinstance(r, Exception):
+            raise r
+        return r
+
+    monkeypatch.setattr(sr.yahoo, "fetch_yahoo", fake)
+    return box
+
+
+def _pts(start, n, base=100.0):
+    return [RawPoint(d.date(), base + i) for i, d in enumerate(pd.bdate_range(start, periods=n))]
+
+
+def _store(key, start, n, source="YF", base=100.0):
+    repository.upsert_points(key, source, "level", _pts(start, n, base))
+
+
+def test_first_use_fetches_full_history(ondemand):
+    ondemand.result = lambda t, s, e: _pts("2024-01-02", 5)
+    s = sr.get_series("AAPL", dt.date(2024, 1, 1), TODAY)
+    assert ondemand.calls == [("AAPL", catalog.EPOCH, TODAY)]
+    assert repository.last_date("yf:AAPL") is not None and not s.empty
+
+
+def test_fresh_data_does_not_refetch(ondemand):
+    repository.upsert_points("yf:AAPL", "YF", "level", [RawPoint(TODAY - dt.timedelta(days=1), 10.0)])
+    s = sr.get_series("AAPL", dt.date(2024, 1, 1), TODAY)
+    assert ondemand.calls == []
+    assert not s.empty
+
+
+def test_stale_data_tops_up_from_last_date(ondemand):
+    last = TODAY - dt.timedelta(days=10)
+    repository.upsert_points("yf:AAPL", "YF", "level", [RawPoint(last, 10.0)])
+    ondemand.result = lambda t, s, e: [RawPoint(TODAY - dt.timedelta(days=1), 11.0)]
+    sr.get_series("AAPL", dt.date(2024, 1, 1), TODAY)
+    assert ondemand.calls == [("AAPL", last + dt.timedelta(days=1), TODAY)]
+    assert repository.last_date("yf:AAPL") == TODAY - dt.timedelta(days=1)
+
+
+def test_fetch_error_falls_back_to_stored(ondemand):
+    last = TODAY - dt.timedelta(days=10)
+    repository.upsert_points("yf:AAPL", "YF", "level", [RawPoint(last, 10.0)])
+    ondemand.result = lambda t, s, e: FetchError("fora do ar")
+    s = sr.get_series("AAPL", dt.date(2024, 1, 1), TODAY)
+    assert list(s.values) == [10.0]
+
+
+def test_fetch_error_without_data_returns_none(ondemand):
+    ondemand.result = lambda t, s, e: FetchError("fora do ar")
+    assert sr.get_series("AAPL", dt.date(2024, 1, 1), TODAY) is None
+
+
+def test_brl_variant_uses_ptax(ondemand):
+    _store("yf:AAPL", "2024-06-03", 5, base=100.0)
+    _store("ptax:USDBRL", "2024-06-03", 5, source="PTAX", base=5.0)
+    s = sr.get_series("AAPL BRL", dt.date(2024, 6, 1), TODAY)
+    expected = (
+        repository.load_series("yf:AAPL", dt.date(2024, 6, 1), TODAY)
+        * repository.load_series("ptax:USDBRL", dt.date(2024, 6, 1), TODAY)
+    )
+    assert list(s.values) == pytest.approx(list(expected.values))
+
+
+def test_catalog_name_wins_over_asset(ondemand):
+    _store("yf:IVVB11.SA", "2024-06-03", 3)
+    s = sr.get_series("IVVB11", dt.date(2024, 6, 1), TODAY)
+    assert ondemand.calls == []
+    assert not s.empty
+
+
+def test_unknown_name_raises_keyerror(ondemand):
+    with pytest.raises(KeyError):
+        sr.get_series("NAOEXISTE", dt.date(2024, 1, 1), TODAY)
