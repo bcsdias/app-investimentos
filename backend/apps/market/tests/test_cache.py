@@ -1,6 +1,10 @@
+import threading
+import time
+
 import numpy as np
 import pandas as pd
 import pytest
+from django.core.cache import cache as django_cache
 
 from apps.market import cache as mc
 
@@ -66,3 +70,26 @@ def test_multiindex_columns_are_flattened():
     mc.set_df("market:t:mi", df, ttl=60)
     out = mc.get_df("market:t:mi")
     assert list(out.columns) == ["Close_PETR4"]
+
+
+def test_single_flight_blocks_second_holder():
+    order = []
+
+    def worker(tag):
+        with mc.single_flight("k", timeout=5, poll=0.01):
+            order.append(f"{tag}-in")
+            time.sleep(0.1)
+            order.append(f"{tag}-out")
+
+    ts = [threading.Thread(target=worker, args=(t,)) for t in "ab"]
+    [t.start() for t in ts]
+    [t.join() for t in ts]
+    assert order[1].endswith("-out")  # sem intercalação
+
+
+def test_single_flight_times_out_and_proceeds():
+    django_cache.add("k:lock", 1, 30)  # lock "preso"
+    t0 = time.monotonic()
+    with mc.single_flight("k", timeout=0.2, poll=0.01):
+        pass
+    assert time.monotonic() - t0 < 1

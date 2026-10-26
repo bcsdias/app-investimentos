@@ -2,7 +2,7 @@
 
 Porta de src/data/sources/market_data.py::buscar_historico / buscar_resumo_carteira.
 NÃO grava em MarketSeries (é dado por-usuário). Cacheia no Redis com TTL 600s.
-Levanta DLPError em erro HTTP; devolve None só para 'sem dados'.
+Levanta DLPAuthError (401/403), DLPUnavailableError (rede/5xx/JSON inválido) ou DLPError; devolve None só para 'sem dados'.
 """
 from __future__ import annotations
 
@@ -12,10 +12,11 @@ import logging
 
 import pandas as pd
 import requests
+from django.core.cache import cache
 
 from apps.market import cache as mc
 
-from .base import DLPError
+from .base import DLPAuthError, DLPError, DLPUnavailableError
 
 logger = logging.getLogger(__name__)
 
@@ -31,53 +32,90 @@ def _norm_date_col(df: pd.DataFrame) -> pd.DataFrame:
     return df.rename(columns=rename) if rename else df
 
 
-def buscar_historico(token, ativo=None, classe=None, corretora=None):
-    params = {k: v for k, v in {"ativo": ativo, "classe": classe, "corretora": corretora}.items() if v}
-    pstr = json.dumps(params, sort_keys=True)
-    key = mc.make_key("dlp", "hist", _token_hash(token), hashlib.sha256(pstr.encode()).hexdigest()[:12])
-    cached = mc.get_df(key)
-    if cached is not None:
-        return _norm_date_col(cached) if isinstance(cached, pd.DataFrame) else cached
+def _gen_key(token: str) -> str:
+    return mc.make_key("dlp", "gen", _token_hash(token))
 
+
+def _generation(token: str) -> int:
+    try:
+        return int(cache.get(_gen_key(token), 0))
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("dlp gen get falhou: %s", exc)
+        return 0
+
+
+def invalidate_user_cache(token: str) -> None:
+    """Invalida hist/resumo do usuário incrementando a geração (vale em redis e locmem)."""
+    key = _gen_key(token)
+    try:
+        cache.add(key, 0, None)
+        cache.incr(key)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("dlp invalidate falhou para %s: %s", _token_hash(token), exc)
+
+
+def _get(path: str, token: str, params: dict) -> dict:
     try:
         resp = requests.get(
-            f"{_BASE}/historico",
+            f"{_BASE}{path}",
             headers={"Content-Type": "application/json", "Authorization": token},
             params=params,
             timeout=60,
         )
-        resp.raise_for_status()
-        payload = resp.json()
-    except Exception as exc:  # noqa: BLE001
-        raise DLPError(f"DLP /historico: {exc}") from exc
+    except (requests.Timeout, requests.ConnectionError) as exc:
+        raise DLPUnavailableError(f"DLP {path}: {type(exc).__name__}") from None
+    status = resp.status_code
+    if status in (401, 403):
+        raise DLPAuthError(f"DLP {path}: HTTP {status}")
+    if status >= 500:
+        raise DLPUnavailableError(f"DLP {path}: HTTP {status}")
+    if status >= 400:
+        raise DLPError(f"DLP {path}: HTTP {status}")
+    try:
+        return resp.json()
+    except ValueError:
+        raise DLPUnavailableError(f"DLP {path}: resposta JSON inválida") from None
 
-    df = pd.DataFrame(payload.get("historico", []))
-    if df.empty:
-        return None
-    df = _norm_date_col(df)
-    mc.set_df(key, df, ttl=mc.TTL_DLP)
-    return df
+
+def buscar_historico(token, ativo=None, classe=None, corretora=None):
+    params = {k: v for k, v in {"ativo": ativo, "classe": classe, "corretora": corretora}.items() if v}
+    pstr = json.dumps(params, sort_keys=True)
+    key = mc.make_key(
+        "dlp", "hist", _token_hash(token), _generation(token),
+        hashlib.sha256(pstr.encode()).hexdigest()[:12],
+    )
+    cached = mc.get_df(key)
+    if cached is not None:
+        return _norm_date_col(cached) if isinstance(cached, pd.DataFrame) else cached
+
+    with mc.single_flight(key):
+        cached = mc.get_df(key)
+        if cached is not None:
+            return _norm_date_col(cached) if isinstance(cached, pd.DataFrame) else cached
+        payload = _get("/historico", token, params)
+        df = pd.DataFrame(payload.get("historico", []))
+        if df.empty:
+            return None
+        df = _norm_date_col(df)
+        mc.set_df(key, df, ttl=mc.TTL_DLP)
+        return df
 
 
 def buscar_resumo_carteira(token):
-    key = mc.make_key("dlp", "resumo", _token_hash(token))
+    key = mc.make_key("dlp", "resumo", _token_hash(token), _generation(token))
     cached = mc.get_df(key)
     if cached is not None:
         return cached
 
-    try:
-        resp = requests.get(
-            f"{_BASE}/resumo",
-            headers={"Content-Type": "application/json", "Authorization": token},
-            params={"summary": "true", "wallet": "true", "multiwallet": "false", "notifications": "false"},
-            timeout=60,
+    with mc.single_flight(key):
+        cached = mc.get_df(key)
+        if cached is not None:
+            return cached
+        payload = _get(
+            "/resumo", token,
+            {"summary": "true", "wallet": "true", "multiwallet": "false", "notifications": "false"},
         )
-        resp.raise_for_status()
-        payload = resp.json()
-    except Exception as exc:  # noqa: BLE001
-        raise DLPError(f"DLP /resumo: {exc}") from exc
-
-    if not payload:
-        return None
-    mc.set_df(key, payload, ttl=mc.TTL_DLP)
-    return payload
+        if not payload:
+            return None
+        mc.set_df(key, payload, ttl=mc.TTL_DLP)
+        return payload

@@ -9,6 +9,8 @@ from __future__ import annotations
 import io
 import json
 import logging
+import time
+from contextlib import contextmanager
 
 import pandas as pd
 from django.core.cache import cache
@@ -65,3 +67,35 @@ def get_df(key: str):
             return frame.iloc[:, 0]
         return frame
     return raw
+
+
+@contextmanager
+def single_flight(key: str, timeout: float = 90, poll: float = 0.1):
+    """Serializa quem calcula/busca o mesmo `key` (lock via cache.add, atômico).
+
+    Quem não obtém o lock espera até obtê-lo ou estourar `timeout`; neste caso
+    segue sem o lock (com warning) e não libera um lock que não é seu.
+    """
+    lock_key = key + ":lock"
+    acquired = False
+    deadline = time.monotonic() + timeout
+    while True:
+        try:
+            acquired = bool(cache.add(lock_key, 1, timeout))
+        except Exception as exc:  # cache é otimização — segue sem lock
+            logger.warning("single_flight add falhou para %s: %s", lock_key, exc)
+            break
+        if acquired:
+            break
+        if time.monotonic() >= deadline:
+            logger.warning("single_flight estourou %.1fs para %s; seguindo sem lock", timeout, key)
+            break
+        time.sleep(poll)
+    try:
+        yield
+    finally:
+        if acquired:
+            try:
+                cache.delete(lock_key)
+            except Exception as exc:
+                logger.warning("single_flight delete falhou para %s: %s", lock_key, exc)

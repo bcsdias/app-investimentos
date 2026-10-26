@@ -22,3 +22,11 @@ class FetchError(Exception):
 
 class DLPError(Exception):
     """Falha na API DLP (por-usuário)."""
+
+
+class DLPAuthError(DLPError):
+    """Token DLP rejeitado (HTTP 401/403)."""
+
+
+class DLPUnavailableError(DLPError):
+    """DLP indisponível: timeout, rede, 5xx ou resposta inválida."""
