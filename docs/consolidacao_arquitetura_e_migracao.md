@@ -148,7 +148,7 @@ benchmarks de mercado e avaliação de risco financeiro.
 - **Sem Dockerfiles do app** nem compose final/nginx único — o backend roda no host (Fase 5).
   Só os containers de **infra** (`lab-postgres`, `lab-redis`) existem.
 - **Dados ainda no legado**: os tokens continuam no Supabase (a migração `user_tokens` → `UserToken` ocorre na fase correspondente); o cache já está integrado no `lab-redis`.
-- `.devcontainer/devcontainer.json` aponta para `app/web_app_v2.py` (**caminho stale**, não existe mais).
+- ~~`.devcontainer/devcontainer.json` aponta para `app/web_app_v2.py` (**caminho stale**, não existe mais).~~ **Removido em 2026-10-26**: template Codespaces do app Streamlit (Python 3.11), incompatível com o fluxo atual (backend no host, Python 3.12; Docker só para `lab-postgres`/`lab-redis`).
 
 ### 2.3. Dívida técnica / lixo a resolver **durante** a migração (não carregar adiante)
 
