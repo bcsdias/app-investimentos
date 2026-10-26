@@ -54,3 +54,10 @@ def test_real_file_meta_is_meta_platforms():
         assert assets.load_universe()["META"].nome == "META PLATFORMS INC."
     finally:
         assets.load_universe.cache_clear()
+
+
+def test_lookup_prefers_br_then_exchange_rank(assets_csv):
+    assert assets.lookup("GDX").yf_ticker == "GDX"  # NYSEARCA (rank 1) vence LON (rank 2)
+    assert assets.lookup("GDX", "LON:GDX").yf_ticker == "GDX.L"
+    assert assets.lookup("PETR4").yf_ticker == "PETR4.SA"
+    assert assets.lookup("NADA") is None

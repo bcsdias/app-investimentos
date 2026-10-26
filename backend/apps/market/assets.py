@@ -33,6 +33,7 @@ class Asset:
     classe: str
     mercado: str  # "BR" | "INTL"
     yf_ticker: str
+    exchange_rank: int = _DEFAULT_EXCHANGE_RANK
 
     @property
     def brl_variant(self) -> bool:
@@ -69,7 +70,7 @@ def load_universe() -> dict[str, Asset]:
             rank = _EXCHANGE_RANK.get(market_cod.split(":", 1)[0].upper(), _DEFAULT_EXCHANGE_RANK)
             if yf in universe and rank >= ranks[yf]:
                 continue
-            universe[yf] = Asset(sigla, (row.get("razao_social") or "").strip(), classe, mercado, yf)
+            universe[yf] = Asset(sigla, (row.get("razao_social") or "").strip(), classe, mercado, yf, rank)
             ranks[yf] = rank
     return universe
 
@@ -84,6 +85,20 @@ def resolve(name: str) -> SeriesDef | None:
         if asset is not None and asset.brl_variant:
             return SeriesDef(name, None, None, "level", derivation=ToBRL(base))
     return None
+
+
+def lookup(sigla: str, market_cod: str | None = None) -> Asset | None:
+    """Ativo de uma sigla (formato DLP). Com market_cod, a bolsa exata; senão BR primeiro, depois bolsa."""
+    universe = load_universe()
+    if market_cod:
+        hit = universe.get(_yf_ticker(sigla, market_cod))
+        if hit is not None:
+            return hit
+    target = sigla.strip().upper()
+    matches = [a for a in universe.values() if a.sigla.upper() == target]
+    if not matches:
+        return None
+    return min(matches, key=lambda a: (a.mercado != "BR", a.exchange_rank))
 
 
 def search(q: str, limit: int = 20) -> list[Asset]:
