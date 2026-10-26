@@ -130,3 +130,29 @@ class PortfolioFiltersOut(Schema):
     ativos: list[str]
     classes: list[str]
 
+
+class BenchmarkGroupOut(Schema):
+    name: str
+    items: list[str]
+
+
+class SyntheticCatalogOut(Schema):
+    bases: list[str]
+    operadores: list[str]
+
+
+class BenchmarkCatalogOut(Schema):
+    groups: list[BenchmarkGroupOut]
+    defaults: list[str]
+    synthetic: SyntheticCatalogOut
+
+
+class AssetSearchOut(Schema):
+    sigla: str
+    nome: str
+    classe: str
+    mercado: str
+    yf_ticker: str
+    brl_variant: bool
+
+
