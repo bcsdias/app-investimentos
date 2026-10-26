@@ -36,3 +36,26 @@ def fake_series(monkeypatch, migration_assets_csv):
     fake.calls = []
     monkeypatch.setattr("apps.migration_ir.prices.series.get_series", fake)
     return fake
+
+
+@pytest.fixture
+def resumos(monkeypatch):
+    from apps.migration_ir.tests.fixtures import ANA_RESUMO, RESUMO
+
+    by_token = {"tok-teste": RESUMO, "tok-ana": ANA_RESUMO}
+    monkeypatch.setattr("apps.migration_ir.api.dlp.buscar_resumo_carteira", lambda tok: by_token.get(tok))
+    return by_token
+
+
+@pytest.fixture
+def client_resumo(user_with_token_client, resumos, fake_series):
+    return user_with_token_client
+
+
+@pytest.fixture
+def plan_envelope(client_resumo):
+    from apps.migration_ir.tests.fixtures import PLAN_BODY
+
+    r = client_resumo.post("/api/v1/migration/plan", PLAN_BODY, content_type="application/json")
+    assert r.status_code == 200
+    return r.json()

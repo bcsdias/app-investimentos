@@ -1,30 +1,13 @@
+import re
+
 import pytest
 from django.test import Client
 
 from apps.core.models import UserToken
 from apps.market.services.sources.base import DLPAuthError, DLPUnavailableError
-from apps.migration_ir.tests.fixtures import RESUMO
+from apps.migration_ir.tests.fixtures import PLAN_BODY
 
 M = "/api/v1/migration"
-PLAN_BODY = {
-    "targets": [{"ticker": "IMAB11", "weight": 60}, {"ticker": "VWRA11", "weight": 35}, {"ticker": "BITH11", "weight": 5}],
-    "holdings": [{"ativo": "PETR4", "action": "sell"}, {"ativo": "HGLG11", "action": "sell"},
-                 {"ativo": "CDB-XP-2027", "action": "count_as", "target": "IMAB11", "saldo": 12850.0}],
-}
-ANA_RESUMO = {"wallet": [{"ativo": "VALE3", "classe": "ACAO", "qtd": 10, "price_fx": 60.0, "pm_fx": 50.0,
-                          "vlr_investido": 500.0, "market_cod": "BVMF:VALE3", "moeda": "BRL"}]}
-
-
-@pytest.fixture
-def resumos(monkeypatch):
-    by_token = {"tok-teste": RESUMO, "tok-ana": ANA_RESUMO}
-    monkeypatch.setattr("apps.migration_ir.api.dlp.buscar_resumo_carteira", lambda tok: by_token.get(tok))
-    return by_token
-
-
-@pytest.fixture
-def client_resumo(user_with_token_client, resumos, fake_series):
-    return user_with_token_client
 
 
 def post(c, path, body):
@@ -118,3 +101,15 @@ def test_users_are_isolated(user_with_token_client, other_user, resumos):
     ana.force_login(other_user)
     assert [i["ativo"] for i in ana.get(f"{M}/wallet").json()["data"]] == ["VALE3"]
     assert "VALE3" not in [i["ativo"] for i in user_with_token_client.get(f"{M}/wallet").json()["data"]]
+
+
+def test_plan_pdf_endpoint(client_resumo):
+    r = post(client_resumo, "plan.pdf", PLAN_BODY)
+    assert r.status_code == 200 and r["Content-Type"] == "application/pdf"
+    assert re.fullmatch(r'attachment; filename="plano_migracao_ir_\d{8}\.pdf"', r["Content-Disposition"])
+    assert r.content.startswith(b"%PDF")
+
+
+def test_plan_pdf_errors_are_json(client_resumo):
+    r = post(client_resumo, "plan.pdf", {**PLAN_BODY, "monthly_cap": 0})
+    assert r.status_code == 422 and r.json()["code"] == "invalid_parameters"

@@ -3,24 +3,21 @@ from __future__ import annotations
 
 import contextlib
 
-from django.http import HttpRequest
+from django.http import HttpRequest, HttpResponse
+from django.utils import timezone
 from ninja import Router
 
 from apps.api.analysis import dlp_errors, get_token
 from apps.api.errors import ApiError
 from apps.market.services.sources import dlp
+from apps.migration_ir.pdf import render_plan_pdf
 from apps.migration_ir.planner import Action, PlanError, build_plan, validate_plan_input
 from apps.migration_ir.prices import resolve_target_prices
 from apps.migration_ir.schemas import PlanOut, PlanRequest, WalletOut
-from apps.migration_ir.tax import tax_treatment
+from apps.migration_ir.tax import DISCLAIMER, tax_treatment
 from apps.migration_ir.wallet import Holding, normalize_wallet
 
 router = Router(tags=["migration"])
-
-DISCLAIMER = (
-    "Valores de IR são estimativas (sem taxas, sem compensação de prejuízos). "
-    "Confira a apuração oficial na DLP."
-)
 
 
 @contextlib.contextmanager
@@ -92,3 +89,12 @@ def wallet(request: HttpRequest):
 @router.post("/plan", response=PlanOut)
 def plan(request: HttpRequest, payload: PlanRequest):
     return compute_plan(request.user, payload)
+
+
+@router.post("/plan.pdf")
+def plan_pdf(request: HttpRequest, payload: PlanRequest):
+    envelope = compute_plan(request.user, payload)
+    now = timezone.localtime()
+    resp = HttpResponse(render_plan_pdf(envelope, payload, generated_at=now), content_type="application/pdf")
+    resp["Content-Disposition"] = f'attachment; filename="plano_migracao_ir_{now:%Y%m%d}.pdf"'
+    return resp

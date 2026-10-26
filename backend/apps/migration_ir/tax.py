@@ -11,6 +11,11 @@ TaxTreatment = Literal["exempt_20k", "taxed", "not_estimated"]
 EXEMPTION_LIMIT = 20_000.0  # R$ de venda de ações por mês
 ACAO_OVER_LIMIT_RATE = 0.15
 
+DISCLAIMER = (
+    "Valores de IR são estimativas (sem taxas, sem compensação de prejuízos). "
+    "Confira a apuração oficial na DLP."
+)
+
 # classe -> (tratamento, alíquota sobre o lucro). Ausente da tabela = not_estimated.
 _TABLE: dict[str, tuple[TaxTreatment, float | None]] = {
     "ACAO": ("exempt_20k", None),
