@@ -99,27 +99,28 @@ benchmarks de mercado e avaliação de risco financeiro.
 > o **estado real do repositório hoje**, na branch `migracao-django` (publicada em
 > `origin/migracao-django`; `main` e `dev` intactas).
 >
-> **Fases 0 + 1 concluídas em 2026-08-28; Fases 2 + 2.5 em 2026-08-31** — ver §2.0. As
+> **Fases 0 + 1 concluídas em 2026-08-28; Fases 2 + 2.5 em 2026-08-31; Fase 3 em 2026-10-26** — ver §2.0. As
 > decisões travadas estão em [`adr/`](adr/README.md); a orientação de trabalho no backend em
 > [`../backend/CLAUDE.md`](../backend/CLAUDE.md).
 
-### 2.0. Já implementado — Fases 0 + 1 (2026-08-28) e Fases 2 + 2.5 (2026-08-31)
+### 2.0. Já implementado — Fases 0 + 1 (2026-08-28), Fases 2 + 2.5 (2026-08-31) e Fase 3 (2026-10-26)
 
 | Camada | Local | Situação |
 |---|---|---|
 | **Infra LAB** | `/data/projetos/lab-postgres/`, `/data/projetos/lab-redis/` (fora do repo) | `lab-postgres` + `lab-redis` compartilhados, *healthy*, na rede externa `lab-net`. `lab-nginx` de teste removido. [ADR 0001](adr/0001-infra-lab-compartilhada.md). |
 | **Database do app** | `lab-postgres` → database + role `appinvest` (`CREATEDB`) | Criado por `backend/scripts/bootstrap_db.sh` (idempotente, versionado). Nenhuma tabela do app no `banco_lab`. [ADR 0006](adr/0006-prefixo-lab-containers-appinvest-codigo.md). |
-| **Projeto Django** | `backend/config/` | `settings.py` dual host/container: DB `appinvest`, cache `django-redis`, Fernet, logging stdout ([ADR 0008](adr/0008-logging-stdout-apenas.md)), TZ `America/Sao_Paulo`. `urls.py` só `/admin/` + stub `/api/` ([ADR 0009](adr/0009-django-ninja-stub-desde-fase-1.md)). |
-| **Usuário** | `backend/apps/accounts/` | `User(AbstractUser)` customizado; `AUTH_USER_MODEL = "accounts.User"`. [ADR 0002](adr/0002-modelo-user-customizado-dia-1.md). |
+| **Projeto Django** | `backend/config/` | `settings.py` dual host/container: DB `appinvest`, cache `django-redis`, Fernet, logging stdout ([ADR 0008](adr/0008-logging-stdout-apenas.md)), TZ `America/Sao_Paulo`. `urls.py` expõe `/admin/` e `/api/v1/` (`config/api.py`, Swagger em `/api/v1/docs`). |
+| **Usuário** | `backend/apps/accounts/` | `User(AbstractUser)` customizado; `AUTH_USER_MODEL = "accounts.User"`. Endpoints de sessão `/api/v1/auth/{csrf,login,logout,me}` em `apps/accounts/api.py`. [ADR 0002](adr/0002-modelo-user-customizado-dia-1.md). |
 | **Cripto** | `backend/apps/core/security.py` | `encrypt()` / `decrypt()` Fernet sobre `settings.FERNET_KEY` — **mesma chave do app legado**, compat. testada nos dois sentidos. [ADR 0003](adr/0003-reuso-da-chave-fernet-do-legado.md). |
 | **Modelos** | `backend/apps/core/models.py` | `UserToken` (OneToOne, token cifrado em repouso, `set_token`/`get_token`) e `MarketSeries` (`UniqueConstraint(series_key, reference_date)`). Migration `core.0001`. [ADR 0007](adr/0007-modelagem-usertoken-marketseries.md). |
 | **Admin** | `backend/apps/core/admin.py` | `UserToken` sem "add", `encrypted_token` read-only; `MarketSeries` com filtro por `source` e navegação por data. |
-| **Testes** | `backend/{apps,engine}/*/tests/` + `backend/pytest.ini` | `pytest-django`, `--reuse-db`, marker `integration` desmarcado por padrão. Base Fases 0+1: 15 testes (usuário, security, modelos, smoke). **Total atual: 125** (Fase 2 ~65, Fase 2.5 ~30, + correções de revisão). |
+| **Testes** | `backend/{apps,engine}/*/tests/` + `backend/pytest.ini` | `pytest-django`, `--reuse-db`, marker `integration` desmarcado por padrão. **Total atual: 238 testes unitários/contrato (+ 3 `integration`)** verdes. |
 | **Scripts** | `backend/scripts/` | `bootstrap_db.sh` (cria role/database) e `rotate_db_password.sh` (rotaciona a senha). |
-| **Docs** | `backend/README.md`, `backend/CLAUDE.md`, `docs/adr/` | Setup/rodar, convenções do agente, e ADRs. |
-| **Serviços de Mercado (Fase 2)** | `backend/apps/market/` | App `apps.market`: `services/sources/{base,bcb,ptax,yahoo,tesouro,b3,dlp}.py`, `repository.py` (acesso exclusivo a `core.MarketSeries`), `cache.py` (envelope pandas sobre `django-redis`), `catalog.py` (`SeriesDef`), `synthetics.py` (`SyntheticSpec` + parser legado), `transforms.py` (derivações puras), `series.py` (fachada de leitura). Migration `core.0002` (`kind`), comandos `ingest_market_data` / `backfill_market_data`. [ADR 0011](adr/0011-marketseries-valor-cru-kind.md). |
+| **Docs** | `backend/README.md`, `backend/CLAUDE.md`, `docs/adr/` | Setup/rodar, convenções do agente, e ADRs 0001–0014. |
+| **Serviços de Mercado (Fase 2 + Fase 3)** | `backend/apps/market/` | App `apps.market`: `services/sources/{base,bcb,ptax,yahoo,tesouro,b3,dlp}.py` (erros DLP tipados `DLPAuthError`/`DLPUnavailableError`, invalidação por geração e single-flight via `cache.add`), `repository.py`, `cache.py` (`single_flight`), `catalog.py` (`SeriesDef`), `assets.py` + `data/ativos.csv` (universo de ~7.500 tickers + variante BRL), `synthetics.py` (`SyntheticSpec` + `display_name`), `transforms.py`, `series.py` (catálogo + fetch-on-read de tickers sob demanda). Migration `core.0002` (`kind`), comandos `ingest_market_data` (inclui tickers sob demanda) / `backfill_market_data`. [ADR 0011](adr/0011-marketseries-valor-cru-kind.md), [ADR 0014](adr/0014-tickers-sob-demanda.md). |
 | **Engine de Cálculo (Fase 2.5)** | `backend/engine/` | Pacote puro `engine` (irmão de `apps/`, sem `models.py`): `twr.py` / `irr.py` cópia literal de `src/engine/`; `metrics.py` idem + `pct_change(fill_method=None)`; `compute.py` (7 funções puras extraídas dos `plot_*`); `dataset.py` (`fetch_user_portfolio` + `build_dataset`, consome `apps.market.series`); `report_legacy.py` (export CLI Matplotlib, nunca importado pela API). Bug `self.logger` corrigido. `pytest.ini` → `testpaths = apps engine`. [ADR 0012](adr/0012-engine-copia-literal-fase-2-5.md). |
-| **Correções de revisão (Fases 2 / 2.5)** | `backend/apps/market/`, `backend/engine/` | Revisão pós-implementação (`code-review` + manual, 2026-08-31): 6 defeitos corrigidos com TDD — ver §2.3. **125 testes verdes** no total (`.venv/bin/pytest -q`), `manage.py check` limpo, sem migrations pendentes. |
+| **Correções de revisão (Fases 2 / 2.5)** | `backend/apps/market/`, `backend/engine/` | Revisão pós-implementação (`code-review` + manual, 2026-08-31): 6 defeitos corrigidos com TDD — ver §2.3. |
+| **API da Carteira (Fase 3)** | `backend/config/api.py`, `backend/apps/api/`, `backend/apps/accounts/api.py` | `NinjaAPI` em `/api/v1/` (Swagger em `/api/v1/docs`), `ApiSessionAuth` (sessão + CSRF no envelope `ApiError`), `/auth/{csrf,login,logout,me}`, `/dlp/{token,token-status}`, `/portfolio/{filters,refresh,summary,twr-evolution,drawdown,rolling-metrics,risk-return,shadow,yearly-summary,irr-evolution}`, `/benchmarks/catalog`, `/assets/search`. Integração ao vivo validada contra DLP (HTTP 401/403 em token inválido → `422 dlp_token_rejected`) e Yahoo Finance (`AAPL` sob demanda). **238 testes verdes** (`.venv/bin/pytest -q`), `manage.py check` limpo, sem migrations pendentes. [ADR 0013](adr/0013-contrato-da-api-v1.md), [ADR 0014](adr/0014-tickers-sob-demanda.md). |
 
 > Driver Postgres: `psycopg[binary]` 3.x ([ADR 0004](adr/0004-psycopg-binary-3.md)). Sem
 > `django-cors-headers` ([ADR 0005](adr/0005-sem-django-cors-headers.md)). Env via
@@ -143,7 +144,7 @@ benchmarks de mercado e avaliação de risco financeiro.
 
 ### 2.2. O que **não** existe ainda
 
-- **Sem API HTTP**: `django-ninja` está instalado mas é só stub em `config/urls.py` (Fase 3).
+- **Sem endpoints do Planejador de IR (`apps/migration_ir/`)**: separados na **Fase 3b** (spec própria).
 - **Sem `frontend/`, sem `package.json`** — zero JS/Node no repositório (Fase 4).
 - **Sem Dockerfiles do app** nem compose final/nginx único — o backend roda no host (Fase 5).
   Só os containers de **infra** (`lab-postgres`, `lab-redis`) existem.
@@ -161,8 +162,9 @@ benchmarks de mercado e avaliação de risco financeiro.
   4. `ingest_market_data`: `upsert_points` movido para dentro do `try` (um `DatabaseError` numa série não aborta mais o lote); `_warm_cache` usa `hoje - 5*365 dias` em vez de `date.replace(year=…)`, que levantava `ValueError` em 29/fev.
   5. `engine/compute.compute_risk_return`: série de volatilidade zero (benchmark achatado por `ffill`) dava Sharpe `±inf` que o `.dropna()` não removia — agora a linha cai da tabela.
   6. Homóglifo cirílico (`о`) numa string de log de `backfill_market_data.py`.
-- **Pendências de baixo impacto assumidas de propósito** (candidatas a limpeza futura, não bloqueiam a Fase 3):
-  - `apps.market.cache.make_key` não sanitiza a chave: nomes com espaço/`&`/`/` (`"S&P 500"`) geram `CacheKeyWarning`. Tolerado pelo Redis (`django-redis`); quebraria com memcached.
+- **Pendências de baixo impacto assumidas de propósito** (candidatas a limpeza futura, não bloqueiam as próximas fases):
+  - `apps.market.cache.make_key` não sanitiza a chave: nomes com espaço/`&`/`/` (`"S&P 500"`, `"AAPL BRL"`) geram `CacheKeyWarning`. Tolerado pelo Redis (`django-redis`); quebraria com memcached.
+  - Ativos de Londres (`.L`) na variante `"BRL"` são convertidos pela PTAX USD/BRL (igual ao legado, para preservar paridade na Fase 6); corrigir câmbio GBP/GBp pós-Fase 6 ([ADR 0014](adr/0014-tickers-sob-demanda.md)).
   - `CATALOGO_TD` **vazio de propósito** — `services/sources/tesouro.py` + ramos `td:` de `catalog`/`backfill` são caminho dormente, testados só com fixture. Renda fixa hoje é modelada pelos índices ANBIMA (IMA-B/IRF-M/IMA-S via BCB SGS + emenda com ETF), não por PU de título individual.
   - `test_sources_b3.py::test_fetch_b3_selenium_*` fica verde porque `ChromeDriverManager().install()` falha antes do mock — cobre o `raise FetchError`, mas pelo motivo errado.
   - Alguns testes de `engine/tests/test_dataset.py` usam `@pytest.mark.django_db` sem tocar o banco (monkeypatch total).
@@ -313,11 +315,10 @@ flowchart TD
 > (Streamlit) permanece durante a transição para **validação de paridade** (§Fase 6) e é
 > removido apenas ao final.
 >
-> **Nota:** os blocos `apps/market/` e `engine/` abaixo refletem o que foi **efetivamente
-> construído** nas Fases 2 / 2.5 (o layout divergiu do esboço original — `services/sources/*`
-> em vez de `services/*`, sem `benchmarks.py`, com `series.py` + `transforms.py` + `repository.py`).
-> `apps/api/`, `apps/accounts/api.py`, `apps/migration_ir/` e `frontend/` seguem sendo **alvo**
-> das Fases 3–4. Estrutura viva e detalhada do backend em [`../backend/README.md`](../backend/README.md).
+> **Nota:** os blocos `config/`, `apps/accounts/`, `apps/market/`, `apps/api/` e `engine/` abaixo refletem o que foi **efetivamente
+> construído** nas Fases 1, 2, 2.5 e 3.
+> `apps/migration_ir/` (Fase 3b) e `frontend/` (Fase 4) seguem sendo **alvo**.
+> Estrutura viva e detalhada do backend em [`../backend/README.md`](../backend/README.md).
 
 ```
 /data/projetos/app-investimentos/
@@ -331,8 +332,9 @@ flowchart TD
 │   ├── manage.py
 │   │
 │   ├── config/
+│   │   ├── api.py                        # NinjaAPI (/api/v1/, docs em /api/v1/docs) + handler ApiError
 │   │   ├── settings.py                   # Postgres, Redis (django-redis), sessão/CSRF, FERNET_KEY (REUSAR a atual)
-│   │   ├── urls.py                       # /api/, /admin/
+│   │   ├── urls.py                       # /api/v1/, /admin/
 │   │   ├── wsgi.py
 │   │   └── asgi.py
 │   │
@@ -343,40 +345,44 @@ flowchart TD
 │   │   │   └── security.py               # wrapper Fernet (porta de src/data/user_store.py)
 │   │   │
 │   │   ├── accounts/
-│   │   │   ├── api.py                    # login/logout/whoami
+│   │   │   ├── api.py                    # /api/v1/auth/{csrf,login,logout,me}
 │   │   │   └── migrations/
-│   │   │       └── 0002_import_supabase_tokens.py   # data migration (ver §7.2)
+│   │   │       └── 0002_import_supabase_tokens.py   # data migration (Fase 5 — ver §7.2)
 │   │   │
-│   │   ├── api/
-│   │   │   ├── router.py                 # rotas /api/v1/...
-│   │   │   ├── schemas.py                # schemas Pydantic in/out
-│   │   │   └── serializers.py            # pd.Series/DataFrame -> JSON (porta do envelope de cache.py)
-│   │   │
-│   │   ├── market/                       # [FASE 2] serviços de mercado
+│   │   ├── market/                       # [FASES 2 + 3] serviços de mercado e universo de tickers
 │   │   │   ├── services/sources/         # cada fonte fala só com a origem externa; levanta FetchError
-│   │   │   │   ├── base.py               # RawPoint, FetchError, DLPError
+│   │   │   │   ├── base.py               # RawPoint, FetchError, DLPError, DLPAuthError, DLPUnavailableError
 │   │   │   │   ├── bcb.py                # SGS (chunking de 5 anos, valor cru)
 │   │   │   │   ├── ptax.py               # PTAX venda via Olinda
 │   │   │   │   ├── yahoo.py              # yf.download (Close ajustado); vazio -> FetchError
 │   │   │   │   ├── tesouro.py            # PU Base Manhã (caminho dormente — CATALOGO_TD vazio)
 │   │   │   │   ├── b3.py                 # read_b3_static (host) + fetch_b3_selenium (só ingestão)
-│   │   │   │   └── dlp.py                # buscar_historico / buscar_resumo_carteira (ao vivo, por-usuário)
+│   │   │   │   └── dlp.py                # buscar_historico / buscar_resumo_carteira (geração + single-flight)
+│   │   │   ├── data/ativos.csv           # cópia empacotada do universo (~7.500 linhas)
+│   │   │   ├── assets.py                 # universo de tickers Yahoo + variante BRL + search()
 │   │   │   ├── repository.py             # único acesso a core.MarketSeries (upsert em lote + dedup, load_series)
-│   │   │   ├── cache.py                  # envelope pandas sobre django-redis (falha loga e engole)
+│   │   │   ├── cache.py                  # envelope pandas sobre django-redis + single_flight
 │   │   │   ├── catalog.py                # SeriesDef em Python puro (cruas + derivadas) + DEFAULT_BENCHMARKS
-│   │   │   ├── synthetics.py             # SyntheticSpec{base,operador,valor} + parse_legacy_string
+│   │   │   ├── synthetics.py             # SyntheticSpec{base,operador,valor} + display_name + parse_legacy_string
 │   │   │   ├── transforms.py             # derivações puras: accumulate, splice_proxy, to_brl, synthetic_from_spec, composite, rebase_100
-│   │   │   ├── series.py                 # fachada de leitura: Redis -> repository + transforms (catálogo) -> Redis
+│   │   │   ├── series.py                 # fachada de leitura: Redis -> repository + transforms (catálogo + fetch-on-read) -> Redis
 │   │   │   └── management/commands/
-│   │   │       ├── ingest_market_data.py   # ingestão incremental ao vivo -> MarketSeries + aquece cache
+│   │   │       ├── ingest_market_data.py   # ingestão incremental ao vivo (catálogo + tickers sob demanda)
 │   │   │       └── backfill_market_data.py # bootstrap offline dos CSVs do repo legado (descartável)
 │   │   │
-│   │   ├── api/                          # [FASE 3 — alvo]
-│   │   │   ├── router.py                 # rotas /api/v1/...
-│   │   │   ├── schemas.py                # schemas Pydantic in/out
-│   │   │   └── serializers.py            # pd.Series/DataFrame -> JSON (porta do envelope de cache.py)
+│   │   ├── api/                          # [FASE 3] API da Carteira (Django Ninja)
+│   │   │   ├── errors.py                 # ApiError(status, code, message, details)
+│   │   │   ├── csrf.py                   # ApiSessionAuth (CSRF devolvendo ApiError 403)
+│   │   │   ├── schemas.py                # schemas Ninja (request/response)
+│   │   │   ├── serializers.py            # pd.Series/DataFrame -> JSON no formato do ECharts
+│   │   │   ├── analysis.py               # validate_request, get_token, dlp_errors, run_analysis
+│   │   │   └── routers/
+│   │   │       ├── dlp.py                # POST/DELETE /dlp/token, GET /dlp/token-status
+│   │   │       ├── portfolio.py          # filters, refresh, summary + 7 endpoints de gráfico
+│   │   │       ├── benchmarks.py         # GET /benchmarks/catalog
+│   │   │       └── assets.py             # GET /assets/search
 │   │   │
-│   │   └── migration_ir/                 # [FASE 3 — alvo] Planejador de Isenção de IR
+│   │   └── migration_ir/                 # [FASE 3b — alvo] Planejador de Isenção de IR
 │   │       ├── services.py               # calcular_compras_rebalanceadas, obter_preco_atual
 │   │       ├── pdf.py                    # gerar_pdf_plano (fpdf2) — porta de 3_migracao_ir.py
 │   │       └── api.py                    # endpoints do planejador
@@ -470,28 +476,23 @@ flowchart TD
 4. Adaptar `fetch_user_portfolio` / `build_dataset` para consumir `MarketSeries`/serviços novos.
 5. Testes unitários das novas `compute_*` (reaproveitar fixtures de `tests/`).
 
-### Fase 3 — Endpoints da API (Django Ninja)
-1. `apps/accounts/api.py`: `POST /api/v1/auth/login`, `POST /api/v1/auth/logout`, `GET /api/v1/auth/me`.
-2. `apps/api/router.py`:
-   - `POST /api/v1/dlp/token` — salvar/criptografar token DLP do usuário logado.
-   - `GET  /api/v1/dlp/token-status` — se o usuário tem token configurado.
-   - `GET  /api/v1/portfolio/summary` — KPIs (patrimônio, TWR, CAGR, Sharpe, Volatilidade).
-   - `GET  /api/v1/portfolio/twr-evolution` — séries base 100 para ECharts.
-   - `GET  /api/v1/portfolio/drawdown`
-   - `GET  /api/v1/portfolio/rolling-metrics` — volatilidade e Sharpe móveis.
-   - `GET  /api/v1/portfolio/shadow-simulation`
-   - `GET  /api/v1/portfolio/yearly-summary`
-   - `GET  /api/v1/portfolio/irr-evolution`
-   - `GET  /api/v1/benchmarks/catalog`
-3. `apps/migration_ir/api.py` (**planejador de IR**):
+### Fase 3 — API da Carteira (Django Ninja)
+1. `apps/accounts/api.py`: `GET /api/v1/auth/csrf`, `POST /api/v1/auth/login`, `POST /api/v1/auth/logout`, `GET /api/v1/auth/me`.
+2. `apps/api/routers/{dlp,portfolio,benchmarks,assets}.py` + `analysis.py` + `serializers.py`:
+   - `POST /api/v1/dlp/token`, `DELETE /api/v1/dlp/token`, `GET /api/v1/dlp/token-status`.
+   - `GET  /api/v1/portfolio/filters` e `POST /api/v1/portfolio/refresh`.
+   - `POST /api/v1/portfolio/{summary,twr-evolution,drawdown,rolling-metrics,risk-return,shadow,yearly-summary,irr-evolution}` (corpo `AnalysisRequest` / `RollingRequest`, envelope `{data, meta}`).
+   - `GET  /api/v1/benchmarks/catalog` e `GET /api/v1/assets/search`.
+3. `apps/market/assets.py` + `series.py`: universo de tickers do `ativos.csv`, variante `"BRL"`, fetch-on-read no Yahoo e atualização no `ingest_market_data`.
+4. Validar no Swagger (`/api/v1/docs`).
+
+### Fase 3b — Planejador de Migração de IR (`apps/migration_ir/`)
+1. `apps/migration_ir/api.py`:
    - `GET  /api/v1/migration/wallet` — carteira atual (via `/resumo` da DLP).
    - `POST /api/v1/migration/plan` — recebe alocação-alvo, retorna plano de compras mensais
      (respeitando o limite de R$ 20.000/mês).
    - `POST /api/v1/migration/plan.pdf` — mesmo cálculo, retorna os **bytes do PDF** (`fpdf2`);
      o React apenas dispara o download.
-4. `apps/api/serializers.py`: conversão `pd.Series`/`DataFrame` → JSON (o retorno de
-   `processar_benchmarks` é `dict[str, pd.Series]`, **não** serializável direto).
-5. Validar tudo no Swagger (`/api/docs`).
 
 ### Fase 4 — Frontend React SPA (maior bloco)
 1. Bootstrap: `package.json`, `vite.config.js` (proxy `/api` → backend em dev),
@@ -657,9 +658,10 @@ python scripts/parity_check.py --token <TOKEN> --start 2020-01-01 --end 2024-12-
 2. [x] **Fase 1** — Django + `settings.py` (Fernet reusada) + `UserToken`/`MarketSeries` + Admin.
 3. [x] **Fase 2** — quebrar `market_data.py` em `apps/market/services/`; portar cache; `ingest_market_data` + `backfill_market_data`.
 4. [x] **Fase 2.5** — `engine/compute.py` (extrair dos `plot_*`); `report_legacy.py`; corrigir `self.logger`.
-5. [ ] **Fase 3** — endpoints Ninja (auth, portfolio, benchmarks, migration_ir + PDF); Swagger.
-6. [ ] **Fase 4** — SPA React (auth, filtros, 5 gráficos ECharts, tabela anual, planejador de IR).
-7. [ ] **Fase 5** — Dockerfiles (backend / ingestion-com-Chrome / frontend), compose final, nginx único.
-8. [ ] **Migração de dados** — import dos tokens do Supabase; `ingest_market_data` inicial.
-9. [ ] **Fase 6** — validação de paridade; só então remover `src/` e libs legadas.
-10. [ ] Decidir prefixo `lab-` / merge de `migracao-django` (§7.3).
+5. [x] **Fase 3** — endpoints Ninja da carteira (auth, token DLP, 8 análises + filters/refresh, benchmarks, busca e fetch-on-read de tickers); Swagger em `/api/v1/docs`.
+6. [ ] **Fase 3b** — Planejador de Isenção de IR (`/migration/*` + PDF `fpdf2`).
+7. [ ] **Fase 4** — SPA React (auth, filtros, gráficos ECharts, tabela anual, planejador de IR).
+8. [ ] **Fase 5** — Dockerfiles (backend / ingestion-com-Chrome / frontend), compose final, nginx único.
+9. [ ] **Migração de dados** — import dos tokens do Supabase; `ingest_market_data` inicial.
+10. [ ] **Fase 6** — validação de paridade; só então remover `src/` e libs legadas.
+11. [ ] Decidir prefixo `lab-` / merge de `migracao-django` (§7.3).

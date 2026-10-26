@@ -51,4 +51,6 @@ Cada fase do roteiro do documento mestre passa por: **design** (`superpowers/spe
 Fases **0 + 1** (infra LAB + esqueleto do backend Django) concluídas em 2026-08-28.
 Fases **2 + 2.5** (serviços de mercado `apps/market/` + engine puro `backend/engine/`)
 concluídas em 2026-08-31, com correções de revisão aplicadas na sequência.
-Próximo incremento: **Fase 3** — endpoints da API (Django Ninja).
+**Fase 3** (API da Carteira em Django Ninja — auth, token DLP, 8 análises + filters/refresh, catálogo de benchmarks, busca e fetch-on-read de tickers) concluída em 2026-10-26.
+Próximo incremento: **Fase 3b** (Planejador de IR `/migration/*` + PDF) / **Fase 4** (SPA React).
+

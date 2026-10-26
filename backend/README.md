@@ -3,11 +3,11 @@
 Backend Django da migração Streamlit → Django + React (ver [`../docs/consolidacao_arquitetura_e_migracao.md`](../docs/consolidacao_arquitetura_e_migracao.md)).
 Nesta fase roda **no host** (Python 3.12); conteinerização é a Fase 5.
 
-**Estado:** Fases 0 + 1 + 2 + 2.5 concluídas — infra LAB + esqueleto Django (`User` customizado,
+**Estado:** Fases 0 + 1 + 2 + 2.5 + 3 concluídas — infra LAB + esqueleto Django (`User` customizado,
 wrapper Fernet, modelos `UserToken` / `MarketSeries`, Admin), app `apps.market` (fontes de
-mercado, `repository`, `cache`, `catalog`, `synthetics`, `transforms`, `series`, comandos
-`ingest`/`backfill`) e o pacote puro `engine/` (`twr`/`irr`/`metrics` + `compute` + `dataset` +
-`report_legacy`). Suíte `pytest` verde. O `src/` (Streamlit legado) continua funcionando em
+mercado, `repository`, `cache`, `catalog`, `assets` + `ativos.csv`, `synthetics`, `transforms`, `series` com fetch-on-read, comandos
+`ingest`/`backfill`), pacote puro `engine/` (`twr`/`irr`/`metrics` + `compute` + `dataset` +
+`report_legacy`) e API REST JSON em `/api/v1/` (`apps.api` + `apps.accounts.api`, Swagger em `/api/v1/docs`). Suíte `pytest` verde (238 testes). O `src/` (Streamlit legado) continua funcionando em
 paralelo até a Fase 6.
 
 ---
@@ -79,9 +79,9 @@ cp .env.example .env
 ## Rodar
 
 ```bash
-.venv/bin/python manage.py runserver 0.0.0.0:8000   # Admin em /admin/
+.venv/bin/python manage.py runserver 0.0.0.0:8000   # Admin em /admin/, Swagger em /api/v1/docs
 .venv/bin/python manage.py check
-.venv/bin/pytest -q                                 # 125 testes
+.venv/bin/pytest -q                                 # 238 testes (+ 3 integration com -m integration)
 .venv/bin/python manage.py backfill_market_data      # bootstrap: semeia MarketSeries dos CSVs do repo (uma vez)
 .venv/bin/python manage.py ingest_market_data        # ingestão ao vivo (incremental); agendamento é Fase 5
 .venv/bin/python manage.py shell -c "from engine import dataset, report_legacy; ..."  # export CLI dos gráficos
@@ -94,23 +94,33 @@ cp .env.example .env
 ```
 backend/
 ├── config/                 projeto Django
+│   ├── api.py               NinjaAPI (/api/v1/, Swagger em /api/v1/docs) + handler ApiError
 │   ├── settings.py          DB appinvest, cache Redis, Fernet, logging stdout, TZ America/Sao_Paulo
-│   ├── urls.py              /admin/  (+ stub /api/ para a Fase 3)
+│   ├── urls.py              /admin/, /api/v1/
 │   └── wsgi.py / asgi.py
 ├── apps/
-│   ├── accounts/           User(AbstractUser) — AUTH_USER_MODEL (ADR 0002)
+│   ├── accounts/           User(AbstractUser) — AUTH_USER_MODEL (ADR 0002) + api.py (/auth/*)
+│   ├── api/                API da Carteira em Django Ninja (Fase 3, ADR 0013)
+│   │   ├── errors.py        ApiError(status, code, message, details)
+│   │   ├── csrf.py          ApiSessionAuth (sessão + CSRF no envelope ApiError)
+│   │   ├── schemas.py       schemas Ninja (request/response)
+│   │   ├── serializers.py   pandas -> JSON estrito no formato do ECharts
+│   │   ├── analysis.py      validate_request, get_token, dlp_errors, run_analysis
+│   │   └── routers/         dlp.py, portfolio.py, benchmarks.py, assets.py
 │   ├── core/
 │   │   ├── security.py      wrapper Fernet: encrypt() / decrypt()  (ADR 0003)
 │   │   ├── models.py        UserToken (OneToOne, cifrado em repouso) + MarketSeries (ADR 0007, ADR 0011)
 │   │   └── admin.py         UserToken sem "add", encrypted_token read-only
-│   └── market/             serviços de mercado (Fase 2)
+│   └── market/             serviços de mercado (Fases 2 + 3, ADR 0014)
 │       ├── services/sources/ clientes de mercado (BCB, PTAX, Yahoo, Tesouro, B3, DLP)
+│       ├── data/ativos.csv  universo empacotado de tickers (~7.500 linhas)
+│       ├── assets.py        resolução de tickers Yahoo + variante BRL + search()
 │       ├── repository.py    acesso exclusivo a core.MarketSeries (Postgres)
-│       ├── cache.py         envelope pandas sobre Redis (django-redis)
-│       ├── synthetics.py    contrato estruturado SyntheticSpec + parser legado
+│       ├── cache.py         envelope pandas sobre Redis (django-redis) + single_flight
+│       ├── synthetics.py    contrato estruturado SyntheticSpec + display_name + parser legado
 │       ├── transforms.py    derivações puras (accumulate, splice, to_brl, composite)
 │       ├── catalog.py       definição e resolução de séries (SeriesDef)
-│       ├── series.py        fachada de leitura (Redis -> Repo + Transforms -> Redis)
+│       ├── series.py        fachada de leitura (Redis -> Repo + Transforms + fetch-on-read -> Redis)
 │       └── management/commands/ backfill_market_data, ingest_market_data
 ├── engine/                 núcleo de cálculo puro (Fase 2.5, ADR 0012)
 │   ├── twr.py               cópia literal: cálculo TWR base 100

@@ -40,6 +40,12 @@ Instruções para agentes trabalhando neste diretório. Complementa
   e `default_auto_field = "django.db.models.BigAutoField"`.
 - `engine/` é um pacote Python puro (irmão de `apps/`), sem `models.py` e sem acoplamento a Django.
 - `tests/` como pacote dentro do app (`apps/<nome>/tests/test_*.py`) ou do pacote (`engine/tests/test_*.py`).
+- **Convenções de `apps/api/` (Fase 3, [ADR 0013](../docs/adr/0013-contrato-da-api-v1.md)):**
+  - Única instância `NinjaAPI` em `config/api.py` (`/api/v1/`, Swagger em `/api/v1/docs`), autenticada por `ApiSessionAuth` (`apps/api/csrf.py`).
+  - **Routers finos** em `apps/api/routers/*` e `apps/accounts/api.py`: nenhuma lógica de cálculo nos routers; toda orquestração (validação → token DLP → carteira → `build_dataset`) passa por `apps/api/analysis.py` e toda conversão `pandas -> JSON` por `apps/api/serializers.py`.
+  - Erros de negócio sempre levantam `ApiError(status, code, message, details)` (`apps/api/errors.py`), renderizado como `{"code": str, "message": str, "details": object|null}` em português.
+  - **Nunca** retornar `401` quando a API externa DLP rejeitar o token do usuário (`DLPAuthError`) — usar sempre **`422 dlp_token_rejected`** (`401` é reservado para sessão ausente ou login inválido).
+  - Isolamento por construção: o usuário é sempre `request.user`; nenhuma rota recebe ID ou e-mail de usuário.
 
 ## TDD
 
