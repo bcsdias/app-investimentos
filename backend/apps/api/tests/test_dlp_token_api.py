@@ -56,3 +56,18 @@ def test_save_without_csrf_is_403(user):
     c = Client(enforce_csrf_checks=True)
     c.force_login(user)
     assert _post(c, "x").status_code == 403
+
+
+def test_post_replaces_unreadable_stored_token(auth_client, user):
+    _post(auth_client, "old")
+    UserToken.objects.filter(user=user).update(encrypted_token="lixo")
+    r = _post(auth_client, "new")
+    assert r.status_code == 200
+    assert UserToken.objects.get(user=user).get_token() == "new"
+
+
+def test_delete_removes_unreadable_stored_token(auth_client, user):
+    _post(auth_client, "old")
+    UserToken.objects.filter(user=user).update(encrypted_token="lixo")
+    assert auth_client.delete(f"{URL}/token").status_code == 204
+    assert not UserToken.objects.filter(user=user).exists()

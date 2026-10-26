@@ -1,3 +1,6 @@
+import logging
+
+from cryptography.fernet import InvalidToken
 from django.http import HttpRequest
 from ninja import Router, Status
 
@@ -7,6 +10,16 @@ from apps.core.models import UserToken
 from apps.market.services.sources import dlp
 
 router = Router(tags=["dlp"])
+logger = logging.getLogger(__name__)
+
+
+def _old_token(ut: UserToken) -> str | None:
+    """Token antigo em claro, ou None se ilegível (não bloqueia troca/remoção)."""
+    try:
+        return ut.get_token()
+    except InvalidToken:
+        logger.warning("Token DLP ilegível para o usuário %s; será sobrescrito.", ut.user_id)
+        return None
 
 
 def _status(ut: UserToken | None) -> dict:
@@ -19,7 +32,7 @@ def save_token(request: HttpRequest, payload: TokenIn):
     if not token:
         raise ApiError(422, "invalid_token", "Informe o token DLP.")
     ut = UserToken.objects.filter(user=request.user).first() or UserToken(user=request.user)
-    old = ut.get_token() if ut.pk else None
+    old = _old_token(ut) if ut.pk else None
     ut.set_token(token)
     ut.save()
     if old and old != token:
@@ -36,7 +49,8 @@ def token_status(request: HttpRequest):
 def delete_token(request: HttpRequest):
     ut = UserToken.objects.filter(user=request.user).first()
     if ut is not None:
-        old = ut.get_token()
+        old = _old_token(ut)
         ut.delete()
-        dlp.invalidate_user_cache(old)
+        if old:
+            dlp.invalidate_user_cache(old)
     return Status(204, None)
