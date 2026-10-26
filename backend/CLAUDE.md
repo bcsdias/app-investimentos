@@ -46,6 +46,7 @@ Instruções para agentes trabalhando neste diretório. Complementa
   - Erros de negócio sempre levantam `ApiError(status, code, message, details)` (`apps/api/errors.py`), renderizado como `{"code": str, "message": str, "details": object|null}` em português.
   - **Nunca** retornar `401` quando a API externa DLP rejeitar o token do usuário (`DLPAuthError`) — usar sempre **`422 dlp_token_rejected`** (`401` é reservado para sessão ausente ou login inválido).
   - Isolamento por construção: o usuário é sempre `request.user`; nenhuma rota recebe ID ou e-mail de usuário.
+- **Apps de domínio com API própria (Fase 3b, [ADR 0015](../docs/adr/0015-planejador-de-ir.md)):** o router pode morar no próprio app (`apps/<app>/api.py`, registrado em `config/api.py`), seguindo as mesmas regras de router fino/`ApiError`. Cálculo **novo** (sem paridade a preservar) fica em módulos puros sem Django dentro do app, nunca em `engine/`; esses módulos levantam erro próprio (ex.: `PlanError`) que só o `api.py` converte em `ApiError`.
 
 ## TDD
 

@@ -103,7 +103,7 @@ benchmarks de mercado e avaliação de risco financeiro.
 > decisões travadas estão em [`adr/`](adr/README.md); a orientação de trabalho no backend em
 > [`../backend/CLAUDE.md`](../backend/CLAUDE.md).
 
-### 2.0. Já implementado — Fases 0 + 1 (2026-08-28), Fases 2 + 2.5 (2026-08-31), Fase 3 e Fase 3c (2026-10-26)
+### 2.0. Já implementado — Fases 0 + 1 (2026-08-28), Fases 2 + 2.5 (2026-08-31), Fases 3, 3b e 3c (2026-10-26)
 
 | Camada | Local | Situação |
 |---|---|---|
@@ -114,11 +114,12 @@ benchmarks de mercado e avaliação de risco financeiro.
 | **Cripto** | `backend/apps/core/security.py` | `encrypt()` / `decrypt()` Fernet sobre `settings.FERNET_KEY` — **mesma chave do app legado**, compat. testada nos dois sentidos. [ADR 0003](adr/0003-reuso-da-chave-fernet-do-legado.md). |
 | **Modelos** | `backend/apps/core/models.py` | `UserToken` (OneToOne, token cifrado em repouso, `set_token`/`get_token`) e `MarketSeries` (`UniqueConstraint(series_key, reference_date)`). Migration `core.0001`. [ADR 0007](adr/0007-modelagem-usertoken-marketseries.md). |
 | **Admin** | `backend/apps/core/admin.py` | `UserToken` sem "add", `encrypted_token` read-only; `MarketSeries` com filtro por `source` e navegação por data. |
-| **Testes** | `backend/{apps,engine}/*/tests/` + `backend/pytest.ini` | `pytest-django`, `--reuse-db`, marker `integration` desmarcado por padrão. **Total atual: 249 testes unitários/contrato (+ 4 `integration`)** verdes. |
+| **Testes** | `backend/{apps,engine}/*/tests/` + `backend/pytest.ini` | `pytest-django`, `--reuse-db`, marker `integration` desmarcado por padrão. **Total atual: 329 testes unitários/contrato (+ 5 `integration`)** verdes. |
 | **Scripts** | `backend/scripts/` | `bootstrap_db.sh` (cria role/database) e `rotate_db_password.sh` (rotaciona a senha). |
-| **Docs** | `backend/README.md`, `backend/CLAUDE.md`, `docs/adr/` | Setup/rodar, convenções do agente, e ADRs 0001–0014. |
+| **Docs** | `backend/README.md`, `backend/CLAUDE.md`, `docs/adr/` | Setup/rodar, convenções do agente, e ADRs 0001–0015. |
 | **Serviços de Mercado (Fase 2 + Fase 3)** | `backend/apps/market/` | App `apps.market`: `services/sources/{base,bcb,ptax,yahoo,tesouro,b3,dlp}.py` (erros DLP tipados `DLPAuthError`/`DLPUnavailableError`, invalidação por geração e single-flight via `cache.add`), `repository.py`, `cache.py` (`single_flight`), `catalog.py` (`SeriesDef`), `assets.py` + `data/ativos.csv` (universo de ~7.500 tickers + variante BRL), `synthetics.py` (`SyntheticSpec` + `display_name`), `transforms.py`, `series.py` (catálogo + fetch-on-read de tickers sob demanda). Migration `core.0002` (`kind`), comandos `ingest_market_data` (inclui tickers sob demanda) / `backfill_market_data`. [ADR 0011](adr/0011-marketseries-valor-cru-kind.md), [ADR 0014](adr/0014-tickers-sob-demanda.md). |
 | **Engine de Cálculo (Fase 2.5)** | `backend/engine/` | Pacote puro `engine` (irmão de `apps/`, sem `models.py`): `twr.py` / `irr.py` cópia literal de `src/engine/`; `metrics.py` idem + `pct_change(fill_method=None)`; `compute.py` (7 funções puras extraídas dos `plot_*`); `dataset.py` (`fetch_user_portfolio` + `build_dataset`, consome `apps.market.series`); `report_legacy.py` (export CLI Matplotlib, nunca importado pela API). Bug `self.logger` corrigido. `pytest.ini` → `testpaths = apps engine`. [ADR 0012](adr/0012-engine-copia-literal-fase-2-5.md). |
+| **Planejador de IR (Fase 3b)** | `backend/apps/migration_ir/` | `GET /migration/wallet`, `POST /migration/plan`, `POST /migration/plan.pdf` (fpdf2). Núcleo puro (`wallet`, `tax`, `planner`) + `prices` (carteira → `apps.market`, `assets.lookup`) + router fino. Alvos livres, associação manual `sell`/`count_as`/`ignore`, isenção de R$ 20 mil só para `ACAO`, IR estimado por classe, `price_unavailable` em vez de preço inventado. Stateless. [ADR 0015](adr/0015-planejador-de-ir.md). |
 | **Otimizações DLP (Fase 3c)** | `backend/apps/market/services/sources/dlp.py`, `backend/apps/api/routers/portfolio.py`, `backend/config/settings.py` | `/historico` cacheado **uma vez por `(usuário, geração)`** (`dlp:hist:<token_hash>:<gen>`) com filtros `ativo`/`classe`/`corretora` aplicados em memória (`_filter_historico`); `_extract_distinct` deduplica com `pd.unique` antes de normalizar; URL base em `settings.DLP_BASE_URL` (default `https://users.dlpinvest.com.br`). `engine/` intocado. Teste `integration` de equivalência com o filtro da DLP escrito — **pendente de rodar com token real** (§2.3). |
 | **Correções de revisão (Fases 2 / 2.5)** | `backend/apps/market/`, `backend/engine/` | Revisão pós-implementação (`code-review` + manual, 2026-08-31): 6 defeitos corrigidos com TDD — ver §2.3. |
 | **API da Carteira (Fase 3)** | `backend/config/api.py`, `backend/apps/api/`, `backend/apps/accounts/api.py` | `NinjaAPI` em `/api/v1/` (Swagger em `/api/v1/docs`), `ApiSessionAuth` (sessão + CSRF no envelope `ApiError`), `/auth/{csrf,login,logout,me}`, `/dlp/{token,token-status}`, `/portfolio/{filters,refresh,summary,twr-evolution,drawdown,rolling-metrics,risk-return,shadow,yearly-summary,irr-evolution}`, `/benchmarks/catalog`, `/assets/search`. Integração ao vivo validada contra DLP (HTTP 401/403 em token inválido → `422 dlp_token_rejected`) e Yahoo Finance (`AAPL` sob demanda). **238 testes verdes** (`.venv/bin/pytest -q`), `manage.py check` limpo, sem migrations pendentes. [ADR 0013](adr/0013-contrato-da-api-v1.md), [ADR 0014](adr/0014-tickers-sob-demanda.md). |
@@ -145,7 +146,6 @@ benchmarks de mercado e avaliação de risco financeiro.
 
 ### 2.2. O que **não** existe ainda
 
-- **Sem endpoints do Planejador de IR (`apps/migration_ir/`)**: separados na **Fase 3b** (spec própria).
 - **Sem `frontend/`, sem `package.json`** — zero JS/Node no repositório (Fase 4).
 - **Sem Dockerfiles do app** nem compose final/nginx único — o backend roda no host (Fase 5).
   Só os containers de **infra** (`lab-postgres`, `lab-redis`) existem.
@@ -169,6 +169,8 @@ benchmarks de mercado e avaliação de risco financeiro.
   - `CATALOGO_TD` **vazio de propósito** — `services/sources/tesouro.py` + ramos `td:` de `catalog`/`backfill` são caminho dormente, testados só com fixture. Renda fixa hoje é modelada pelos índices ANBIMA (IMA-B/IRF-M/IMA-S via BCB SGS + emenda com ETF), não por PU de título individual.
   - `test_sources_b3.py::test_fetch_b3_selenium_*` fica verde porque `ChromeDriverManager().install()` falha antes do mock — cobre o `raise FetchError`, mas pelo motivo errado.
   - Alguns testes de `engine/tests/test_dataset.py` usam `@pytest.mark.django_db` sem tocar o banco (monkeypatch total).
+- **Fase 3b — campos de `/resumo → wallet` não confirmados ao vivo:** `apps/migration_ir/tests/test_integration.py::test_real_migration_wallet` precisa rodar com `DLP_TEST_TOKEN` (confere `qtd`/`quantidade`, `price_fx`/`pm_fx` e os valores de `classe` contra `tax.py`).
+- **Fase 3b — regras fiscais simplificadas de propósito** (sem day-trade, sem compensação de prejuízo, BDR 15 %, classes complexas `not_estimated`) — ver [ADR 0015](adr/0015-planejador-de-ir.md).
 - **Fase 3c — equivalência do filtro em memória ainda não confirmada ao vivo:** `apps/api/tests/test_integration.py::test_real_dlp_in_memory_filter_matches_server_filter` precisa rodar com `DLP_TEST_TOKEN` antes da Fase 4 depender dele; se divergir, reverter o commit do cache único.
 - `redis.py` na raiz (script solto de 12 linhas) faz *shadow* do pacote `redis`.
 - `ativos.csv` duplicado (raiz + `data/`).
@@ -318,8 +320,8 @@ flowchart TD
 > removido apenas ao final.
 >
 > **Nota:** os blocos `config/`, `apps/accounts/`, `apps/market/`, `apps/api/` e `engine/` abaixo refletem o que foi **efetivamente
-> construído** nas Fases 1, 2, 2.5 e 3.
-> `apps/migration_ir/` (Fase 3b) e `frontend/` (Fase 4) seguem sendo **alvo**.
+> construído** nas Fases 1, 2, 2.5, 3 e 3b.
+> `frontend/` (Fase 4) segue sendo **alvo**.
 > Estrutura viva e detalhada do backend em [`../backend/README.md`](../backend/README.md).
 
 ```
@@ -384,10 +386,13 @@ flowchart TD
 │   │   │       ├── benchmarks.py         # GET /benchmarks/catalog
 │   │   │       └── assets.py             # GET /assets/search
 │   │   │
-│   │   └── migration_ir/                 # [FASE 3b — alvo] Planejador de Isenção de IR
-│   │       ├── services.py               # calcular_compras_rebalanceadas, obter_preco_atual
-│   │       ├── pdf.py                    # gerar_pdf_plano (fpdf2) — porta de 3_migracao_ir.py
-│   │       └── api.py                    # endpoints do planejador
+│   │   └── migration_ir/                 # [FASE 3b] Planejador de Isenção de IR (ADR 0015)
+│   │       ├── wallet.py                 # /resumo -> Holding (puro)
+│   │       ├── tax.py                    # regra de isenção por classe + IR estimado (puro)
+│   │       ├── planner.py                # validação, guloso no teto, rebalanceamento (puro)
+│   │       ├── prices.py                 # cotação dos alvos (carteira -> apps.market)
+│   │       ├── schemas.py / pdf.py       # schemas Ninja; PDF fpdf2
+│   │       └── api.py                    # /migration/{wallet,plan,plan.pdf}
 │   │
 │   └── engine/                           # [FASE 2.5] pacote puro, irmão de apps/ (sem models.py)
 │       ├── twr.py                        # cópia literal de src/engine/twr.py
@@ -488,7 +493,7 @@ flowchart TD
 3. `apps/market/assets.py` + `series.py`: universo de tickers do `ativos.csv`, variante `"BRL"`, fetch-on-read no Yahoo e atualização no `ingest_market_data`.
 4. Validar no Swagger (`/api/v1/docs`).
 
-### Fase 3b — Planejador de Migração de IR (`apps/migration_ir/`)
+### Fase 3b — Planejador de Migração de IR (`apps/migration_ir/`) — **concluída em 2026-10-26** ([ADR 0015](adr/0015-planejador-de-ir.md))
 1. `apps/migration_ir/api.py`:
    - `GET  /api/v1/migration/wallet` — carteira atual (via `/resumo` da DLP).
    - `POST /api/v1/migration/plan` — recebe alocação-alvo, retorna plano de compras mensais
@@ -679,7 +684,7 @@ python scripts/parity_check.py --token <TOKEN> --start 2020-01-01 --end 2024-12-
 3. [x] **Fase 2** — quebrar `market_data.py` em `apps/market/services/`; portar cache; `ingest_market_data` + `backfill_market_data`.
 4. [x] **Fase 2.5** — `engine/compute.py` (extrair dos `plot_*`); `report_legacy.py`; corrigir `self.logger`.
 5. [x] **Fase 3** — endpoints Ninja da carteira (auth, token DLP, 8 análises + filters/refresh, benchmarks, busca e fetch-on-read de tickers); Swagger em `/api/v1/docs`.
-6. [ ] **Fase 3b** — Planejador de Isenção de IR (`/migration/*` + PDF `fpdf2`).
+6. [x] **Fase 3b** — Planejador de Isenção de IR (`/migration/*` + PDF `fpdf2`).
 7. [x] **Fase 3c** — Otimizações DLP sem impacto no engine (cache único de `/historico` com filtro em memória, `unique()` em `/filters`, domínio `dlpinvest.com.br` parametrizado) (ver §Fase 3c).
 8. [ ] **Fase 4** — SPA React (auth, filtros, gráficos ECharts, tabela anual, planejador de IR).
 9. [ ] **Fase 5** — Dockerfiles (backend / ingestion-com-Chrome / frontend), compose final, nginx único.

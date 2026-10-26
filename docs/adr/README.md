@@ -32,4 +32,5 @@ Complementam (não substituem) as tabelas "decisões travadas" dos specs em
 | [0012](0012-engine-copia-literal-fase-2-5.md) | Cópia literal do engine de cálculo puro na Fase 2.5 e revisão pós-Fase 6 | 2.5 |
 | [0013](0013-contrato-da-api-v1.md) | Contrato da API v1: endpoints analíticos `POST`, envelope `data/meta`, séries ECharts e `422` para token DLP rejeitado | 3 |
 | [0014](0014-tickers-sob-demanda.md) | Tickers sob demanda (`ativos.csv` + fetch-on-read), invalidação DLP por geração e single-flight via `cache.add` | 3 |
+| [0015](0015-planejador-de-ir.md) | Planejador de IR: alvos livres, associação manual, regra de isenção por classe, IR estimado, nunca inventar preço | 3b |
 

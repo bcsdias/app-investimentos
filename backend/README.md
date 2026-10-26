@@ -3,11 +3,11 @@
 Backend Django da migração Streamlit → Django + React (ver [`../docs/consolidacao_arquitetura_e_migracao.md`](../docs/consolidacao_arquitetura_e_migracao.md)).
 Nesta fase roda **no host** (Python 3.12); conteinerização é a Fase 5.
 
-**Estado:** Fases 0 + 1 + 2 + 2.5 + 3 + 3c concluídas — infra LAB + esqueleto Django (`User` customizado,
+**Estado:** Fases 0 + 1 + 2 + 2.5 + 3 + 3b + 3c concluídas — infra LAB + esqueleto Django (`User` customizado,
 wrapper Fernet, modelos `UserToken` / `MarketSeries`, Admin), app `apps.market` (fontes de
 mercado, `repository`, `cache`, `catalog`, `assets` + `ativos.csv`, `synthetics`, `transforms`, `series` com fetch-on-read, comandos
 `ingest`/`backfill`), pacote puro `engine/` (`twr`/`irr`/`metrics` + `compute` + `dataset` +
-`report_legacy`) e API REST JSON em `/api/v1/` (`apps.api` + `apps.accounts.api`, Swagger em `/api/v1/docs`). Suíte `pytest` verde (249 testes). O `src/` (Streamlit legado) continua funcionando em
+`report_legacy`) e API REST JSON em `/api/v1/` (`apps.api` + `apps.accounts.api`, Swagger em `/api/v1/docs`) e planejador de IR (`apps.migration_ir`, `/api/v1/migration/*`). Suíte `pytest` verde (329 testes). O `src/` (Streamlit legado) continua funcionando em
 paralelo até a Fase 6.
 
 ---
@@ -81,7 +81,7 @@ cp .env.example .env
 ```bash
 .venv/bin/python manage.py runserver 0.0.0.0:8000   # Admin em /admin/, Swagger em /api/v1/docs
 .venv/bin/python manage.py check
-.venv/bin/pytest -q                                 # 249 testes (+ 4 integration com -m integration)
+.venv/bin/pytest -q                                 # 329 testes (+ 5 integration com -m integration)
 .venv/bin/python manage.py backfill_market_data      # bootstrap: semeia MarketSeries dos CSVs do repo (uma vez)
 .venv/bin/python manage.py ingest_market_data        # ingestão ao vivo (incremental); agendamento é Fase 5
 .venv/bin/python manage.py shell -c "from engine import dataset, report_legacy; ..."  # export CLI dos gráficos
@@ -111,10 +111,18 @@ backend/
 │   │   ├── security.py      wrapper Fernet: encrypt() / decrypt()  (ADR 0003)
 │   │   ├── models.py        UserToken (OneToOne, cifrado em repouso) + MarketSeries (ADR 0007, ADR 0011)
 │   │   └── admin.py         UserToken sem "add", encrypted_token read-only
+│   ├── migration_ir/       planejador de migração com isenção de IR (Fase 3b, ADR 0015)
+│   │   ├── wallet.py        /resumo -> Holding (puro; price_fx/pm_fx, agrega corretoras)
+│   │   ├── tax.py           tabela de classes, limite 20k, IR estimado, DISCLAIMER (puro)
+│   │   ├── planner.py       validate_plan_input + build_plan (guloso no teto + rebalanceamento) (puro)
+│   │   ├── prices.py        cotação dos alvos: price_fx da carteira -> apps.market (assets.lookup)
+│   │   ├── schemas.py       schemas Ninja (PlanRequest, WalletOut, PlanOut)
+│   │   ├── pdf.py           render_plan_pdf (fpdf2)
+│   │   └── api.py           /migration/wallet, /migration/plan, /migration/plan.pdf
 │   └── market/             serviços de mercado (Fases 2 + 3, ADR 0014)
 │       ├── services/sources/ clientes de mercado (BCB, PTAX, Yahoo, Tesouro, B3, DLP)
 │       ├── data/ativos.csv  universo empacotado de tickers (~7.500 linhas)
-│       ├── assets.py        resolução de tickers Yahoo + variante BRL + search()
+│       ├── assets.py        resolução de tickers Yahoo + variante BRL + search() + lookup(sigla)
 │       ├── repository.py    acesso exclusivo a core.MarketSeries (Postgres)
 │       ├── cache.py         envelope pandas sobre Redis (django-redis) + single_flight
 │       ├── synthetics.py    contrato estruturado SyntheticSpec + display_name + parser legado

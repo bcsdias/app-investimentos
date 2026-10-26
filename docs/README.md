@@ -54,5 +54,6 @@ Fases **2 + 2.5** (serviços de mercado `apps/market/` + engine puro `backend/en
 concluídas em 2026-08-31, com correções de revisão aplicadas na sequência.
 **Fase 3** (API da Carteira em Django Ninja — auth, token DLP, 8 análises + filters/refresh, catálogo de benchmarks, busca e fetch-on-read de tickers) concluída em 2026-10-26.
 **Fase 3c** (otimizações DLP: cache único de `/historico` com filtro em memória, `DLP_BASE_URL`) concluída em 2026-10-26.
-Próximo incremento: **Fase 3b** (Planejador de IR `/migration/*` + PDF) / **Fase 4** (SPA React).
+**Fase 3b** (Planejador de IR `/migration/{wallet,plan,plan.pdf}`, [ADR 0015](adr/0015-planejador-de-ir.md)) concluída em 2026-10-26.
+Próximo incremento: **Fase 4** (SPA React).
 
