@@ -104,3 +104,29 @@ class YearlySummaryDataOut(Schema):
 class YearlySummaryOut(Schema):
     data: YearlySummaryDataOut
     meta: AnalysisMetaOut
+
+
+class SummaryDataOut(Schema):
+    patrimonio_inicial: float | None = None
+    aportes_periodo: float | None = None
+    patrimonio: float | None = None
+    ganho_periodo: float | None = None
+    twr_total: float | None = None
+    cagr: float | None = None
+    volatilidade: float | None = None
+    sharpe: float | None = None
+    max_drawdown: float | None = None
+    xirr: float | None = None
+    data_inicio: str
+    data_fim: str
+
+
+class SummaryOut(Schema):
+    data: SummaryDataOut
+    meta: AnalysisMetaOut
+
+
+class PortfolioFiltersOut(Schema):
+    ativos: list[str]
+    classes: list[str]
+

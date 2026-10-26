@@ -1,16 +1,21 @@
 from __future__ import annotations
 
-from django.http import HttpRequest
-from ninja import Router
+import logging
 
-from apps.api.analysis import AnalysisContext, run_analysis
+import pandas as pd
+from django.http import HttpRequest
+from ninja import Router, Status
+
+from apps.api.analysis import AnalysisContext, dlp_errors, get_token, run_analysis
 from apps.api.errors import ApiError
 from apps.api.schemas import (
     AnalysisRequest,
+    PortfolioFiltersOut,
     RiskReturnOut,
     RollingMetricsOut,
     RollingRequest,
     SeriesListOut,
+    SummaryOut,
     TwrEvolutionOut,
     YearlySummaryOut,
 )
@@ -21,6 +26,7 @@ from apps.api.serializers import (
     series_to_json,
     yearly_to_json,
 )
+from apps.market.services.sources import dlp
 from engine.compute import (
     compute_drawdown,
     compute_irr_evolution,
@@ -32,6 +38,10 @@ from engine.compute import (
 )
 
 router = Router(tags=["portfolio"])
+logger = logging.getLogger(__name__)
+
+ASSET_COLUMNS = ("ativo", "ticker", "codigo")
+CLASS_COLUMNS = ("classe", "tipo")
 
 _RISK_RETURN_COLUMNS = {
     "Volatilidade": "volatilidade",
@@ -49,6 +59,86 @@ def _envelope(ctx: AnalysisContext, data: dict) -> dict:
             "missing": ctx.missing,
         },
     }
+
+
+def _extract_distinct(df: pd.DataFrame, candidates: tuple[str, ...], label: str) -> list[str]:
+    lower_map = {str(col).lower(): col for col in df.columns}
+    for cand in candidates:
+        col = lower_map.get(cand.lower())
+        if col is not None:
+            vals = df[col].dropna().astype(str).map(str.strip)
+            return sorted({v for v in vals if v})
+    logger.warning(
+        "Nenhuma coluna de %s (%s) encontrada no histórico DLP: %s",
+        label,
+        candidates,
+        list(df.columns),
+    )
+    return []
+
+
+@router.get("/filters", response=PortfolioFiltersOut)
+def filters(request: HttpRequest):
+    token = get_token(request.user)
+    with dlp_errors():
+        df = dlp.buscar_historico(token)
+    if df is None or df.empty:
+        return {"ativos": [], "classes": []}
+    return {
+        "ativos": _extract_distinct(df, ASSET_COLUMNS, "ativo"),
+        "classes": _extract_distinct(df, CLASS_COLUMNS, "classe"),
+    }
+
+
+@router.post("/refresh", response={204: None})
+def refresh(request: HttpRequest):
+    token = get_token(request.user)
+    dlp.invalidate_user_cache(token)
+    return Status(204, None)
+
+
+@router.post("/summary", response=SummaryOut)
+def summary(request: HttpRequest, payload: AnalysisRequest):
+    ctx = run_analysis(request.user, payload)
+    pdf = ctx.portfolio_df
+
+    pat_ini = float(pdf["vlr_mercado"].iloc[0])
+    pat_fim = float(pdf["vlr_mercado"].iloc[-1])
+    aportes = float(pdf["vlr_investido"].iloc[-1] - pdf["vlr_investido"].iloc[0])
+    ganho = pat_fim - pat_ini - aportes
+
+    twr_out = compute_twr_evolution(ctx.df_combined)
+    twr_total = clean(twr_out["final_returns"].get("Carteira"))
+
+    rr_df = compute_risk_return(ctx.df_combined)
+    if "Carteira" in rr_df.index:
+        cagr = clean(rr_df.loc["Carteira", "Retorno (CAGR)"])
+        vol = clean(rr_df.loc["Carteira", "Volatilidade"])
+        sharpe = clean(rr_df.loc["Carteira", "Sharpe"])
+    else:
+        cagr = vol = sharpe = None
+
+    dd_df = compute_drawdown(ctx.df_combined)
+    max_dd = clean(dd_df["Carteira"].min()) if "Carteira" in dd_df.columns else None
+
+    irr = compute_irr_evolution(pdf)
+    xirr = clean(irr.iloc[-1]) if not irr.empty else None
+
+    data = {
+        "patrimonio_inicial": clean(pat_ini),
+        "aportes_periodo": clean(aportes),
+        "patrimonio": clean(pat_fim),
+        "ganho_periodo": clean(ganho),
+        "twr_total": twr_total,
+        "cagr": cagr,
+        "volatilidade": vol,
+        "sharpe": sharpe,
+        "max_drawdown": max_dd,
+        "xirr": xirr,
+        "data_inicio": ctx.start.isoformat(),
+        "data_fim": ctx.end.isoformat(),
+    }
+    return _envelope(ctx, data)
 
 
 @router.post("/twr-evolution", response=TwrEvolutionOut)
