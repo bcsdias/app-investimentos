@@ -494,6 +494,15 @@ flowchart TD
    - `POST /api/v1/migration/plan.pdf` — mesmo cálculo, retorna os **bytes do PDF** (`fpdf2`);
      o React apenas dispara o download.
 
+### Fase 3c — Otimizações DLP sem impacto no engine (mapeado em 2026-10-26; escopo reduzido em 2026-10-26)
+> **Referência técnica:** auditoria realizada sobre [`referencia-api-dlp-invest.md`](referencia-api-dlp-invest.md) cruzada com `apps/market/services/sources/dlp.py`, `engine/dataset.py`, `engine/twr.py` e `apps/api/routers/portfolio.py`.
+> **Escopo:** só o que **não muda números nem toca `engine/`** — preserva a paridade da Fase 6 ([ADR 0012](adr/0012-engine-copia-literal-fase-2-5.md)). Entra **antes da Fase 4** (a SPA troca filtros o tempo todo). Os itens que tocam o engine ou mudam números foram movidos para a **Fase 7**.
+
+1. **Cache único de `/historico` + filtragem em memória (`dlp.buscar_historico`):** como `GET /historico` sem filtros já traz obrigatoriamente `ativo`, `classe` e `corretora` em todas as linhas (`HistoricModel`) e já é chamado no carregamento inicial por `GET /api/v1/portfolio/filters`, cachear apenas o DataFrame completo por `(token_hash, generation)` no Redis e aplicar os filtros `ativo`/`classe`/`corretora` em memória no Pandas. Elimina chamadas HTTP extras (até 60s) à DLP ao trocar filtros na UI e reduz o armazenamento no Redis para 1 DataFrame por usuário.
+2. **Extração rápida de filtros (`portfolio._extract_distinct`):** substituir `df[col].dropna().astype(str).map(str.strip)` na coluna inteira do histórico diário por `pd.unique(df[col].dropna())` antes da normalização e ordenação.
+3. **Domínio oficial DLP (`dlp._BASE`):** atualizar de `https://users.dlombelloplanilhas.com` (legado) para `https://users.dlpinvest.com.br` (ou parametrizar via `settings.py`).
+4. **Verificação:** teste `integration` com token real confirmando que o filtro em memória produz o mesmo DataFrame que `GET /historico?ativo=…&classe=…` (premissa do item 1).
+
 ### Fase 4 — Frontend React SPA (maior bloco)
 1. Bootstrap: `package.json`, `vite.config.js` (proxy `/api` → backend em dev),
    `tailwind.config.js` (tema escuro), `api/client.js` (`withCredentials: true`).
@@ -524,6 +533,15 @@ flowchart TD
    Shadow Portfolio, tabela anual. Tolerância explícita (ex.: 1e-6 relativo).
 4. Só então remover `src/` (Streamlit) e as dependências `streamlit`, `altair`, `supabase`,
    `upstash-redis` do projeto.
+
+### Fase 7 — Correções e otimizações do engine pós-paridade (movido da 3c em 2026-10-26)
+> Só depois da Fase 6: estes itens alteram `engine/` (cópia literal do legado) e/ou mudam números, o que invalidaria a comparação de paridade. Entra junto com a revisão profunda do engine já prevista na [ADR 0012](adr/0012-engine-copia-literal-fase-2-5.md).
+
+1. **Otimizações (sem mudar números):**
+   - **Pré-processamento de `date` e remoção de `groupby` duplicado (`dlp.py`, `dataset.py`, `twr.py`):** converter `df["date"] = pd.to_datetime(df["date"])` uma única vez antes de `mc.set_df` em `dlp.buscar_historico` e evitar que `calculate_twr` refaça `pd.to_datetime`, `groupby("date").sum()` e cálculo de `fluxo` quando `fetch_user_portfolio` já entrega o DataFrame agrupado por data.
+2. **Correções de recorte de período (`start_date` / `end_date`) em `engine/dataset.py` (mudam números de `/summary`, `/shadow`, `/irr-evolution`):**
+   - **Corte por `end_date` em `portfolio_df` (`grp`):** hoje `fetch_user_portfolio` filtra `grp` apenas por `start_date`, deixando `portfolio_df` ir até a data atual mesmo quando o usuário informa `end_date` no passado (apenas `twr` era cortado por `end_date` dentro de `calculate_twr`). Filtrar `grp[grp["date"] <= pd.to_datetime(end_date)]` para que `/summary` (`pat_fim`, `aportes`, `ganho`, `xirr`), `/shadow` e `/irr-evolution` respeitem `end_date`.
+   - **Recálculo de `fluxo` após ajuste de `gap` no `start_date`:** quando `start_date` recorta o histórico no meio da carteira, `filt["vlr_investido"] += gap` ajusta o valor investido para igualar `vlr_mercado.iloc[0]`, mas `filt["fluxo"].iloc[0]` permanecia com o diff anterior ao ajuste, distorcendo o fluxo inicial usado por `compute_irr_evolution` (`all_flows = -1 * df["fluxo"].values`). Recalcular `filt["fluxo"]` (ou ajustar `filt["fluxo"].iloc[0] = filt["vlr_investido"].iloc[0] - filt["proventos"].iloc[0]`) após somar o `gap`.
 
 ---
 
@@ -660,8 +678,10 @@ python scripts/parity_check.py --token <TOKEN> --start 2020-01-01 --end 2024-12-
 4. [x] **Fase 2.5** — `engine/compute.py` (extrair dos `plot_*`); `report_legacy.py`; corrigir `self.logger`.
 5. [x] **Fase 3** — endpoints Ninja da carteira (auth, token DLP, 8 análises + filters/refresh, benchmarks, busca e fetch-on-read de tickers); Swagger em `/api/v1/docs`.
 6. [ ] **Fase 3b** — Planejador de Isenção de IR (`/migration/*` + PDF `fpdf2`).
-7. [ ] **Fase 4** — SPA React (auth, filtros, gráficos ECharts, tabela anual, planejador de IR).
-8. [ ] **Fase 5** — Dockerfiles (backend / ingestion-com-Chrome / frontend), compose final, nginx único.
-9. [ ] **Migração de dados** — import dos tokens do Supabase; `ingest_market_data` inicial.
-10. [ ] **Fase 6** — validação de paridade; só então remover `src/` e libs legadas.
-11. [ ] Decidir prefixo `lab-` / merge de `migracao-django` (§7.3).
+7. [ ] **Fase 3c** — Otimizações DLP sem impacto no engine (cache único de `/historico` com filtro em memória, `unique()` em `/filters`, domínio `dlpinvest.com.br` parametrizado) (ver §Fase 3c).
+8. [ ] **Fase 4** — SPA React (auth, filtros, gráficos ECharts, tabela anual, planejador de IR).
+9. [ ] **Fase 5** — Dockerfiles (backend / ingestion-com-Chrome / frontend), compose final, nginx único.
+10. [ ] **Migração de dados** — import dos tokens do Supabase; `ingest_market_data` inicial.
+11. [ ] **Fase 6** — validação de paridade; só então remover `src/` e libs legadas.
+12. [ ] **Fase 7** — pós-paridade: correções de recorte `start_date`/`end_date` e `fluxo`/`gap` em `engine/dataset.py`, pré-parse de `date` e dedup de `groupby` no TWR, revisão profunda do engine (ADR 0012) (ver §Fase 7).
+13. [ ] Decidir prefixo `lab-` / merge de `migracao-django` (§7.3).
