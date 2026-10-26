@@ -103,7 +103,7 @@ benchmarks de mercado e avaliação de risco financeiro.
 > decisões travadas estão em [`adr/`](adr/README.md); a orientação de trabalho no backend em
 > [`../backend/CLAUDE.md`](../backend/CLAUDE.md).
 
-### 2.0. Já implementado — Fases 0 + 1 (2026-08-28), Fases 2 + 2.5 (2026-08-31) e Fase 3 (2026-10-26)
+### 2.0. Já implementado — Fases 0 + 1 (2026-08-28), Fases 2 + 2.5 (2026-08-31), Fase 3 e Fase 3c (2026-10-26)
 
 | Camada | Local | Situação |
 |---|---|---|
@@ -114,11 +114,12 @@ benchmarks de mercado e avaliação de risco financeiro.
 | **Cripto** | `backend/apps/core/security.py` | `encrypt()` / `decrypt()` Fernet sobre `settings.FERNET_KEY` — **mesma chave do app legado**, compat. testada nos dois sentidos. [ADR 0003](adr/0003-reuso-da-chave-fernet-do-legado.md). |
 | **Modelos** | `backend/apps/core/models.py` | `UserToken` (OneToOne, token cifrado em repouso, `set_token`/`get_token`) e `MarketSeries` (`UniqueConstraint(series_key, reference_date)`). Migration `core.0001`. [ADR 0007](adr/0007-modelagem-usertoken-marketseries.md). |
 | **Admin** | `backend/apps/core/admin.py` | `UserToken` sem "add", `encrypted_token` read-only; `MarketSeries` com filtro por `source` e navegação por data. |
-| **Testes** | `backend/{apps,engine}/*/tests/` + `backend/pytest.ini` | `pytest-django`, `--reuse-db`, marker `integration` desmarcado por padrão. **Total atual: 238 testes unitários/contrato (+ 3 `integration`)** verdes. |
+| **Testes** | `backend/{apps,engine}/*/tests/` + `backend/pytest.ini` | `pytest-django`, `--reuse-db`, marker `integration` desmarcado por padrão. **Total atual: 249 testes unitários/contrato (+ 4 `integration`)** verdes. |
 | **Scripts** | `backend/scripts/` | `bootstrap_db.sh` (cria role/database) e `rotate_db_password.sh` (rotaciona a senha). |
 | **Docs** | `backend/README.md`, `backend/CLAUDE.md`, `docs/adr/` | Setup/rodar, convenções do agente, e ADRs 0001–0014. |
 | **Serviços de Mercado (Fase 2 + Fase 3)** | `backend/apps/market/` | App `apps.market`: `services/sources/{base,bcb,ptax,yahoo,tesouro,b3,dlp}.py` (erros DLP tipados `DLPAuthError`/`DLPUnavailableError`, invalidação por geração e single-flight via `cache.add`), `repository.py`, `cache.py` (`single_flight`), `catalog.py` (`SeriesDef`), `assets.py` + `data/ativos.csv` (universo de ~7.500 tickers + variante BRL), `synthetics.py` (`SyntheticSpec` + `display_name`), `transforms.py`, `series.py` (catálogo + fetch-on-read de tickers sob demanda). Migration `core.0002` (`kind`), comandos `ingest_market_data` (inclui tickers sob demanda) / `backfill_market_data`. [ADR 0011](adr/0011-marketseries-valor-cru-kind.md), [ADR 0014](adr/0014-tickers-sob-demanda.md). |
 | **Engine de Cálculo (Fase 2.5)** | `backend/engine/` | Pacote puro `engine` (irmão de `apps/`, sem `models.py`): `twr.py` / `irr.py` cópia literal de `src/engine/`; `metrics.py` idem + `pct_change(fill_method=None)`; `compute.py` (7 funções puras extraídas dos `plot_*`); `dataset.py` (`fetch_user_portfolio` + `build_dataset`, consome `apps.market.series`); `report_legacy.py` (export CLI Matplotlib, nunca importado pela API). Bug `self.logger` corrigido. `pytest.ini` → `testpaths = apps engine`. [ADR 0012](adr/0012-engine-copia-literal-fase-2-5.md). |
+| **Otimizações DLP (Fase 3c)** | `backend/apps/market/services/sources/dlp.py`, `backend/apps/api/routers/portfolio.py`, `backend/config/settings.py` | `/historico` cacheado **uma vez por `(usuário, geração)`** (`dlp:hist:<token_hash>:<gen>`) com filtros `ativo`/`classe`/`corretora` aplicados em memória (`_filter_historico`); `_extract_distinct` deduplica com `pd.unique` antes de normalizar; URL base em `settings.DLP_BASE_URL` (default `https://users.dlpinvest.com.br`). `engine/` intocado. Teste `integration` de equivalência com o filtro da DLP escrito — **pendente de rodar com token real** (§2.3). |
 | **Correções de revisão (Fases 2 / 2.5)** | `backend/apps/market/`, `backend/engine/` | Revisão pós-implementação (`code-review` + manual, 2026-08-31): 6 defeitos corrigidos com TDD — ver §2.3. |
 | **API da Carteira (Fase 3)** | `backend/config/api.py`, `backend/apps/api/`, `backend/apps/accounts/api.py` | `NinjaAPI` em `/api/v1/` (Swagger em `/api/v1/docs`), `ApiSessionAuth` (sessão + CSRF no envelope `ApiError`), `/auth/{csrf,login,logout,me}`, `/dlp/{token,token-status}`, `/portfolio/{filters,refresh,summary,twr-evolution,drawdown,rolling-metrics,risk-return,shadow,yearly-summary,irr-evolution}`, `/benchmarks/catalog`, `/assets/search`. Integração ao vivo validada contra DLP (HTTP 401/403 em token inválido → `422 dlp_token_rejected`) e Yahoo Finance (`AAPL` sob demanda). **238 testes verdes** (`.venv/bin/pytest -q`), `manage.py check` limpo, sem migrations pendentes. [ADR 0013](adr/0013-contrato-da-api-v1.md), [ADR 0014](adr/0014-tickers-sob-demanda.md). |
 
@@ -168,6 +169,7 @@ benchmarks de mercado e avaliação de risco financeiro.
   - `CATALOGO_TD` **vazio de propósito** — `services/sources/tesouro.py` + ramos `td:` de `catalog`/`backfill` são caminho dormente, testados só com fixture. Renda fixa hoje é modelada pelos índices ANBIMA (IMA-B/IRF-M/IMA-S via BCB SGS + emenda com ETF), não por PU de título individual.
   - `test_sources_b3.py::test_fetch_b3_selenium_*` fica verde porque `ChromeDriverManager().install()` falha antes do mock — cobre o `raise FetchError`, mas pelo motivo errado.
   - Alguns testes de `engine/tests/test_dataset.py` usam `@pytest.mark.django_db` sem tocar o banco (monkeypatch total).
+- **Fase 3c — equivalência do filtro em memória ainda não confirmada ao vivo:** `apps/api/tests/test_integration.py::test_real_dlp_in_memory_filter_matches_server_filter` precisa rodar com `DLP_TEST_TOKEN` antes da Fase 4 depender dele; se divergir, reverter o commit do cache único.
 - `redis.py` na raiz (script solto de 12 linhas) faz *shadow* do pacote `redis`.
 - `ativos.csv` duplicado (raiz + `data/`).
 - Arquivos de scratch do Gemini/Antigravity commitados (`.gemini/antigravity/.../scratch/*.py`).
@@ -494,13 +496,13 @@ flowchart TD
    - `POST /api/v1/migration/plan.pdf` — mesmo cálculo, retorna os **bytes do PDF** (`fpdf2`);
      o React apenas dispara o download.
 
-### Fase 3c — Otimizações DLP sem impacto no engine (mapeado em 2026-10-26; escopo reduzido em 2026-10-26)
+### Fase 3c — Otimizações DLP sem impacto no engine (mapeado em 2026-10-26; escopo reduzido em 2026-10-26; **concluída em 2026-10-26**)
 > **Referência técnica:** auditoria realizada sobre [`referencia-api-dlp-invest.md`](referencia-api-dlp-invest.md) cruzada com `apps/market/services/sources/dlp.py`, `engine/dataset.py`, `engine/twr.py` e `apps/api/routers/portfolio.py`.
 > **Escopo:** só o que **não muda números nem toca `engine/`** — preserva a paridade da Fase 6 ([ADR 0012](adr/0012-engine-copia-literal-fase-2-5.md)). Entra **antes da Fase 4** (a SPA troca filtros o tempo todo). Os itens que tocam o engine ou mudam números foram movidos para a **Fase 7**.
 
 1. **Cache único de `/historico` + filtragem em memória (`dlp.buscar_historico`):** como `GET /historico` sem filtros já traz obrigatoriamente `ativo`, `classe` e `corretora` em todas as linhas (`HistoricModel`) e já é chamado no carregamento inicial por `GET /api/v1/portfolio/filters`, cachear apenas o DataFrame completo por `(token_hash, generation)` no Redis e aplicar os filtros `ativo`/`classe`/`corretora` em memória no Pandas. Elimina chamadas HTTP extras (até 60s) à DLP ao trocar filtros na UI e reduz o armazenamento no Redis para 1 DataFrame por usuário.
 2. **Extração rápida de filtros (`portfolio._extract_distinct`):** substituir `df[col].dropna().astype(str).map(str.strip)` na coluna inteira do histórico diário por `pd.unique(df[col].dropna())` antes da normalização e ordenação.
-3. **Domínio oficial DLP (`dlp._BASE`):** atualizar de `https://users.dlombelloplanilhas.com` (legado) para `https://users.dlpinvest.com.br` (ou parametrizar via `settings.py`).
+3. **Domínio oficial DLP:** parametrizado em `settings.DLP_BASE_URL` (default `https://users.dlpinvest.com.br`; antes `https://users.dlombelloplanilhas.com`, fixo em `dlp._BASE`).
 4. **Verificação:** teste `integration` com token real confirmando que o filtro em memória produz o mesmo DataFrame que `GET /historico?ativo=…&classe=…` (premissa do item 1).
 
 ### Fase 4 — Frontend React SPA (maior bloco)
@@ -678,7 +680,7 @@ python scripts/parity_check.py --token <TOKEN> --start 2020-01-01 --end 2024-12-
 4. [x] **Fase 2.5** — `engine/compute.py` (extrair dos `plot_*`); `report_legacy.py`; corrigir `self.logger`.
 5. [x] **Fase 3** — endpoints Ninja da carteira (auth, token DLP, 8 análises + filters/refresh, benchmarks, busca e fetch-on-read de tickers); Swagger em `/api/v1/docs`.
 6. [ ] **Fase 3b** — Planejador de Isenção de IR (`/migration/*` + PDF `fpdf2`).
-7. [ ] **Fase 3c** — Otimizações DLP sem impacto no engine (cache único de `/historico` com filtro em memória, `unique()` em `/filters`, domínio `dlpinvest.com.br` parametrizado) (ver §Fase 3c).
+7. [x] **Fase 3c** — Otimizações DLP sem impacto no engine (cache único de `/historico` com filtro em memória, `unique()` em `/filters`, domínio `dlpinvest.com.br` parametrizado) (ver §Fase 3c).
 8. [ ] **Fase 4** — SPA React (auth, filtros, gráficos ECharts, tabela anual, planejador de IR).
 9. [ ] **Fase 5** — Dockerfiles (backend / ingestion-com-Chrome / frontend), compose final, nginx único.
 10. [ ] **Migração de dados** — import dos tokens do Supabase; `ingest_market_data` inicial.
