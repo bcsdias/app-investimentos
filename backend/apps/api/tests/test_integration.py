@@ -43,6 +43,8 @@ def test_real_dlp_in_memory_filter_matches_server_filter():
     for params in ({"classe": classe}, {"ativo": ativo}):
         mine = dlp.buscar_historico(token, **params).sort_values(order).reset_index(drop=True)
         server = dlp._norm_date_col(pd.DataFrame(dlp._get("/historico", token, params)["historico"]))
+        # o lado "mine" passa pelo envelope do cache (orient="table"), que devolve date como datetime64
+        server["date"] = pd.to_datetime(server["date"])
         server = server.sort_values(order).reset_index(drop=True)
         assert sorted(mine.columns) == sorted(server.columns)
         pd.testing.assert_frame_equal(mine[sorted(mine.columns)], server[sorted(server.columns)])
