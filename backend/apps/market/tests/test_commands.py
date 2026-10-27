@@ -187,3 +187,35 @@ def test_catalog_yf_key_not_duplicated(db):
 
     repository.upsert_points("yf:IVVB11.SA", "YF", "level", [RawPoint(dt.date(2024, 1, 2), 1.0)])
     assert "yf:IVVB11.SA" not in {d.series_key for d in cmd_mod._on_demand_defs()}
+
+
+def test_ingest_b3_selenium_failure_falls_back_and_marks_failed(monkeypatch, db, settings):
+    from apps.market import repository
+    from apps.market.management.commands import ingest_market_data as cmd
+
+    settings.B3_INGEST_USE_SELENIUM = True
+    monkeypatch.setattr(cmd.b3, "fetch_b3_selenium",
+                        lambda *a, **k: (_ for _ in ()).throw(FetchError("site mudou")))
+    monkeypatch.setattr(cmd.b3, "read_b3_static",
+                        lambda ident, s, e: [RawPoint(dt.date(2024, 6, 3), 3200.0)])
+    monkeypatch.setattr(cmd, "_warm_cache", lambda *a, **k: None)
+    err = StringIO()
+    with pytest.raises(SystemExit) as exc:
+        call_command("ingest_market_data", "--only", "b3:IFIX", stderr=err)
+    assert exc.value.code == 1
+    assert "b3:IFIX" in err.getvalue()
+    assert repository.last_date("b3:IFIX") == dt.date(2024, 6, 3)  # histórico do CSV gravado
+
+
+def test_ingest_b3_selenium_success_does_not_read_static(monkeypatch, db, settings):
+    from apps.market import repository
+    from apps.market.management.commands import ingest_market_data as cmd
+
+    settings.B3_INGEST_USE_SELENIUM = True
+    monkeypatch.setattr(cmd.b3, "fetch_b3_selenium",
+                        lambda *a, **k: [RawPoint(dt.date(2026, 10, 26), 3500.0)])
+    monkeypatch.setattr(cmd.b3, "read_b3_static",
+                        lambda *a: pytest.fail("não deve ler CSV"))
+    monkeypatch.setattr(cmd, "_warm_cache", lambda *a, **k: None)
+    call_command("ingest_market_data", "--only", "b3:IFIX")  # sem SystemExit
+    assert repository.last_date("b3:IFIX") == dt.date(2026, 10, 26)

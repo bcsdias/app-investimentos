@@ -3,7 +3,7 @@
 Percorre catalog.ingestible(); para cada série busca da última data gravada até
 hoje (incremental), grava o valor CRU via repository e, ao fim, aquece o cache
 dos DEFAULT_BENCHMARKS. Uma série falhar NÃO aborta o lote; exit 1 se houve falha.
-Agendar este comando é da Fase 5 (ofelia/cron).
+Agendado via supercronic no container de ingestão (Fase 5).
 """
 from __future__ import annotations
 
@@ -24,6 +24,12 @@ logger = logging.getLogger(__name__)
 _EPOCH = catalog.EPOCH
 
 
+class _PartialFetch(FetchError):
+    def __init__(self, message: str, points: list[RawPoint]) -> None:
+        super().__init__(message)
+        self.points = points
+
+
 def _fetch(sdef: catalog.SeriesDef, start: dt.date, end: dt.date) -> list[RawPoint]:
     prefix, _, ident = sdef.series_key.partition(":")
     if prefix == "bcb":
@@ -38,7 +44,16 @@ def _fetch(sdef: catalog.SeriesDef, start: dt.date, end: dt.date) -> list[RawPoi
     if prefix == "b3":
         if settings.B3_INGEST_USE_SELENIUM:
             anos = list(range(start.year, end.year + 1))
-            return b3.fetch_b3_selenium(ident, anos)
+            try:
+                return b3.fetch_b3_selenium(ident, anos)
+            except FetchError as exc:
+                logger.error(
+                    "Selenium falhou para %s (%s); caindo no CSV estático",
+                    sdef.series_key,
+                    exc,
+                )
+                fallback_pts = b3.read_b3_static(ident, start, end)
+                raise _PartialFetch(str(exc), fallback_pts) from exc
         return b3.read_b3_static(ident, start, end)
     raise FetchError(f"prefixo sem fonte: {prefix}")
 
@@ -95,6 +110,15 @@ class Command(BaseCommand):
                 n = repository.upsert_points(
                     sdef.series_key, sdef.source, sdef.kind, points
                 )
+            except _PartialFetch as exc:
+                if exc.points:
+                    repository.upsert_points(
+                        sdef.series_key, sdef.source, sdef.kind, exc.points
+                    )
+                failed += 1
+                failed_keys.append(sdef.series_key)
+                logger.error("ingest %s falhou: %s", sdef.series_key, exc)
+                continue
             except (FetchError, DatabaseError) as exc:
                 failed += 1
                 failed_keys.append(sdef.series_key)
