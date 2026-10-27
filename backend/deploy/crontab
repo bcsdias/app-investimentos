@@ -1,0 +1,2 @@
+0 6,19 * * 1-5 cd /app/backend && python manage.py ingest_market_data
+
