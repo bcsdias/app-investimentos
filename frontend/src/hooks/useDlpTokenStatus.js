@@ -11,7 +11,8 @@ export function useDlpTokenStatus() {
   });
 }
 
-// true/false quando o status chegou; undefined enquanto carrega (ou se falhou).
+// true/false quando o status chegou; undefined enquanto carrega ou se falhou
+// (as páginas tratam a falha via useDlpTokenStatus().isError).
 export function useDlpTokenConfigured() {
   const { data } = useDlpTokenStatus();
   return data ? Boolean(data.configured) : undefined;

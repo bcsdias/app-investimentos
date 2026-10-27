@@ -5,8 +5,10 @@ import { PeriodNotice } from '../components/portfolio/PeriodNotice';
 import { SummaryCards } from '../components/portfolio/SummaryCards';
 import { Tabs } from '../components/common/Tabs';
 import { EmptyState } from '../components/common/EmptyState';
+import { ErrorState } from '../components/common/ErrorState';
 import { Skeleton } from '../components/common/Skeleton';
 import { DlpTokenRequiredState } from '../components/dlp/DlpTokenRequiredState';
+import { useDlpTokenStatus } from '../hooks/useDlpTokenStatus';
 import { TwrChart } from '../components/portfolio/charts/TwrChart';
 import { YearlyTable } from '../components/portfolio/tables/YearlyTable';
 import { ShadowChart } from '../components/portfolio/charts/ShadowChart';
@@ -24,6 +26,7 @@ export function PortfolioPage() {
   const [activeTab, setActiveTab] = useState('performance');
   const { tokenConfigured, summary, twr, drawdown, rolling, riskReturn, shadow, yearly, irr } =
     usePortfolioQueries();
+  const tokenStatus = useDlpTokenStatus();
 
   const isPortfolioEmpty =
     summary.error?.response?.status === 404 &&
@@ -46,7 +49,9 @@ export function PortfolioPage() {
       <FiltersBar />
       <PeriodNotice meta={summary.data?.meta} />
 
-      {tokenConfigured === false ? (
+      {tokenStatus.isError && !tokenStatus.data ? (
+        <ErrorState error={tokenStatus.error} onRetry={tokenStatus.refetch} />
+      ) : tokenConfigured === false ? (
         <DlpTokenRequiredState />
       ) : tokenConfigured === undefined ? (
         <div className="space-y-4" data-testid="token-status-loading">

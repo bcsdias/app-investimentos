@@ -86,4 +86,30 @@ describe('Gating pelo status do token DLP', () => {
     await waitFor(() => expect(summarySpy).toHaveBeenCalledTimes(1));
     expect(screen.queryByText('Configure seu token DLP')).not.toBeInTheDocument();
   });
+
+  it('falha em /dlp/token-status mostra erro com nova tentativa, não skeleton infinito', async () => {
+    const err = new Error('bad gateway');
+    err.response = { status: 502, data: { code: 'upstream', message: 'Servidor indisponível' } };
+    dlpApi.getTokenStatus.mockRejectedValueOnce(err).mockResolvedValue({ configured: false });
+
+    renderWithClient(
+      <PortfolioFilterProvider>
+        <PortfolioPage />
+      </PortfolioFilterProvider>
+    );
+
+    expect(await screen.findByText('Servidor indisponível')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Tentar novamente' }));
+    expect(await screen.findByText('Configure seu token DLP')).toBeInTheDocument();
+  });
+
+  it('MigrationPage também mostra erro quando /dlp/token-status falha', async () => {
+    const err = new Error('bad gateway');
+    err.response = { status: 502, data: { code: 'upstream', message: 'Servidor indisponível' } };
+    dlpApi.getTokenStatus.mockRejectedValue(err);
+
+    renderWithClient(<MigrationPage />);
+
+    expect(await screen.findByText('Servidor indisponível')).toBeInTheDocument();
+  });
 });
