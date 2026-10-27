@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { parseBlobErrorData } from './errors';
 
 export function getCsrfTokenFromCookie() {
   if (typeof document === 'undefined' || !document.cookie) return null;
@@ -28,7 +29,10 @@ api.interceptors.request.use((config) => {
 
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
+    if (error.response) {
+      error.response.data = await parseBlobErrorData(error.response.data);
+    }
     const status = error.response?.status;
     const code = error.response?.data?.code;
     const message = error.response?.data?.message;
