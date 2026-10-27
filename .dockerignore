@@ -7,8 +7,6 @@
 **/.pytest_cache
 backend/staticfiles
 frontend
-src
-tests
 .streamlit
 .gemini
 .agent
