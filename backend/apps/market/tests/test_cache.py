@@ -34,6 +34,18 @@ def test_series_roundtrip_returns_series_not_frame():
     pd.testing.assert_series_equal(out, s, check_names=False)
 
 
+def test_unnamed_series_roundtrip_keeps_values():
+    # to_brl / splice_proxy devolvem name=None; no orient="table" a coluna 0 (int)
+    # voltava como "0" (str) e os valores viravam NaN (achado da paridade da Fase 6).
+    idx = pd.to_datetime(["2024-01-02", "2024-01-03"])
+    s = pd.Series([1.5, 2.5], index=idx)
+    mc.set_df("market:t:unnamed", s, ttl=60)
+    out = mc.get_df("market:t:unnamed")
+    assert isinstance(out, pd.Series)
+    assert out.tolist() == [1.5, 2.5]
+    assert list(out.index) == list(idx)
+
+
 def test_dataframe_roundtrip():
     idx = pd.to_datetime(["2024-01-02", "2024-01-03"])
     df = pd.DataFrame({"a": [1.0, 2.0], "b": [3.0, 4.0]}, index=idx)

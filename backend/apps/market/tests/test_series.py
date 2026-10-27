@@ -77,6 +77,28 @@ def test_get_series_proxy_splice(monkeypatch):
     assert round(out.loc["2024-01-04"], 4) == round(110.0 * 55.0 / 50.0, 4)
 
 
+def test_derived_series_survive_cache_hit(monkeypatch):
+    # ToBRL e ProxySplice produzem séries sem nome; a 2ª leitura (do cache) não
+    # pode virar NaN (achado da paridade da Fase 6).
+    def fake_load(key, s, e):
+        if key == "yf:^GSPC":
+            return pd.Series([100.0, 110.0], index=_bdays(2), name=key)
+        if key == "ptax:USDBRL":
+            return pd.Series([5.0, 5.5], index=_bdays(2), name=key)
+        if key == "bcb:12466":
+            return pd.Series([100.0, 110.0], index=_bdays(2), name=key)
+        if key == "yf:IMAB11.SA":
+            return pd.Series([50.0, 55.0, 60.5], index=_bdays(3, "2024-01-03"), name=key)
+        return pd.Series(dtype=float, name=key)
+
+    monkeypatch.setattr(sr.repository, "load_series", fake_load)
+    for name in ("S&P 500 BRL", "IMA-B"):
+        fresh = sr.get_series(name, S, E)
+        cached = sr.get_series(name, S, E)
+        assert not cached.isna().any(), name
+        assert cached.tolist() == pytest.approx(fresh.tolist(), rel=1e-9), name
+
+
 def test_get_series_empty_returns_none(monkeypatch):
     monkeypatch.setattr(sr.repository, "load_series", lambda key, s, e: pd.Series(dtype=float))
     assert sr.get_series("S&P 500", S, E) is None

@@ -22,6 +22,9 @@ TTL_DLP = 600       # 10min — dados por-usuário da DLP
 
 _SERIES = "pd.Series"
 _FRAME = "pd.DataFrame"
+# Rótulo para série sem nome: no orient="table" a coluna 0 (int) volta como "0" (str)
+# e o read_json devolve tudo NaN — caso de to_brl/splice_proxy (achado da Fase 6).
+_UNNAMED = "__unnamed__"
 
 
 def make_key(*parts) -> str:
@@ -42,7 +45,10 @@ def set_df(key: str, value, ttl: int | None) -> None:
     try:
         payload = value
         if isinstance(value, (pd.Series, pd.DataFrame)):
-            frame = value.to_frame() if isinstance(value, pd.Series) else value
+            if isinstance(value, pd.Series):
+                frame = value.to_frame(name=_UNNAMED if value.name is None else value.name)
+            else:
+                frame = value
             frame = _flatten_columns(frame)
             payload = {
                 "_type": _SERIES if isinstance(value, pd.Series) else _FRAME,
@@ -64,7 +70,10 @@ def get_df(key: str):
     if isinstance(raw, dict) and raw.get("_type") in (_SERIES, _FRAME):
         frame = pd.read_json(io.StringIO(json.dumps(raw["payload"])), orient="table")
         if raw["_type"] == _SERIES:
-            return frame.iloc[:, 0]
+            out = frame.iloc[:, 0]
+            if out.name == _UNNAMED:
+                out.name = None
+            return out
         return frame
     return raw
 
