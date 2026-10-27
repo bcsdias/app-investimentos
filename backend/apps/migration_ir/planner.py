@@ -19,6 +19,8 @@ from apps.migration_ir.wallet import Holding
 
 MAX_TARGETS = 10
 MAX_CAP = 20_000.0
+MIN_CAP = 100.0
+MAX_MONTHS = 240
 _WEIGHT_TOL = 1e-6
 _EPS = 1e-6  # folga para comparar R$ em float
 
@@ -84,8 +86,10 @@ def _validate_targets(targets: list[tuple[str, float]]) -> dict[str, float]:
 
 
 def _validate_params(monthly_cap: float, initial_cash: float, already_sold: float) -> None:
-    if not 0 < monthly_cap <= MAX_CAP:
-        raise PlanError("invalid_parameters", "O teto mensal deve estar entre 0 (exclusivo) e 20.000.")
+    if not all(math.isfinite(v) for v in (monthly_cap, initial_cash, already_sold)):
+        raise PlanError("invalid_parameters", "Valores monetários devem ser números finitos.")
+    if not MIN_CAP <= monthly_cap <= MAX_CAP:
+        raise PlanError("invalid_parameters", "O teto mensal deve estar entre R$ 100 e R$ 20.000.")
     if initial_cash < 0 or already_sold < 0:
         raise PlanError("invalid_parameters", "Valores monetários não podem ser negativos.")
 
@@ -260,11 +264,16 @@ def _schedule_stocks(inp: PlanInput, stocks: list[Holding]) -> list[list[_Lot]]:
         nonlocal remaining
         months.append([])
         remaining = cap
+        if len(months) > MAX_MONTHS:
+            raise PlanError(
+                "invalid_parameters",
+                f"O plano passaria de {MAX_MONTHS} meses; aumente o teto mensal ou venda menos papéis.",
+            )
 
     for h in sorted(stocks, key=lambda x: (x.saldo, x.ativo)):
         price, q, last = h.price, h.qtd, None
         while q >= 1:
-            n = min(math.floor(remaining / price + _EPS), math.floor(q))
+            n = min(math.floor((remaining + _EPS) / price), math.floor(q))
             cur = len(months) - 1
             if n >= 1:
                 last = _Lot(h, n)

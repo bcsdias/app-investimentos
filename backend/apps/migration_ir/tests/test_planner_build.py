@@ -133,3 +133,20 @@ def test_fractional_residual_of_single_holding_never_breaks_cap():
     plan, _ = build_plan(_inp(hs, [Action("AAA3", "sell")]), {"A": 10.0})
     assert [m["exempt_sales_total"] for m in plan["months"]] == [20000, 40]
     assert all(m["warnings"] == [] for m in plan["months"])
+
+
+def test_plan_longer_than_max_months_is_rejected():
+    from apps.migration_ir.planner import PlanError
+
+    hs = [_h("CARA3", "ACAO", 300, 150.0, 100.0)]
+    with pytest.raises(PlanError) as e:
+        build_plan(_inp(hs, [Action("CARA3", "sell")], monthly_cap=100), {"A": 10.0})
+    assert e.value.code == "invalid_parameters" and "240" in e.value.message
+
+
+def test_unit_slightly_over_remaining_is_not_sold():
+    price = 20000 / 3 + 1e-4  # não múltiplo de centavo; 3 unidades passam do teto por 3e-4
+    hs = [_h("AAA3", "ACAO", 3, price, 5.0)]
+    plan, _ = build_plan(_inp(hs, [Action("AAA3", "sell")]), {"A": 10.0})
+    assert [sum(s["qtd"] for s in m["sales"]) for m in plan["months"]] == [2, 1]
+    assert all("exceeds_exemption" not in m["warnings"] for m in plan["months"])

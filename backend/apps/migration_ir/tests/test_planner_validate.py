@@ -75,3 +75,22 @@ def test_contributions_only_drops_sells_keeps_count_as():
 
 def test_cash_only_plan_is_valid():
     assert _v(actions=[], initial_cash=500).initial_cash == 500
+
+
+@pytest.mark.parametrize("cap", [99.99, float("nan"), float("inf")])
+def test_cap_below_min_or_non_finite_is_invalid(cap):
+    with pytest.raises(PlanError) as e:
+        _v(monthly_cap=cap)
+    assert e.value.code == "invalid_parameters"
+
+
+@pytest.mark.parametrize("field", ["initial_cash", "already_sold"])
+@pytest.mark.parametrize("value", [float("nan"), float("inf")])
+def test_non_finite_money_is_invalid(field, value):
+    with pytest.raises(PlanError) as e:
+        _v(**{field: value})
+    assert e.value.code == "invalid_parameters"
+
+
+def test_cap_100_is_valid():
+    assert _v(monthly_cap=100).monthly_cap == 100
