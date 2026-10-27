@@ -33,4 +33,5 @@ Complementam (não substituem) as tabelas "decisões travadas" dos specs em
 | [0013](0013-contrato-da-api-v1.md) | Contrato da API v1: endpoints analíticos `POST`, envelope `data/meta`, séries ECharts e `422` para token DLP rejeitado | 3 |
 | [0014](0014-tickers-sob-demanda.md) | Tickers sob demanda (`ativos.csv` + fetch-on-read), invalidação DLP por geração e single-flight via `cache.add` | 3 |
 | [0015](0015-planejador-de-ir.md) | Planejador de IR: alvos livres, associação manual, regra de isenção por classe, IR estimado, nunca inventar preço | 3b |
+| [0016](0016-empacotamento-no-lab.md) | Empacotamento no LAB: dev no host × containers `lab-appinvest-*` em `:8080`, Chromium ARM64, `supercronic`, timeouts 180 s, Supabase descartado | 5 |
 

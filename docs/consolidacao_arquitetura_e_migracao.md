@@ -99,11 +99,11 @@ benchmarks de mercado e avaliação de risco financeiro.
 > o **estado real do repositório hoje**, na branch `migracao-django` (publicada em
 > `origin/migracao-django`; `main` e `dev` intactas).
 >
-> **Fases 0 + 1 concluídas em 2026-08-28; Fases 2 + 2.5 em 2026-08-31; Fase 3 em 2026-10-26; Fase 4 em 2026-10-27** — ver §2.0. As
+> **Fases 0 + 1 concluídas em 2026-08-28; Fases 2 + 2.5 em 2026-08-31; Fases 3, 3b e 3c em 2026-10-26; Fases 4 e 5 em 2026-10-27** — ver §2.0. As
 > decisões travadas estão em [`adr/`](adr/README.md); a orientação de trabalho no backend em
 > [`../backend/CLAUDE.md`](../backend/CLAUDE.md).
 
-### 2.0. Já implementado — Fases 0 + 1 (2026-08-28), Fases 2 + 2.5 (2026-08-31), Fases 3, 3b e 3c (2026-10-26), Fase 4 (2026-10-27)
+### 2.0. Já implementado — Fases 0 + 1 (2026-08-28), Fases 2 + 2.5 (2026-08-31), Fases 3, 3b e 3c (2026-10-26), Fases 4 e 5 (2026-10-27)
 
 | Camada | Local | Situação |
 |---|---|---|
@@ -114,17 +114,18 @@ benchmarks de mercado e avaliação de risco financeiro.
 | **Cripto** | `backend/apps/core/security.py` | `encrypt()` / `decrypt()` Fernet sobre `settings.FERNET_KEY` — **mesma chave do app legado**, compat. testada nos dois sentidos. [ADR 0003](adr/0003-reuso-da-chave-fernet-do-legado.md). |
 | **Modelos** | `backend/apps/core/models.py` | `UserToken` (OneToOne, token cifrado em repouso, `set_token`/`get_token`) e `MarketSeries` (`UniqueConstraint(series_key, reference_date)`). Migration `core.0001`. [ADR 0007](adr/0007-modelagem-usertoken-marketseries.md). |
 | **Admin** | `backend/apps/core/admin.py` | `UserToken` sem "add", `encrypted_token` read-only; `MarketSeries` com filtro por `source` e navegação por data. |
-| **Testes** | `backend/{apps,engine}/*/tests/` + `backend/pytest.ini` | `pytest-django`, `--reuse-db`, marker `integration` desmarcado por padrão. **Total atual: 350 testes unitários/contrato (+ 5 `integration`, rodados com token real em 2026-10-27)** verdes. Frontend: **65 testes Vitest** (`frontend/src/test/`). |
+| **Testes** | `backend/{apps,engine}/*/tests/` + `backend/pytest.ini` | `pytest-django`, `--reuse-db`, marker `integration` desmarcado por padrão. **Total atual: 354 testes unitários/contrato (+ 5 `integration`, rodados com token real em 2026-10-27)** verdes. Frontend: **68 testes Vitest** (`frontend/src/test/`). |
 | **Scripts** | `backend/scripts/` | `bootstrap_db.sh` (cria role/database) e `rotate_db_password.sh` (rotaciona a senha). |
-| **Docs** | `backend/README.md`, `backend/CLAUDE.md`, `docs/adr/` | Setup/rodar, convenções do agente, e ADRs 0001–0015. |
+| **Docs** | `backend/README.md`, `backend/CLAUDE.md`, `docs/adr/` | Setup/rodar, convenções do agente, e ADRs 0001–0016. |
 | **Serviços de Mercado (Fase 2 + Fase 3)** | `backend/apps/market/` | App `apps.market`: `services/sources/{base,bcb,ptax,yahoo,tesouro,b3,dlp}.py` (erros DLP tipados `DLPAuthError`/`DLPUnavailableError`, invalidação por geração e single-flight via `cache.add`), `repository.py`, `cache.py` (`single_flight`), `catalog.py` (`SeriesDef`), `assets.py` + `data/ativos.csv` (universo de ~7.500 tickers + variante BRL), `synthetics.py` (`SyntheticSpec` + `display_name`), `transforms.py`, `series.py` (catálogo + fetch-on-read de tickers sob demanda). Migration `core.0002` (`kind`), comandos `ingest_market_data` (inclui tickers sob demanda) / `backfill_market_data`. [ADR 0011](adr/0011-marketseries-valor-cru-kind.md), [ADR 0014](adr/0014-tickers-sob-demanda.md). |
 | **Engine de Cálculo (Fase 2.5)** | `backend/engine/` | Pacote puro `engine` (irmão de `apps/`, sem `models.py`): `twr.py` / `irr.py` cópia literal de `src/engine/`; `metrics.py` idem + `pct_change(fill_method=None)`; `compute.py` (7 funções puras extraídas dos `plot_*`); `dataset.py` (`fetch_user_portfolio` + `build_dataset`, consome `apps.market.series`); `report_legacy.py` (export CLI Matplotlib, nunca importado pela API). Bug `self.logger` corrigido. `pytest.ini` → `testpaths = apps engine`. [ADR 0012](adr/0012-engine-copia-literal-fase-2-5.md). |
 | **Planejador de IR (Fase 3b)** | `backend/apps/migration_ir/` | `GET /migration/wallet`, `POST /migration/plan`, `POST /migration/plan.pdf` (fpdf2). Núcleo puro (`wallet`, `tax`, `planner`) + `prices` (carteira → `apps.market`, `assets.lookup`) + router fino. Alvos livres, associação manual `sell`/`count_as`/`ignore`, isenção de R$ 20 mil só para `ACAO`, IR estimado por classe, `price_unavailable` em vez de preço inventado. Stateless. [ADR 0015](adr/0015-planejador-de-ir.md). |
 | **Otimizações DLP (Fase 3c)** | `backend/apps/market/services/sources/dlp.py`, `backend/apps/api/routers/portfolio.py`, `backend/config/settings.py` | `/historico` cacheado **uma vez por `(usuário, geração)`** (`dlp:hist:<token_hash>:<gen>`) com filtros `ativo`/`classe`/`corretora` aplicados em memória (`_filter_historico`); `_extract_distinct` deduplica com `pd.unique` antes de normalizar; URL base em `settings.DLP_BASE_URL` (default `https://users.dlpinvest.com.br`). `engine/` intocado. Teste `integration` de equivalência com o filtro da DLP escrito — **pendente de rodar com token real** (§2.3). |
 | **Correções de revisão (Fases 2 / 2.5)** | `backend/apps/market/`, `backend/engine/` | Revisão pós-implementação (`code-review` + manual, 2026-08-31): 6 defeitos corrigidos com TDD — ver §2.3. |
-| **Frontend SPA (Fase 4)** | `frontend/` | React 18 + Vite + Tailwind + TanStack Query v5 + ECharts (`echarts-for-react`) + Vitest. `api/` (Axios com CSRF, `errors.js` com `getApiError`/`shouldRetry`/parse de erro em `Blob`), `context/` (sessão, filtros), `hooks/` (`usePortfolioQueries`, `useMigrationPlan`, `useDlpTokenStatus`), `pages/` (Login, Portfolio com abas Performance/Risco, Migração de IR), 7 gráficos + tabela anual + planejador com export PDF. Queries só disparam com token DLP configurado; preset "Tudo" envia `start=1900-01-01` e exibe o período efetivo de `meta`. Dev: proxy `/api` do Vite → backend. Ainda sem Dockerfile (Fase 5). |
+| **Frontend SPA (Fase 4)** | `frontend/` | React 18 + Vite + Tailwind + TanStack Query v5 + ECharts (`echarts-for-react`) + Vitest. `api/` (Axios com CSRF, `errors.js` com `getApiError`/`shouldRetry`/parse de erro em `Blob`), `context/` (sessão, filtros), `hooks/` (`usePortfolioQueries`, `useMigrationPlan`, `useDlpTokenStatus`), `pages/` (Login, Portfolio com abas Performance/Risco, Migração de IR), 7 gráficos + tabela anual + planejador com export PDF. Queries só disparam com token DLP configurado; preset "Tudo" envia `start=1900-01-01` e exibe o período efetivo de `meta`. Dev: proxy `/api` do Vite → backend. |
 | **Correções de revisão (Fases 3/4)** | `backend/apps/{market,migration_ir}/`, `frontend/` | Revisão pós-implementação (2026-10-27): plano [`2026-10-27-correcoes-revisao-fases-3-4.md`](superpowers/plans/2026-10-27-correcoes-revisao-fases-3-4.md) — ver §2.3. |
 | **API da Carteira (Fase 3)** | `backend/config/api.py`, `backend/apps/api/`, `backend/apps/accounts/api.py` | `NinjaAPI` em `/api/v1/` (Swagger em `/api/v1/docs`), `ApiSessionAuth` (sessão + CSRF no envelope `ApiError`), `/auth/{csrf,login,logout,me}`, `/dlp/{token,token-status}`, `/portfolio/{filters,refresh,summary,twr-evolution,drawdown,rolling-metrics,risk-return,shadow,yearly-summary,irr-evolution}`, `/benchmarks/catalog`, `/assets/search`. Integração ao vivo validada contra DLP (HTTP 401/403 em token inválido → `422 dlp_token_rejected`) e Yahoo Finance (`AAPL` sob demanda). **238 testes verdes** (`.venv/bin/pytest -q`), `manage.py check` limpo, sem migrations pendentes. [ADR 0013](adr/0013-contrato-da-api-v1.md), [ADR 0014](adr/0014-tickers-sob-demanda.md). |
+| **Containers do App (Fase 5)** | `docker-compose.yml`, `backend/Dockerfile`, `backend/deploy/`, `frontend/Dockerfile`, `frontend/nginx.conf` | 3 serviços na rede externa `lab-net` (`name: appinvest`): `lab-appinvest-web` (`127.0.0.1:8080:80`, SPA + proxy `/api/` e `/admin/` + `/static/`), `lab-appinvest-backend` (Gunicorn `2w×4t`, `--timeout 180`), `lab-appinvest-ingestion` (Chromium Debian ARM64 + `supercronic` seg–sex 06:00/19:00 `America/Sao_Paulo`). `requirements.txt` (runtime) separado de `requirements-dev.txt` (host). Scraper B3 lê os 2 semestres (`b3:IFIX/SMLL/IDIV` atualizados até 26/10/2026) com fallback CSV que preserva o alerta de falha. [ADR 0016](adr/0016-empacotamento-no-lab.md). |
 
 > Driver Postgres: `psycopg[binary]` 3.x ([ADR 0004](adr/0004-psycopg-binary-3.md)). Sem
 > `django-cors-headers` ([ADR 0005](adr/0005-sem-django-cors-headers.md)). Env via
@@ -148,9 +149,10 @@ benchmarks de mercado e avaliação de risco financeiro.
 
 ### 2.2. O que **não** existe ainda
 
-- **Sem Dockerfiles do app** nem compose final/nginx único — o backend roda no host (Fase 5).
-  Só os containers de **infra** (`lab-postgres`, `lab-redis`) existem.
-- **Dados ainda no legado**: os tokens continuam no Supabase (a migração `user_tokens` → `UserToken` ocorre na fase correspondente); o cache já está integrado no `lab-redis`.
+- ~~**Sem Dockerfiles do app** nem compose final/nginx único — o backend roda no host (Fase 5). Só os containers de **infra** (`lab-postgres`, `lab-redis`) existem.~~ **Concluído na Fase 5 (2026-10-27):** `docker-compose.yml` com `lab-appinvest-{web,backend,ingestion}` rodando no LAB ([ADR 0016](adr/0016-empacotamento-no-lab.md)).
+- ~~**Dados ainda no legado**: os tokens continuam no Supabase (a migração `user_tokens` → `UserToken` ocorre na fase correspondente); o cache já está integrado no `lab-redis`.~~ **Decidido na Fase 5:** Supabase descartado sem migração ([ADR 0016](adr/0016-empacotamento-no-lab.md)); tokens são cadastrados diretamente na SPA.
+- **Validação de paridade numérica e remoção do legado Streamlit (`src/`)**: Fase 6.
+- **Correções pós-paridade no `engine/`**: Fase 7.
 - ~~`.devcontainer/devcontainer.json` aponta para `app/web_app_v2.py` (**caminho stale**, não existe mais).~~ **Removido em 2026-10-26**: template Codespaces do app Streamlit (Python 3.11), incompatível com o fluxo atual (backend no host, Python 3.12; Docker só para `lab-postgres`/`lab-redis`).
 
 ### 2.3. Dívida técnica / lixo a resolver **durante** a migração (não carregar adiante)
@@ -168,7 +170,7 @@ benchmarks de mercado e avaliação de risco financeiro.
   - `apps.market.cache.make_key` não sanitiza a chave: nomes com espaço/`&`/`/` (`"S&P 500"`, `"AAPL BRL"`) geram `CacheKeyWarning`. Tolerado pelo Redis (`django-redis`); quebraria com memcached.
   - Ativos de Londres (`.L`) na variante `"BRL"` são convertidos pela PTAX USD/BRL (igual ao legado, para preservar paridade na Fase 6); corrigir câmbio GBP/GBp pós-Fase 6 ([ADR 0014](adr/0014-tickers-sob-demanda.md)).
   - `CATALOGO_TD` **vazio de propósito** — `services/sources/tesouro.py` + ramos `td:` de `catalog`/`backfill` são caminho dormente, testados só com fixture. Renda fixa hoje é modelada pelos índices ANBIMA (IMA-B/IRF-M/IMA-S via BCB SGS + emenda com ETF), não por PU de título individual.
-  - `test_sources_b3.py::test_fetch_b3_selenium_*` fica verde porque `ChromeDriverManager().install()` falha antes do mock — cobre o `raise FetchError`, mas pelo motivo errado.
+  - ~~`test_sources_b3.py::test_fetch_b3_selenium_*` fica verde porque `ChromeDriverManager().install()` falha antes do mock — cobre o `raise FetchError`, mas pelo motivo errado.~~ **Corrigido na Fase 5 (2026-10-27):** `ChromeDriverManager.install` mockado explicitamente e adicionados testes de `CHROME_BINARY`/`CHROMEDRIVER_PATH` e leitura dos 2 semestres da B3.
   - Alguns testes de `engine/tests/test_dataset.py` usam `@pytest.mark.django_db` sem tocar o banco (monkeypatch total).
 - ~~**Fase 3b — campos de `/resumo → wallet` não confirmados ao vivo**~~ — **confirmado em 2026-10-27**: `test_real_migration_wallet` verde com `DLP_TEST_TOKEN` real.
 - **Fase 3b — regras fiscais simplificadas de propósito** (sem day-trade, sem compensação de prejuízo, BDR 15 %, classes complexas `not_estimated`) — ver [ADR 0015](adr/0015-planejador-de-ir.md).
@@ -179,7 +181,7 @@ benchmarks de mercado e avaliação de risco financeiro.
   3. DLP fora do ar: o single-flight serializava timeouts de 60 s — falha `DLPUnavailableError` fica 30 s em cache (`<chave>:err`, liberada pelo refresh); `requests.RequestException` e payload não-objeto viram `DLPUnavailableError` (antes 500).
   4. Planejador sem limite de meses — teto mínimo R$ 100, `MAX_MONTHS = 240`, folga `_EPS` em reais e valores não finitos rejeitados.
   5. SPA: `retry` só em 5xx/rede; queries só com token configurado (fim dos 9× 409 e do modal reabrindo); erros de PDF em `Blob` legíveis; estados de erro com "Tentar novamente"; % de risco sempre convertido de fração; datas locais nos presets; avisos do plano traduzidos e `ir_not_estimated` exibido; plano limpo ao mudar entradas.
-- **Backlog da revisão de 2026-10-27 (assumido de propósito, não bloqueia a Fase 5):** lock do `single_flight` sem dono; geração do cache DLP despejável pelo LRU do Redis; corrida no `save_token` (`IntegrityError` em POST concorrente); 422 de schema do Ninja fora do envelope `ApiError`; cálculo dentro do router `summary`; `start` default relativo a hoje quando só `end` vem; filtro DLP ignorado se a coluna faltar; layout do PDF em quebra de página; rate limit de login; **timeout DLP (60 s) × gunicorn (30 s) — decidir na Fase 5**; `catalog.defaults` não usado pela SPA; busca de ticker sem debounce; `Content-Disposition`/`revokeObjectURL` no download; `location.state.from` no login; filtros sobrevivendo ao logout; token não salvo persistindo no modal; acessibilidade do `Modal`; mensagem de "primeira carga DLP"; `period` na URL (D6); bundle de 1,4 MB sem code-splitting; código morto (`data?.data?.x || data?.x`, branch shorthand do `SummaryCards`).
+- **Backlog da revisão de 2026-10-27 (assumido de propósito, não bloqueia a Fase 5):** lock do `single_flight` sem dono; geração do cache DLP despejável pelo LRU do Redis; corrida no `save_token` (`IntegrityError` em POST concorrente); 422 de schema do Ninja fora do envelope `ApiError`; cálculo dentro do router `summary`; `start` default relativo a hoje quando só `end` vem; filtro DLP ignorado se a coluna faltar; layout do PDF em quebra de página; rate limit de login; ~~timeout DLP (60 s) × gunicorn (30 s) — decidir na Fase 5~~ (**decidido na Fase 5:** Gunicorn `--timeout 180` e nginx `proxy_read_timeout 180s` em `/api/`, [ADR 0016](adr/0016-empacotamento-no-lab.md)); `catalog.defaults` não usado pela SPA; busca de ticker sem debounce; `Content-Disposition`/`revokeObjectURL` no download; `location.state.from` no login; filtros sobrevivendo ao logout; token não salvo persistindo no modal; acessibilidade do `Modal`; mensagem de "primeira carga DLP"; `period` na URL (D6); bundle de 1,4 MB sem code-splitting; código morto (`data?.data?.x || data?.x`, branch shorthand do `SummaryCards`).
 - **Menores da revisão final da branch de correções (2026-10-27) — adiados para revisão posterior:**
   1. **Token DLP rejeitado (422) com `configured: true`:** as 8 análises falham juntas → 8 `ErrorState` iguais ("Token DLP rejeitado…") com "Tentar novamente" que não resolve; ao voltar para `/`, as queries em erro são refeitas no mount e o modal reabre. O backend não guarda `DLPAuthError` no cache de falha (9 chamadas rápidas, serializadas pelo `single_flight`). Mesmo efeito com token ilegível (`409 dlp_token_missing` com `configured: true`). Sugestão: tratar `dlp_token_rejected`/`dlp_token_missing` do `/summary` como estado único de página.
   2. **`PeriodNotice` fora de contexto:** após remover o token, o `meta` do `/summary` em cache ainda mostra "Período analisado …" acima do CTA "Configure seu token DLP" (`frontend/src/pages/PortfolioPage.jsx`). Renderizar só com `tokenConfigured === true`.
@@ -199,7 +201,7 @@ benchmarks de mercado e avaliação de risco financeiro.
 
 | Dependência | Papel | Situação atual | Nova arquitetura no LAB |
 |---|---|---|---|
-| **Supabase Cloud** | Armazenamento de tokens DLP (Fernet) | Nuvem (REST, service_role) | **Migrado** para PostgreSQL 16 local (`lab-postgres`), via modelo `UserToken`. **Requer script de migração das linhas existentes** (ver §7.2). |
+| **Supabase Cloud** | Armazenamento de tokens DLP (Fernet) | Nuvem (REST, service_role) | **Substituído** por PostgreSQL 16 local (`lab-postgres`), via modelo `UserToken`. **Supabase descartado sem migração de dados** (serviço legado instável e sem dados relevantes; cadastro de token pela SPA — [ADR 0016](adr/0016-empacotamento-no-lab.md)). |
 | **Upstash Redis** | Cache de cotações e séries | Nuvem (HTTP REST) | **Migrado** para Redis 7 local (`lab-redis`, TCP). `cache.py` precisa trocar `upstash_redis` por `redis`/`django-redis`. |
 | **Google OAuth2** | Autenticação de usuários | `st.login()` nativo do Streamlit | **Autenticação Django** (login/sessão). SSO Google é **perdido** — ver §7.1 para o trade-off e a alternativa opcional (`django-allauth`). |
 | **Streamlit UI** | Visualização | Acoplada; Altair (TWR) + Matplotlib (`st.pyplot`) no resto | **Desacoplado**: Django Ninja (API REST JSON) + React SPA (Apache ECharts). |
@@ -303,15 +305,12 @@ flowchart TD
   para a carteira. A tela deve exibir estado de carregamento na primeira análise e, se
   desejado, um job assíncrono pode pré-buscar a carteira logo após o login do usuário.
 
-### 3.5. Índices B3: Selenium mantido
+### 3.5. Índices B3: Selenium mantido (Chromium ARM64)
 
-- `buscar_dados_b3` (headless Chrome via `selenium` + `webdriver-manager`) é **mantido**.
-- O container que executa `ingest_market_data` precisa de **Chrome + chromedriver** (imagem
-  base não pode ser `python:slim` puro — usar imagem com Chrome, ou instalar Chrome + deixar
-  o `webdriver-manager` resolver o driver em runtime).
-- **Selenium só na ingestão.** Nenhum endpoint da API dispara scraping.
-- **Fallback de leitura:** se a ingestão falhar, a API lê os CSVs estáticos via
-  `b3_source.get_b3_index` (`data/static/*_all.csv`), mantidos pela GitHub Action mensal.
+- `fetch_b3_selenium` (porta de `buscar_dados_b3`) é **mantido**.
+- Na VM `aarch64` (ARM64) do LAB não há Google Chrome oficial e o `webdriver-manager` baixa driver x86 incompatível; por isso o target `ingestion` de `backend/Dockerfile` instala **`chromium` + `chromium-driver` do Debian Bookworm (`arm64`)** e define `CHROME_BINARY=/usr/bin/chromium` e `CHROMEDRIVER_PATH=/usr/bin/chromedriver` ([ADR 0016](adr/0016-empacotamento-no-lab.md)). O scraper itera pelos dois semestres (`1º semestre` e `2º semestre`) da tabela da B3.
+- **Selenium só na ingestão.** Nenhum endpoint da API dispara scraping (a imagem `backend` não contém navegador).
+- **Fallback de leitura:** se o Selenium falhar num índice durante `ingest_market_data`, o comando lê `read_b3_static` (`data/static/*_all.csv`) e grava o histórico, mas **continua marcando a série como falha (exit 1)** para não mascarar quebra do scraper ([ADR 0016](adr/0016-empacotamento-no-lab.md)).
 
 ### 3.6. Autenticação da SPA → API (multi-usuário)
 
@@ -341,12 +340,13 @@ flowchart TD
 ```
 /data/projetos/app-investimentos/
 │
-├── docker-compose.yml                    # lab-postgres, lab-redis, lab-backend, lab-ingestion, lab-frontend, lab-nginx
+├── docker-compose.yml                    # [FASE 5] lab-appinvest-{web,backend,ingestion} na rede externa lab-net
 │
 ├── backend/                              # [NOVO] Django 5 + Django Ninja
-│   ├── Dockerfile                        # imagem do backend (Gunicorn) — SEM Chrome
-│   ├── Dockerfile.ingestion              # imagem da ingestão — COM Chrome + chromedriver
-│   ├── requirements.txt                  # dependências PINADAS (inclui selenium, webdriver-manager)
+│   ├── Dockerfile                        # [FASE 5] multi-target: backend (Gunicorn, sem navegador) e ingestion (Chromium ARM64 + supercronic)
+│   ├── deploy/                           # [FASE 5] entrypoint-web.sh (migrate + collectstatic + gunicorn) e crontab (06:00/19:00 seg-sex)
+│   ├── requirements.txt                  # dependências PINADAS de runtime (inclui selenium, webdriver-manager)
+│   ├── requirements-dev.txt              # [FASE 5] -r requirements.txt + pytest*, model-bakery, matplotlib (host)
 │   ├── manage.py
 │   │
 │   ├── config/
@@ -538,14 +538,11 @@ flowchart TD
 4. Integração: ligar estado do React à API; validar filtros dinâmicos, zoom nos gráficos e o
    fluxo de "primeira análise" (loading enquanto a DLP responde — ver §3.4).
 
-### Fase 5 — Dockerização e unificação
-1. `backend/Dockerfile` (Gunicorn, sem Chrome) e `backend/Dockerfile.ingestion` (com Chrome).
-2. `frontend/Dockerfile` (multi-stage: build Vite → assets estáticos).
-3. `docker-compose.yml` final: `lab-postgres`, `lab-redis`, `lab-backend`, `lab-ingestion`
-   (comando: `manage.py ingest_market_data`, agendado por cron do host ou `ofelia`/`cron` no container),
-   `lab-frontend` (assets), `lab-nginx` (**um só** proxy: serve os assets do frontend e roteia
-   `/api` e `/admin` para o backend).
-4. Migração de dados: rodar o import dos tokens do Supabase (§7.2) e o `ingest_market_data` inicial.
+### Fase 5 — Dockerização e unificação — **concluída em 2026-10-27** ([ADR 0016](adr/0016-empacotamento-no-lab.md))
+1. `backend/Dockerfile` multi-target: `backend` (Gunicorn, sem navegador) e `ingestion` (com `chromium` + `chromium-driver` ARM64 + `supercronic`).
+2. `frontend/Dockerfile` (multi-stage: build Vite → `nginx:alpine` com `frontend/nginx.conf`).
+3. `docker-compose.yml` (`name: appinvest`, rede externa `lab-net`): `lab-appinvest-web` (`127.0.0.1:8080:80`, serve a SPA, `/static/` e faz proxy de `/api/` e `/admin/`), `lab-appinvest-backend` e `lab-appinvest-ingestion` (`manage.py ingest_market_data` agendado via `supercronic` às 06:00 e 19:00 seg–sex).
+4. Carga inicial de mercado: ~~import dos tokens do Supabase (§7.2)~~ (cancelado — Supabase descartado) + `backfill_market_data` e `ingest_market_data` inicial no container de ingestão (`b3:IFIX/SMLL/IDIV` atualizados até 2026-10-26).
 
 ### Fase 6 — Validação de paridade (obrigatória — app financeiro)
 1. Selecionar 1–2 tokens DLP reais e 2–3 janelas de período.
@@ -573,13 +570,9 @@ Ver §3.6. Resumo: login Django + cookie de sessão, mesma origem via nginx (sem
 habilitado, `django_auth` do Ninja nas rotas protegidas. SSO Google fica para fase posterior
 opcional (`django-allauth`).
 
-### 6.2. Migração dos tokens do Supabase
-- Script/`data migration` (`apps/accounts/migrations/0002_import_supabase_tokens.py` **ou**
-  um `manage.py import_supabase_tokens`).
-- Passos: ler `user_tokens` do Supabase (URL + service_role atuais) → para cada `user_email`,
-  `get_or_create` do `User` Django → gravar o `encrypted_token` **como está** (já está cifrado
-  com a mesma chave Fernet) no `UserToken`.
-- **Não descriptografar/recriptografar** — basta reusar a chave (ver §6.3).
+### 6.2. ~~Migração dos tokens do Supabase~~ (Cancelado na Fase 5 — [ADR 0016](adr/0016-empacotamento-no-lab.md))
+- ~~Script/`data migration` (`apps/accounts/migrations/0002_import_supabase_tokens.py` **ou** um `manage.py import_supabase_tokens`).~~
+- **Motivo do cancelamento:** o Supabase legado encontra-se com problemas e não há dados de usuário relevantes para importar. Usuários são criados via `createsuperuser`/`/admin` e o token DLP é cadastrado pela SPA (a `FERNET_KEY` legada continua sendo usada normalmente — §6.3).
 
 ### 6.3. Continuidade da chave Fernet
 - **Copiar a `fernet_key` atual** de `.streamlit/secrets.toml` para `FERNET_KEY` no
@@ -636,13 +629,11 @@ A v1 mistura `banco_lab` e nomes genéricos. **Decidir:** se a stack LAB vai vir
 (merge de `migracao-django` em `dev`/`main`), remover o prefixo `lab-` de containers e banco antes de
 consolidar. Se for fork paralelo permanente, manter.
 
-### 7.4. Agendador da ingestão
-Cron do host chamando `docker compose run --rm lab-ingestion`, ou um scheduler no container
-(`ofelia`, `supercronic`). Recomendação: `ofelia` no compose (simples, declarativo).
+### 7.4. Agendador da ingestão (Decidido na Fase 5 — [ADR 0016](adr/0016-empacotamento-no-lab.md))
+**Decidido:** **`supercronic`** dentro do container `lab-appinvest-ingestion` (`backend/deploy/crontab`: `0 6,19 * * 1-5`, `TZ=America/Sao_Paulo`), logando em stdout. Preferido a `ofelia` por não exigir montagem do socket do Docker (`/var/run/docker.sock`) dentro do container.
 
 ### 7.5. Selenium em container
-Fonte de fragilidade. Mitigações: imagem dedicada (`Dockerfile.ingestion`), timeout curto,
-retries, e **fallback automático** para `data/static/*_all.csv` quando o scraping falhar.
+Fonte de fragilidade. Mitigações implementadas na Fase 5 ([ADR 0016](adr/0016-empacotamento-no-lab.md)): target dedicado (`ingestion`), Chromium + `chromium-driver` nativos do Debian ARM64 (`CHROME_BINARY`/`CHROMEDRIVER_PATH`), leitura dos 2 semestres da tabela da B3 e **fallback automático** para `data/static/*_all.csv` que preserva o histórico inicial mas mantém a série marcada em `failed_keys` (exit 1).
 
 ---
 
@@ -701,8 +692,8 @@ python scripts/parity_check.py --token <TOKEN> --start 2020-01-01 --end 2024-12-
 6. [x] **Fase 3b** — Planejador de Isenção de IR (`/migration/*` + PDF `fpdf2`).
 7. [x] **Fase 3c** — Otimizações DLP sem impacto no engine (cache único de `/historico` com filtro em memória, `unique()` em `/filters`, domínio `dlpinvest.com.br` parametrizado) (ver §Fase 3c).
 8. [x] **Fase 4** — SPA React (auth, filtros, gráficos ECharts, tabela anual, planejador de IR) + correções da revisão de 2026-10-27.
-9. [ ] **Fase 5** — Dockerfiles (backend / ingestion-com-Chrome / frontend), compose final, nginx único.
-10. [ ] **Migração de dados** — import dos tokens do Supabase; `ingest_market_data` inicial.
+9. [x] **Fase 5** — Dockerfiles (`backend` multi-target + `frontend` multi-stage), `docker-compose.yml` (`lab-appinvest-{web,backend,ingestion}` em `127.0.0.1:8080`), Chromium ARM64 + `supercronic` ([ADR 0016](adr/0016-empacotamento-no-lab.md)).
+10. [x] **Carga inicial de mercado** — ~~import dos tokens do Supabase~~ (cancelado, ADR 0016); `backfill_market_data` + `ingest_market_data` inicial no container (`b3:*` atualizado até 2026-10-26).
 11. [ ] **Fase 6** — validação de paridade; só então remover `src/` e libs legadas.
 12. [ ] **Fase 7** — pós-paridade: correções de recorte `start_date`/`end_date` e `fluxo`/`gap` em `engine/dataset.py`, pré-parse de `date` e dedup de `groupby` no TWR, revisão profunda do engine (ADR 0012) (ver §Fase 7).
 13. [ ] Decidir prefixo `lab-` / merge de `migracao-django` (§7.3).

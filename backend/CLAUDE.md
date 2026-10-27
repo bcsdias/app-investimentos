@@ -16,6 +16,7 @@ Instruções para agentes trabalhando neste diretório. Complementa
   não existe `python` no PATH da VM, e `python3` é o do sistema (sem deps).
 - Config vem só de `backend/.env` (via `python-dotenv`, sem expansão custom) — ver
   [ADR 0010](../docs/adr/0010-python-dotenv-puro.md).
+- O desenvolvimento continua no host (`runserver` + Vite + `.venv/bin/pytest` + `npm test`); o `docker-compose.yml` na raiz é apenas "o app rodando" no LAB (`127.0.0.1:8080`, reconstruído sob demanda com `docker compose up -d --build`) — ver [ADR 0016](../docs/adr/0016-empacotamento-no-lab.md).
 
 ## Banco de dados
 

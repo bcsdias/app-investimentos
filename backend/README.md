@@ -1,13 +1,13 @@
 # Backend — `app-investimentos`
 
 Backend Django da migração Streamlit → Django + React (ver [`../docs/consolidacao_arquitetura_e_migracao.md`](../docs/consolidacao_arquitetura_e_migracao.md)).
-Nesta fase roda **no host** (Python 3.12); conteinerização é a Fase 5.
+O desenvolvimento roda **no host** (Python 3.12); o app empacotado roda nos containers do `../docker-compose.yml` ([ADR 0016](../docs/adr/0016-empacotamento-no-lab.md)).
 
-**Estado:** Fases 0 + 1 + 2 + 2.5 + 3 + 3b + 3c concluídas (e a SPA da Fase 4 em `../frontend/` consome esta API) — infra LAB + esqueleto Django (`User` customizado,
+**Estado:** Fases 0 + 1 + 2 + 2.5 + 3 + 3b + 3c + 4 + 5 concluídas — infra LAB + esqueleto Django (`User` customizado,
 wrapper Fernet, modelos `UserToken` / `MarketSeries`, Admin), app `apps.market` (fontes de
 mercado, `repository`, `cache`, `catalog`, `assets` + `ativos.csv`, `synthetics`, `transforms`, `series` com fetch-on-read, comandos
 `ingest`/`backfill`), pacote puro `engine/` (`twr`/`irr`/`metrics` + `compute` + `dataset` +
-`report_legacy`) e API REST JSON em `/api/v1/` (`apps.api` + `apps.accounts.api`, Swagger em `/api/v1/docs`) e planejador de IR (`apps.migration_ir`, `/api/v1/migration/*`). Suíte `pytest` verde (350 testes). O `src/` (Streamlit legado) continua funcionando em
+`report_legacy`), API REST JSON em `/api/v1/` (`apps.api` + `apps.accounts.api`, Swagger em `/api/v1/docs`), planejador de IR (`apps.migration_ir`, `/api/v1/migration/*`), SPA React em `../frontend/` e empacotamento Docker (`lab-appinvest-{web,backend,ingestion}` em `127.0.0.1:8080`, Chromium ARM64 + `supercronic`). Suíte `pytest` verde (354 testes). O `src/` (Streamlit legado) continua funcionando em
 paralelo até a Fase 6.
 
 ---
@@ -76,15 +76,57 @@ cp .env.example .env
 
 ---
 
-## Rodar
+## Rodar (desenvolvimento no host)
 
 ```bash
 .venv/bin/python manage.py runserver 0.0.0.0:8000   # Admin em /admin/, Swagger em /api/v1/docs
 .venv/bin/python manage.py check
-.venv/bin/pytest -q                                 # 350 testes (+ 5 integration com -m integration)
+.venv/bin/pytest -q                                 # 354 testes (+ 5 integration com -m integration)
 .venv/bin/python manage.py backfill_market_data      # bootstrap: semeia MarketSeries dos CSVs do repo (uma vez)
-.venv/bin/python manage.py ingest_market_data        # ingestão ao vivo (incremental); agendamento é Fase 5
+.venv/bin/python manage.py ingest_market_data        # ingestão ao vivo (incremental; no host B3 lê CSV estático)
 .venv/bin/python manage.py shell -c "from engine import dataset, report_legacy; ..."  # export CLI dos gráficos
+```
+
+---
+
+## Containers (app rodando no LAB)
+
+O `docker-compose.yml` na **raiz do repositório** sobe os três containers do app (`lab-appinvest-web`, `lab-appinvest-backend`, `lab-appinvest-ingestion`) na rede externa `lab-net`, compartilhando `lab-postgres` (database `appinvest`), `lab-redis` (DB `1`) e `backend/.env` com o ambiente de desenvolvimento ([ADR 0016](../docs/adr/0016-empacotamento-no-lab.md)).
+
+### Subir / reconstruir e acessar
+
+```bash
+# A partir da raiz do repositório (/data/projetos/app-investimentos):
+docker compose up -d --build
+docker compose ps
+```
+
+- **Acesso (VS Code Port Forwarding):** encaminhe a porta **`8080`** na aba *Ports* do VS Code e abra `http://localhost:8080` (SPA em `/`, Django Admin em `/admin/`, API em `/api/v1/`). Nenhuma porta do app é exposta em `0.0.0.0`.
+- **Criar superusuário (ou usar o já existente no banco `appinvest`):**
+  ```bash
+  docker compose exec backend python manage.py createsuperuser
+  ```
+
+### Carga inicial de mercado e ingestão manual
+
+No container `ingestion`, `B3_INGEST_USE_SELENIUM=1` está ativo com Chromium + `chromium-driver` nativos do Debian ARM64 e agendamento via `supercronic` (`0 6,19 * * 1-5`, horário de São Paulo):
+
+```bash
+# 1. Carga inicial dos CSVs versionados (idempotente):
+docker compose exec ingestion python manage.py backfill_market_data
+
+# 2. Ingestão incremental ao vivo (BCB, PTAX, Yahoo e B3 via Chromium):
+docker compose exec ingestion python manage.py ingest_market_data
+
+# Ingestão filtrada (ex.: apenas índices B3):
+docker compose exec ingestion python manage.py ingest_market_data --only b3:IFIX,b3:SMLL,b3:IDIV
+```
+
+### Logs
+
+```bash
+docker compose logs -f
+docker compose logs -f backend ingestion
 ```
 
 ---
@@ -140,6 +182,8 @@ backend/
 ├── scripts/
 │   ├── bootstrap_db.sh      cria role/database appinvest (idempotente)  — versionado
 │   └── rotate_db_password.sh rotaciona a senha: gera + aplica no PG + espelha no .env
+├── deploy/                 entrypoint-web.sh (migrate + collectstatic + gunicorn) e crontab (supercronic)
+├── Dockerfile              multi-target: backend (Gunicorn) e ingestion (Chromium ARM64 + supercronic)
 ├── requirements.txt        pins com ~= (runtime — usado nos containers)
 ├── requirements-dev.txt    -r requirements.txt + pytest*, model-bakery, matplotlib (host)
 └── pytest.ini              DJANGO_SETTINGS_MODULE=config.settings, testpaths=apps engine, --reuse-db
