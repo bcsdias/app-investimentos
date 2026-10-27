@@ -92,9 +92,9 @@ engine/dataset.py                   # M — usa synthetics.display_name
 **Interfaces:**
 - Produces: `apps.api.errors.ApiError(status: int, code: str, message: str, details: dict | list | None = None)` (atributos homônimos); `config.api.api` (`NinjaAPI`, `auth=django_auth`, `urls_namespace="api-v1"`, `docs_url="/docs"`); `config.api.handle_api_error(request, exc: ApiError) -> HttpResponse`; fixtures `locmem_cache`, `user` (username `"bruno"`, senha `"s3nha-forte!"`), `other_user` (`"ana"`), `auth_client` (Django `Client` com `force_login(user)`).
 
-- [ ] **Step 1: Escrever `conftest.py` (raiz de `backend/`) com as fixtures acima.** `locmem_cache` troca `settings.CACHES` por `LocMemCache` e faz `cache.clear()`. `user`/`other_user` via `User.objects.create_user`.
+- [x] **Step 1: Escrever `conftest.py` (raiz de `backend/`) com as fixtures acima.** `locmem_cache` troca `settings.CACHES` por `LocMemCache` e faz `cache.clear()`. `user`/`other_user` via `User.objects.create_user`.
 
-- [ ] **Step 2: Escrever os testes que falham** — `apps/api/tests/test_api_base.py`:
+- [x] **Step 2: Escrever os testes que falham** — `apps/api/tests/test_api_base.py`:
 
 ```python
 def test_docs_served(client):
@@ -112,13 +112,13 @@ def test_handle_api_error_renders_contract(rf):
     assert json.loads(resp.content) == {"code": "dlp_token_missing", "message": "Cadastre seu token DLP.", "details": None}
 ```
 
-- [ ] **Step 3: Rodar e ver falhar** — `.venv/bin/pytest apps/api -q` → FAIL (`ModuleNotFoundError: apps.api` / 404 em `/api/v1/docs`).
+- [x] **Step 3: Rodar e ver falhar** — `.venv/bin/pytest apps/api -q` → FAIL (`ModuleNotFoundError: apps.api` / 404 em `/api/v1/docs`).
 
-- [ ] **Step 4: Implementar.** `apps/api/apps.py` (`name = "apps.api"`, `BigAutoField`); `ApiError` em `errors.py`; `config/api.py` com `NinjaAPI(title="app-investimentos API", version="1", auth=django_auth, urls_namespace="api-v1")` e `api.add_exception_handler(ApiError, handle_api_error)` (via `api.create_response`). `urls.py`: `path("api/v1/", api.urls)`. `settings.py`: `"apps.api"` em `INSTALLED_APPS`, `CSRF_COOKIE_HTTPONLY = False`, `MARKET_ASSETS_CSV = BASE_DIR / "apps" / "market" / "data" / "ativos.csv"`.
+- [x] **Step 4: Implementar.** `apps/api/apps.py` (`name = "apps.api"`, `BigAutoField`); `ApiError` em `errors.py`; `config/api.py` com `NinjaAPI(title="app-investimentos API", version="1", auth=django_auth, urls_namespace="api-v1")` e `api.add_exception_handler(ApiError, handle_api_error)` (via `api.create_response`). `urls.py`: `path("api/v1/", api.urls)`. `settings.py`: `"apps.api"` em `INSTALLED_APPS`, `CSRF_COOKIE_HTTPONLY = False`, `MARKET_ASSETS_CSV = BASE_DIR / "apps" / "market" / "data" / "ativos.csv"`.
 
-- [ ] **Step 5: Rodar e ver passar** — `.venv/bin/pytest -q` → todos verdes (125 + 3); `.venv/bin/python manage.py check` limpo.
+- [x] **Step 5: Rodar e ver passar** — `.venv/bin/pytest -q` → todos verdes (125 + 3); `.venv/bin/python manage.py check` limpo.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add conftest.py config/ apps/api/
@@ -137,7 +137,7 @@ git commit -m "✨ feat(api): fundação da API Ninja em /api/v1 com ApiError"
 - Consumes: `ApiError`, `api`, fixtures da Task 1.
 - Produces: `apps.accounts.api.router`; schemas `LoginIn{username, password}`, `UserOut{id, username, email}`, `MeOut(UserOut){has_dlp_token: bool}`.
 
-- [ ] **Step 1: Escrever os testes que falham:**
+- [x] **Step 1: Escrever os testes que falham:**
 
 ```python
 URL = "/api/v1/auth"
@@ -183,13 +183,13 @@ def test_logout_without_csrf_is_403(user):
     assert c.post(f"{URL}/logout").status_code == 403
 ```
 
-- [ ] **Step 2: Rodar e ver falhar** — `.venv/bin/pytest apps/accounts/tests/test_auth_api.py -q` → FAIL (404).
+- [x] **Step 2: Rodar e ver falhar** — `.venv/bin/pytest apps/accounts/tests/test_auth_api.py -q` → FAIL (404).
 
-- [ ] **Step 3: Implementar `router = Router(tags=["auth"])`.** `csrf` e `login` com `auth=None`; `csrf` decorado com `ensure_csrf_cookie` e `login` com `csrf_protect` (via `ninja.decorators.decorate_view`). Login: `authenticate` + `django.contrib.auth.login`; falha → `ApiError(401, "invalid_credentials", "Usuário ou senha inválidos.")`. `has_dlp_token` = `UserToken.objects.filter(user=request.user).exists()`.
+- [x] **Step 3: Implementar `router = Router(tags=["auth"])`.** `csrf` e `login` com `auth=None`; `csrf` decorado com `ensure_csrf_cookie` e `login` com `csrf_protect` (via `ninja.decorators.decorate_view`). Login: `authenticate` + `django.contrib.auth.login`; falha → `ApiError(401, "invalid_credentials", "Usuário ou senha inválidos.")`. `has_dlp_token` = `UserToken.objects.filter(user=request.user).exists()`.
 
-- [ ] **Step 4: Rodar e ver passar** — `.venv/bin/pytest -q` → verde.
+- [x] **Step 4: Rodar e ver passar** — `.venv/bin/pytest -q` → verde.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/accounts/ config/api.py
@@ -212,7 +212,7 @@ git commit -m "✨ feat(accounts): endpoints de sessão /auth (csrf, login, logo
   - `buscar_historico` / `buscar_resumo_carteira`: assinatura inalterada; em cache miss entram em `single_flight(chave)`, **re-checam o cache** e só então chamam a DLP.
   - Mapeamento HTTP (helper interno `_get(path, token, params) -> dict`): `requests.Timeout`/`ConnectionError` → `DLPUnavailableError`; status 401/403 → `DLPAuthError`; ≥500 → `DLPUnavailableError`; outro ≥400 → `DLPError`; `resp.json()` inválido → `DLPUnavailableError`. Mensagens só com o path e o status, nunca o token.
 
-- [ ] **Step 1: Escrever os testes que falham.** Em `test_sources_dlp.py`, o `_Resp` passa a não depender de `raise_for_status` (o código novo lê `status_code`). Novos testes:
+- [x] **Step 1: Escrever os testes que falham.** Em `test_sources_dlp.py`, o `_Resp` passa a não depender de `raise_for_status` (o código novo lê `status_code`). Novos testes:
 
 ```python
 @pytest.mark.parametrize("status", [401, 403])
@@ -279,13 +279,13 @@ def test_single_flight_times_out_and_proceeds():
     assert time.monotonic() - t0 < 1
 ```
 
-- [ ] **Step 2: Rodar e ver falhar** — `.venv/bin/pytest apps/market/tests/test_sources_dlp.py apps/market/tests/test_cache.py -q` → FAIL (`ImportError: DLPAuthError`, `AttributeError: single_flight`).
+- [x] **Step 2: Rodar e ver falhar** — `.venv/bin/pytest apps/market/tests/test_sources_dlp.py apps/market/tests/test_cache.py -q` → FAIL (`ImportError: DLPAuthError`, `AttributeError: single_flight`).
 
-- [ ] **Step 3: Implementar** conforme o bloco Interfaces.
+- [x] **Step 3: Implementar** conforme o bloco Interfaces.
 
-- [ ] **Step 4: Rodar e ver passar** — `.venv/bin/pytest -q` → verde (inclusive os testes DLP antigos e os de `engine/tests/test_dataset.py`).
+- [x] **Step 4: Rodar e ver passar** — `.venv/bin/pytest -q` → verde (inclusive os testes DLP antigos e os de `engine/tests/test_dataset.py`).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/market/
@@ -304,7 +304,7 @@ git commit -m "✨ feat(market): erros DLP tipados, invalidação por geração 
 - Consumes: `UserToken.set_token/get_token`, `dlp.invalidate_user_cache`.
 - Produces: schemas `TokenIn{token: str}`, `TokenStatusOut{configured: bool, updated_at: datetime | None}`.
 
-- [ ] **Step 1: Escrever os testes que falham:**
+- [x] **Step 1: Escrever os testes que falham:**
 
 ```python
 URL = "/api/v1/dlp"
@@ -350,13 +350,13 @@ def test_save_without_csrf_is_403(user):
     assert _post(c, "x").status_code == 403
 ```
 
-- [ ] **Step 2: Rodar e ver falhar** — `.venv/bin/pytest apps/api/tests/test_dlp_token_api.py -q` → FAIL (404).
+- [x] **Step 2: Rodar e ver falhar** — `.venv/bin/pytest apps/api/tests/test_dlp_token_api.py -q` → FAIL (404).
 
-- [ ] **Step 3: Implementar o router** (`tags=["dlp"]`). Token: `strip()`; vazio → `ApiError(422, "invalid_token", "Informe o token DLP.")`. Ao substituir ou remover, chamar `dlp.invalidate_user_cache(<token antigo>)`.
+- [x] **Step 3: Implementar o router** (`tags=["dlp"]`). Token: `strip()`; vazio → `ApiError(422, "invalid_token", "Informe o token DLP.")`. Ao substituir ou remover, chamar `dlp.invalidate_user_cache(<token antigo>)`.
 
-- [ ] **Step 4: Rodar e ver passar** — `.venv/bin/pytest -q`.
+- [x] **Step 4: Rodar e ver passar** — `.venv/bin/pytest -q`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/api/ config/api.py
@@ -379,9 +379,9 @@ git commit -m "✨ feat(api): endpoints do token DLP (salvar, status, remover)"
   - `search(q: str, limit: int = 20) -> list[Asset]` — ordem: sigla exata, depois prefixo de sigla, depois substring do nome; case-insensitive.
 - Classes aceitas — BR: `ACAO, ETF, ETF RF, FI_INFRA, FI_SET, FIDC, FII, FIP, FIP_IE, BDR, BDR ETF`; INTL: `ETF_GB, ETF_US, REIT, STOCK`. Yahoo: `BVMF:` → `.SA`; `LON:`/`LSE:` → `.L`; demais → sigla pura.
 
-- [ ] **Step 1: Criar `ativos_mini.csv`** (com BOM) contendo: `PETR4;BVMF:PETR4;ACAO;PETROLEO BRASILEIRO`, `HGLG11;BVMF:HGLG11;FII;CSHG LOGISTICA`, `AAPL;NASDAQ:AAPL;STOCK;APPLE INC`, `GDX;LON:GDX;ETF_GB;VANECK GOLD MINERS UCITS`, `GDX;NYSEARCA:GDX;ETF_US;VANECK GOLD MINERS ETF`, `USML;LSE:USML;ETF_GB;X USML`, `BTC;CURRENCY:BTC;CRIPTO;BITCOIN`, `IBOV;INDEX:IBOV;INDICE;IBOVESPA`, `IVVB11;BVMF:IVVB11;ETF;ISHARES S&P 500`.
+- [x] **Step 1: Criar `ativos_mini.csv`** (com BOM) contendo: `PETR4;BVMF:PETR4;ACAO;PETROLEO BRASILEIRO`, `HGLG11;BVMF:HGLG11;FII;CSHG LOGISTICA`, `AAPL;NASDAQ:AAPL;STOCK;APPLE INC`, `GDX;LON:GDX;ETF_GB;VANECK GOLD MINERS UCITS`, `GDX;NYSEARCA:GDX;ETF_US;VANECK GOLD MINERS ETF`, `USML;LSE:USML;ETF_GB;X USML`, `BTC;CURRENCY:BTC;CRIPTO;BITCOIN`, `IBOV;INDEX:IBOV;INDICE;IBOVESPA`, `IVVB11;BVMF:IVVB11;ETF;ISHARES S&P 500`.
 
-- [ ] **Step 2: Escrever os testes que falham:**
+- [x] **Step 2: Escrever os testes que falham:**
 
 ```python
 def test_yahoo_ticker_mapping(assets_csv):
@@ -415,13 +415,13 @@ def test_real_file_loads():
     assert len(assets.load_universe()) > 5000
 ```
 
-- [ ] **Step 3: Rodar e ver falhar** — `.venv/bin/pytest apps/market/tests/test_assets.py -q` → FAIL (`ModuleNotFoundError`).
+- [x] **Step 3: Rodar e ver falhar** — `.venv/bin/pytest apps/market/tests/test_assets.py -q` → FAIL (`ModuleNotFoundError`).
 
-- [ ] **Step 4: Implementar `assets.py`** conforme Interfaces.
+- [x] **Step 4: Implementar `assets.py`** conforme Interfaces.
 
-- [ ] **Step 5: Rodar e ver passar** — `.venv/bin/pytest -q`.
+- [x] **Step 5: Rodar e ver passar** — `.venv/bin/pytest -q`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add apps/market/assets.py apps/market/data/ativos.csv apps/market/tests/
@@ -441,7 +441,7 @@ git commit -m "✨ feat(market): universo de tickers do ativos.csv (assets.py)"
 - Produces: `get_series(name, start, end)` inalterado na assinatura, agora aceitando nomes do universo de tickers; helpers internos `_resolve(name) -> tuple[SeriesDef, bool]` (`bool` = sob demanda; catálogo primeiro, depois `assets`; nenhum → `KeyError`) e `_ensure_fresh(sdef: SeriesDef, today: dt.date) -> None`; constante `STALE_DAYS = 3`.
 - Regras (spec §5.6, D11, D12): só para série crua sob demanda, **após** cache miss e **antes** de materializar; sob `single_flight(f"ondemand:{series_key}")`, re-checar `last_date`; `None` → `fetch_yahoo(ticker, catalog.EPOCH, today)`; `last_date < today − STALE_DAYS` → `fetch_yahoo(ticker, last_date + 1, today)`; `upsert_points(key, "YF", "level", pts)`. `FetchError` → `logger.warning` e segue (materializa o que o banco tiver; vazio → `None`). Variante BRL não precisa de lógica nova: `ToBRL` chama `get_series(base)`, que resolve sob demanda.
 
-- [ ] **Step 1: Escrever os testes que falham** (db + `locmem_cache` + `assets_csv`; `fetch_yahoo` mockado em `series.yahoo.fetch_yahoo`; `today` fixado com monkeypatch de `series._today`, função que devolve `dt.date.today()`):
+- [x] **Step 1: Escrever os testes que falham** (db + `locmem_cache` + `assets_csv`; `fetch_yahoo` mockado em `series.yahoo.fetch_yahoo`; `today` fixado com monkeypatch de `series._today`, função que devolve `dt.date.today()`):
 
 ```python
 def test_first_use_fetches_full_history(...):
@@ -462,13 +462,13 @@ def test_unknown_name_raises_keyerror(...):
         series.get_series("NAOEXISTE", dt.date(2024, 1, 1), TODAY)
 ```
 
-- [ ] **Step 2: Rodar e ver falhar** — `.venv/bin/pytest apps/market/tests/test_series.py -q` → FAIL (`KeyError: série desconhecida no catálogo: 'AAPL'`).
+- [x] **Step 2: Rodar e ver falhar** — `.venv/bin/pytest apps/market/tests/test_series.py -q` → FAIL (`KeyError: série desconhecida no catálogo: 'AAPL'`).
 
-- [ ] **Step 3: Implementar** conforme Interfaces.
+- [x] **Step 3: Implementar** conforme Interfaces.
 
-- [ ] **Step 4: Rodar e ver passar** — `.venv/bin/pytest -q`.
+- [x] **Step 4: Rodar e ver passar** — `.venv/bin/pytest -q`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/market/
@@ -486,7 +486,7 @@ git commit -m "✨ feat(market): tickers sob demanda com histórico completo e s
 **Interfaces:**
 - Produces: helper `_on_demand_defs() -> list[SeriesDef]` — chaves `yf:*` de `repository.available_keys()` fora de `{d.series_key for d in catalog.ingestible()}`, cada uma como `SeriesDef(key[3:], "YF", key, "level")`. O loop de `handle` itera `catalog.ingestible() + _on_demand_defs()`, com a mesma política (`--only`, `--full`, `--since`, `failed_keys`, exit 1).
 
-- [ ] **Step 1: Escrever os testes que falham:**
+- [x] **Step 1: Escrever os testes que falham:**
 
 ```python
 def test_ingest_updates_on_demand_ticker(monkeypatch, db):
@@ -504,13 +504,13 @@ def test_catalog_yf_key_not_duplicated(db):
     assert "yf:IVVB11.SA" not in {d.series_key for d in cmd_mod._on_demand_defs()}
 ```
 
-- [ ] **Step 2: Rodar e ver falhar** — `.venv/bin/pytest apps/market/tests/test_commands.py -q` → FAIL.
+- [x] **Step 2: Rodar e ver falhar** — `.venv/bin/pytest apps/market/tests/test_commands.py -q` → FAIL.
 
-- [ ] **Step 3: Implementar.**
+- [x] **Step 3: Implementar.**
 
-- [ ] **Step 4: Rodar e ver passar** — `.venv/bin/pytest -q`.
+- [x] **Step 4: Rodar e ver passar** — `.venv/bin/pytest -q`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/market/
@@ -532,7 +532,7 @@ git commit -m "✨ feat(market): ingestão também atualiza tickers buscados sob
   - `frame_to_rows(df: pd.DataFrame, columns: dict[str, str]) -> list[dict]` — cada linha = `{"name": str(index), <novo>: clean(df[<orig>])}`.
   - `yearly_to_json(df: pd.DataFrame) -> dict` — `{"years": [int...], "rows": [{"name", "values": {str(ano): float|None}, "total": float|None}]}` (coluna `"Total Acum."` vira `total`).
 
-- [ ] **Step 1: Escrever os testes que falham:**
+- [x] **Step 1: Escrever os testes que falham:**
 
 ```python
 def test_clean_handles_nan_inf_numpy():
@@ -558,10 +558,10 @@ def test_yearly_to_json_shape():
                                   "rows": [{"name": "Carteira", "values": {"2023": 0.1, "2024": None}, "total": 0.3}]}
 ```
 
-- [ ] **Step 2: Rodar e ver falhar** — `.venv/bin/pytest apps/api/tests/test_serializers.py -q` → FAIL.
-- [ ] **Step 3: Implementar.**
-- [ ] **Step 4: Rodar e ver passar.**
-- [ ] **Step 5: Commit**
+- [x] **Step 2: Rodar e ver falhar** — `.venv/bin/pytest apps/api/tests/test_serializers.py -q` → FAIL.
+- [x] **Step 3: Implementar.**
+- [x] **Step 4: Rodar e ver passar.**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/api/
@@ -588,7 +588,7 @@ git commit -m "✨ feat(api): serializers pandas -> JSON no formato do ECharts"
   - `@dataclass class AnalysisContext: df_combined: pd.DataFrame; portfolio_df: pd.DataFrame; selic: pd.Series | None; start: date; end: date; missing: list[str]`.
   - `run_analysis(user, req: AnalysisRequest) -> AnalysisContext` — `validate_request` → `get_token` → `fetch_user_portfolio(token, ativo=, classe=, start_date=iso, end_date=iso)` (`DLPAuthError` → 422 `dlp_token_rejected`; demais `DLPError` → 502 `dlp_unavailable`; `None` → 404 `portfolio_empty`) → `build_dataset(...)`. `start`/`end` do contexto = primeiro/último índice de `df_combined`; `missing` = benchmarks + `display_name(spec)` ausentes das colunas.
 
-- [ ] **Step 1: Escrever os testes que falham.** Em `test_synthetics.py`: `display_name` para `("IPCA","+",6.0)` → `"IPCA + 6%"` e `("CDI","%",110.0)` → `"110% do CDI"`. Em `test_analysis.py` (validação é pura; `run_analysis` com `analysis.fetch_user_portfolio` e `analysis.build_dataset` monkeypatchados):
+- [x] **Step 1: Escrever os testes que falham.** Em `test_synthetics.py`: `display_name` para `("IPCA","+",6.0)` → `"IPCA + 6%"` e `("CDI","%",110.0)` → `"110% do CDI"`. Em `test_analysis.py` (validação é pura; `run_analysis` com `analysis.fetch_user_portfolio` e `analysis.build_dataset` monkeypatchados):
 
 ```python
 TODAY = dt.date(2026, 10, 26)
@@ -645,10 +645,10 @@ def test_missing_lists_absent_names(user_with_token, monkeypatch):
 
 Fixtures em `apps/api/tests/conftest.py`: `user_with_token` (`user` + `UserToken` com `"tok-teste"`) e `user_with_token_client` (`Client` com `force_login` desse usuário) — reusadas nas Tasks 10 e 11.
 
-- [ ] **Step 2: Rodar e ver falhar** — `.venv/bin/pytest apps/api/tests/test_analysis.py apps/market/tests/test_synthetics.py -q` → FAIL.
-- [ ] **Step 3: Implementar** `display_name` (e usá-la em `engine/dataset.py`), os schemas e `analysis.py`.
-- [ ] **Step 4: Rodar e ver passar** — `.venv/bin/pytest -q` (inclusive `engine/tests`).
-- [ ] **Step 5: Commit**
+- [x] **Step 2: Rodar e ver falhar** — `.venv/bin/pytest apps/api/tests/test_analysis.py apps/market/tests/test_synthetics.py -q` → FAIL.
+- [x] **Step 3: Implementar** `display_name` (e usá-la em `engine/dataset.py`), os schemas e `analysis.py`.
+- [x] **Step 4: Rodar e ver passar** — `.venv/bin/pytest -q` (inclusive `engine/tests`).
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/api/ apps/market/synthetics.py apps/market/tests/test_synthetics.py engine/dataset.py
@@ -671,7 +671,7 @@ git commit -m "✨ feat(api): validação do AnalysisRequest e orquestração ru
   - `risk-return` → `{rows: [{name, volatilidade, retorno_cagr, sharpe}]}`; `yearly-summary` → `yearly_to_json`.
 - Fixture `portfolio_env` (conftest de `apps/api/tests`): `user_with_token` logado + monkeypatch de `apps.api.analysis.fetch_user_portfolio`, devolvendo uma carteira determinística de ~400 dias úteis (`twr` + `portfolio_df` com `date, vlr_mercado, vlr_investido, proventos, fluxo`, começando em `2024-03-01`), e de `engine.dataset.series.get_many/get_series`, servindo `CDI`/`SELIC` sintéticos a partir de `2024-01-02` (padrão de `engine/tests/test_dataset.py`).
 
-- [ ] **Step 1: Escrever os testes que falham:**
+- [x] **Step 1: Escrever os testes que falham:**
 
 ```python
 P = "/api/v1/portfolio"
@@ -718,10 +718,10 @@ def test_yearly_summary_shape(portfolio_env):
     assert d["years"] == [2024, 2025] and {r["name"] for r in d["rows"]} >= {"Carteira", "CDI"}
 ```
 
-- [ ] **Step 2: Rodar e ver falhar** — `.venv/bin/pytest apps/api/tests/test_portfolio_charts.py -q` → FAIL (404).
-- [ ] **Step 3: Implementar o router** (`tags=["portfolio"]`): cada handler = `ctx = run_analysis(request.user, body)` + um `compute_*` + serializer + `_envelope`.
-- [ ] **Step 4: Rodar e ver passar** — `.venv/bin/pytest -q`.
-- [ ] **Step 5: Commit**
+- [x] **Step 2: Rodar e ver falhar** — `.venv/bin/pytest apps/api/tests/test_portfolio_charts.py -q` → FAIL (404).
+- [x] **Step 3: Implementar o router** (`tags=["portfolio"]`): cada handler = `ctx = run_analysis(request.user, body)` + um `compute_*` + serializer + `_envelope`.
+- [x] **Step 4: Rodar e ver passar** — `.venv/bin/pytest -q`.
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/api/ config/api.py
@@ -743,7 +743,7 @@ git commit -m "✨ feat(api): endpoints de gráfico da carteira (TWR, drawdown, 
   - `GET /portfolio/filters` → `{ativos: [str], classes: [str]}` (ordenados, distintos), do `buscar_historico(token)` da carteira inteira; colunas candidatas `ASSET_COLUMNS = ("ativo", "ticker", "codigo")`, `CLASS_COLUMNS = ("classe", "tipo")`, usa a primeira presente; nenhuma → lista vazia + `logger.warning`. Erros DLP mapeados como em `run_analysis` (extrair o mapeamento para um helper compartilhado em `analysis.py`: `dlp_errors()` context manager).
   - `POST /portfolio/refresh` → `dlp.invalidate_user_cache(get_token(user))`, `204`.
 
-- [ ] **Step 1: Escrever os testes que falham:**
+- [x] **Step 1: Escrever os testes que falham:**
 
 ```python
 def test_summary_period_values(portfolio_env):
@@ -771,10 +771,10 @@ def test_refresh_invalidates_user_cache(user_with_token_client, monkeypatch):
 def test_refresh_without_token_409(auth_client): ...
 ```
 
-- [ ] **Step 2: Rodar e ver falhar.**
-- [ ] **Step 3: Implementar.**
-- [ ] **Step 4: Rodar e ver passar** — `.venv/bin/pytest -q`.
-- [ ] **Step 5: Commit**
+- [x] **Step 2: Rodar e ver falhar.**
+- [x] **Step 3: Implementar.**
+- [x] **Step 4: Rodar e ver passar** — `.venv/bin/pytest -q`.
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/api/
@@ -795,7 +795,7 @@ git commit -m "✨ feat(api): resumo do período, filtros da carteira e refresh 
   - `GET /benchmarks/catalog` → `{groups: [{name, items}], defaults, synthetic: {bases: ["IPCA","CDI"], operadores: ["+","%"]}}`. O agrupamento é do implementador (ex.: por `source`/derivação); só precisa respeitar o teste.
   - `GET /assets/search?q=&limit=20` → `[{sigla, nome, classe, mercado, yf_ticker, brl_variant}]`; `len(q.strip()) < 2` → 422 `invalid_query`; `limit` limitado a `1..50` (fora → 422 `invalid_query`).
 
-- [ ] **Step 1: Escrever os testes que falham:**
+- [x] **Step 1: Escrever os testes que falham:**
 
 ```python
 def test_catalog_groups_only_known_names(auth_client):
@@ -820,10 +820,10 @@ def test_catalog_and_search_require_session(client, db):
     assert client.get("/api/v1/assets/search", {"q": "pe"}).status_code == 401
 ```
 
-- [ ] **Step 2: Rodar e ver falhar.**
-- [ ] **Step 3: Implementar.**
-- [ ] **Step 4: Rodar e ver passar** — `.venv/bin/pytest -q`.
-- [ ] **Step 5: Commit**
+- [x] **Step 2: Rodar e ver falhar.**
+- [x] **Step 3: Implementar.**
+- [x] **Step 4: Rodar e ver passar** — `.venv/bin/pytest -q`.
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/api/ config/api.py
@@ -838,22 +838,22 @@ git commit -m "✨ feat(api): catálogo de benchmarks e busca de tickers"
 - Create: `apps/api/tests/test_integration.py`, `docs/adr/0013-contrato-da-api-v1.md`, `docs/adr/0014-tickers-sob-demanda.md`
 - Modify: `docs/adr/README.md`, `docs/consolidacao_arquitetura_e_migracao.md`, `docs/README.md`, `backend/README.md`, `backend/CLAUDE.md`, `apps/api/routers/portfolio.py` (se a DLP real usar outros nomes de coluna) e `apps/market/services/sources/dlp.py` (se o token inválido não vier como 401/403)
 
-- [ ] **Step 1: Escrever os testes `integration`** (pulam sem `DLP_TEST_TOKEN` no ambiente):
+- [x] **Step 1: Escrever os testes `integration`** (pulam sem `DLP_TEST_TOKEN` no ambiente):
   - `test_real_dlp_historico_columns` — `buscar_historico(token)` devolve DataFrame; imprime `sorted(df.columns)` (`-s`) para conferir as colunas de ativo/classe.
   - `test_real_dlp_invalid_token_raises_auth_error` — token `"invalido-xyz"` → `DLPAuthError`.
   - `test_real_yahoo_on_demand_aapl` (db) — `series.get_series("AAPL", hoje − 30 dias, hoje)` não vazio.
 
-- [ ] **Step 2: Rodar** — `DLP_TEST_TOKEN=<token> .venv/bin/pytest -m integration apps/api/tests/test_integration.py -s -q`. Se as colunas ou o status de token inválido divergirem do que o código assume, ajustar `ASSET_COLUMNS`/`CLASS_COLUMNS` ou o mapeamento de `_get` com teste unitário novo (ver falhar → passar) e registrar o achado no ADR 0013.
+- [x] **Step 2: Rodar** — `DLP_TEST_TOKEN=<token> .venv/bin/pytest -m integration apps/api/tests/test_integration.py -s -q`. Se as colunas ou o status de token inválido divergirem do que o código assume, ajustar `ASSET_COLUMNS`/`CLASS_COLUMNS` ou o mapeamento de `_get` com teste unitário novo (ver falhar → passar) e registrar o achado no ADR 0013.
 
-- [ ] **Step 3: Roteiro manual no Swagger** (spec §3.3, item 3) com `manage.py runserver`: criar usuário no admin → `GET /auth/csrf` → `POST /auth/login` → `POST /dlp/token` (token real) → `GET /dlp/token-status` → os 8 endpoints de carteira com benchmarks default + sintético `{"base":"CDI","operador":"+","valor":2}` + `"AAPL BRL"` → `GET /portfolio/filters` e um endpoint com `classe` → `POST /portfolio/refresh` → `POST /auth/logout` → endpoint protegido = 401. Conferir no stdout do servidor que nenhum token aparece. Registrar o resultado (ok/achados) no fecho da fase, em `docs/consolidacao_arquitetura_e_migracao.md` §2.0.
+- [x] **Step 3: Roteiro manual no Swagger** (spec §3.3, item 3) com `manage.py runserver`: criar usuário no admin → `GET /auth/csrf` → `POST /auth/login` → `POST /dlp/token` (token real) → `GET /dlp/token-status` → os 8 endpoints de carteira com benchmarks default + sintético `{"base":"CDI","operador":"+","valor":2}` + `"AAPL BRL"` → `GET /portfolio/filters` e um endpoint com `classe` → `POST /portfolio/refresh` → `POST /auth/logout` → endpoint protegido = 401. Conferir no stdout do servidor que nenhum token aparece. Registrar o resultado (ok/achados) no fecho da fase, em `docs/consolidacao_arquitetura_e_migracao.md` §2.0.
 
-- [ ] **Step 4: Escrever os ADRs.** 0013 — contrato da API (D1–D5 + tabela de erros + achados da DLP real); 0014 — tickers sob demanda (D7–D12). Adicionar uma linha de cada no índice `docs/adr/README.md`.
+- [x] **Step 4: Escrever os ADRs.** 0013 — contrato da API (D1–D5 + tabela de erros + achados da DLP real); 0014 — tickers sob demanda (D7–D12). Adicionar uma linha de cada no índice `docs/adr/README.md`.
 
-- [ ] **Step 5: Checklist de documentação** de [`docs/README.md`](../../README.md#checklist-de-atualização-ao-fechar-uma-fase): doc mestre §2.0 (linha "API (Fase 3)"), §2.2 (remover "Sem API HTTP"), §4, §5 (registrar a **Fase 3b — Planejador de IR**), §9 (marcar Fase 3, inserir 3b); `backend/README.md` (Estado, Estrutura, contagem de testes, como abrir o Swagger); `backend/CLAUDE.md` (convenções de `apps/api`: routers finos, orquestração em `analysis.py`, `ApiError`, 422 para token rejeitado); `docs/README.md`.
+- [x] **Step 5: Checklist de documentação** de [`docs/README.md`](../../README.md#checklist-de-atualização-ao-fechar-uma-fase): doc mestre §2.0 (linha "API (Fase 3)"), §2.2 (remover "Sem API HTTP"), §4, §5 (registrar a **Fase 3b — Planejador de IR**), §9 (marcar Fase 3, inserir 3b); `backend/README.md` (Estado, Estrutura, contagem de testes, como abrir o Swagger); `backend/CLAUDE.md` (convenções de `apps/api`: routers finos, orquestração em `analysis.py`, `ApiError`, 422 para token rejeitado); `docs/README.md`.
 
-- [ ] **Step 6: Verificação final** — `.venv/bin/pytest -q` verde; `.venv/bin/python manage.py check` limpo; `.venv/bin/python manage.py makemigrations --check --dry-run` → "No changes detected".
+- [x] **Step 6: Verificação final** — `.venv/bin/pytest -q` verde; `.venv/bin/python manage.py check` limpo; `.venv/bin/python manage.py makemigrations --check --dry-run` → "No changes detected".
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add -A apps/ ../docs/ README.md CLAUDE.md

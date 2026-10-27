@@ -103,7 +103,7 @@ Saldos: BTC 30000 · CDB 12000 (custo) · PETR4 11430 · HGLG11 8000 · IMAB11 5
   - `@dataclass(frozen=True) Holding(ativo: str, classe: str, qtd: float, price: float | None, pm: float | None, vlr_investido: float, market_cod: str, moeda: str)` com propriedades `saldo -> float` (`qtd * price` se `price`, senão `vlr_investido`) e `saldo_source -> Literal["market", "cost"]`.
   - `normalize_wallet(payload: dict) -> tuple[list[Holding], list[str]]` — holdings com `saldo > 0`, ordenados por `saldo` decrescente (empate: `ativo`); segundo item = warnings globais (`mixed_class:<ativo>`). Payload sem `wallet` → `([], [])`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```python
 def test_normalize_maps_fx_fields_and_sorts_by_saldo():
@@ -139,21 +139,21 @@ def test_normalize_without_wallet_key():
     assert normalize_wallet({}) == ([], [])
 ```
 
-- [ ] **Step 2: Run to verify they fail**
+- [x] **Step 2: Run to verify they fail**
 
 Run: `.venv/bin/pytest apps/migration_ir -v`
 Expected: FAIL — `ModuleNotFoundError: apps.migration_ir.wallet`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Scaffold do app (`apps.py` com `name = "apps.migration_ir"`, `default_auto_field = "django.db.models.BigAutoField"`), `INSTALLED_APPS`. Em `wallet.py`: helper `_num(v) -> float | None` (aceita str/int/float, inválido → `None`); `price`/`pm` ≤ 0 → `None`. Agregação D14: soma `qtd`/`vlr_investido`; `pm` ponderado pela `qtd` das linhas com `pm`; `price` da primeira linha não nula; `classe`/`market_cod`/`moeda` da linha de maior `qtd`; warning se `classe` divergir.
 
-- [ ] **Step 4: Run to verify they pass**
+- [x] **Step 4: Run to verify they pass**
 
 Run: `.venv/bin/pytest apps/migration_ir -v && .venv/bin/python manage.py check`
 Expected: PASS; `no issues`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add config/settings.py apps/migration_ir
@@ -175,7 +175,7 @@ git commit -m "✨ feat(migration_ir): app do planejador e normalização da car
   - `estimate_profit(price: float, pm: float | None, qtd: float) -> float | None` — `(price − pm) × qtd`; `pm is None` → `None`.
   - `estimate_ir(lucro: float | None, rate: float) -> float | None` — `None` se `lucro is None`; `max(0, lucro) × rate`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```python
 @pytest.mark.parametrize("classe,expected", [
@@ -195,16 +195,16 @@ def test_profit_and_ir():
     assert estimate_profit(10.0, None, 5) is None and estimate_ir(None, 0.15) is None
 ```
 
-- [ ] **Step 2: Run to verify they fail**
+- [x] **Step 2: Run to verify they fail**
 
 Run: `.venv/bin/pytest apps/migration_ir/tests/test_tax.py -v`
 Expected: FAIL — `ModuleNotFoundError`.
 
-- [ ] **Step 3: Implement** — tabela como `dict` constante no topo do módulo (revisável).
+- [x] **Step 3: Implement** — tabela como `dict` constante no topo do módulo (revisável).
 
-- [ ] **Step 4: Run to verify they pass** — mesmo comando, PASS.
+- [x] **Step 4: Run to verify they pass** — mesmo comando, PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/migration_ir/tax.py apps/migration_ir/tests/test_tax.py
@@ -231,7 +231,7 @@ git commit -m "✨ feat(migration_ir): regra de isenção por classe e estimativ
 
 Ordem de validação (o primeiro erro vence): `invalid_allocation` → `invalid_parameters` → `invalid_holding` → `nothing_to_plan`. A cotação (`price_unavailable`) é da Task 5.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```python
 WALLET, _ = normalize_wallet(RESUMO)
@@ -301,16 +301,16 @@ def test_cash_only_plan_is_valid():
     assert _v(actions=[], initial_cash=500).initial_cash == 500
 ```
 
-- [ ] **Step 2: Run to verify they fail**
+- [x] **Step 2: Run to verify they fail**
 
 Run: `.venv/bin/pytest apps/migration_ir/tests/test_planner_validate.py -v`
 Expected: FAIL — `ModuleNotFoundError: apps.migration_ir.planner`.
 
-- [ ] **Step 3: Implement** `PlanError`, `Action`, `PlanInput`, `validate_plan_input`, `target_holding`, `calcular_compras_rebalanceadas` (ver Interfaces). Mensagens em português, uma por condição (ex.: `"Os pesos dos alvos devem somar 100."`, `"O papel {ativo} não pode ser vendido: não tem cotação."`).
+- [x] **Step 3: Implement** `PlanError`, `Action`, `PlanInput`, `validate_plan_input`, `target_holding`, `calcular_compras_rebalanceadas` (ver Interfaces). Mensagens em português, uma por condição (ex.: `"Os pesos dos alvos devem somar 100."`, `"O papel {ativo} não pode ser vendido: não tem cotação."`).
 
-- [ ] **Step 4: Run to verify they pass** — mesmo comando, PASS.
+- [x] **Step 4: Run to verify they pass** — mesmo comando, PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/migration_ir/planner.py apps/migration_ir/tests/test_planner_validate.py
@@ -354,7 +354,7 @@ para cada ação (saldo crescente), q = qtd:
 
 Helper de teste: `_h(ativo, classe, qtd, price, pm=None, vlr=0.0) -> Holding` (moeda `"BRL"`, `market_cod` vazio) e `_inp(holdings, actions, **kw)` que chama `validate_plan_input` com alvos `[("A", 100)]` por padrão e `prices={"A": 10.0}`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```python
 def test_greedy_fills_cap_then_spills():
@@ -464,19 +464,19 @@ def test_contributions_only_single_month():
     assert (p["ticker"], p["valor"], p["qtd_sugerida"], p["participacao_final"]) == ("IMAB11", 1000.0, 10, 1.0)
 ```
 
-- [ ] **Step 2: Run to verify they fail**
+- [x] **Step 2: Run to verify they fail**
 
 Run: `.venv/bin/pytest apps/migration_ir/tests/test_planner_build.py -v`
 Expected: FAIL — `ImportError: cannot import name 'build_plan'`.
 
-- [ ] **Step 3: Implement `build_plan`** conforme Interfaces e o pseudocódigo do guloso.
+- [x] **Step 3: Implement `build_plan`** conforme Interfaces e o pseudocódigo do guloso.
 
-- [ ] **Step 4: Run to verify they pass**
+- [x] **Step 4: Run to verify they pass**
 
 Run: `.venv/bin/pytest apps/migration_ir -v`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/migration_ir/planner.py apps/migration_ir/tests/test_planner_build.py
@@ -503,7 +503,7 @@ git commit -m "✨ feat(migration_ir): cronograma de vendas no teto de isenção
 
 Regras: (1) holding do alvo com `price` → `wallet`. (2) `lookup(ticker, holding.market_cod if holding else None)`; série = `asset.yf_ticker` se `BR`, senão `f"{asset.yf_ticker} BRL"`; `get_series(nome, today - 10 dias, today)`; preço = último valor não nulo; `KeyError`/`None`/vazia → indisponível. `classe == "ETF_GB"` (ou `holding.moeda == "GBP"`) → `fx_approx`. Alvo na carteira sem cotação e fora do universo → `price_unavailable` (não `invalid_allocation`).
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `test_assets.py` (usa `assets_csv`):
 
@@ -537,19 +537,19 @@ def test_missing_quote_is_price_unavailable(fake_series): ...     # alvo "AAPL" 
 
 (Os três últimos seguem o mesmo esqueleto do primeiro; asserções nos comentários.)
 
-- [ ] **Step 2: Run to verify they fail**
+- [x] **Step 2: Run to verify they fail**
 
 Run: `.venv/bin/pytest apps/market/tests/test_assets.py apps/migration_ir/tests/test_prices.py -v`
 Expected: FAIL — `AttributeError: module 'apps.market.assets' has no attribute 'lookup'` / `ModuleNotFoundError`.
 
-- [ ] **Step 3: Implement** `exchange_rank`, `lookup`, `prices.py`, fixture CSV e `migration_assets_csv`.
+- [x] **Step 3: Implement** `exchange_rank`, `lookup`, `prices.py`, fixture CSV e `migration_assets_csv`.
 
-- [ ] **Step 4: Run to verify they pass**
+- [x] **Step 4: Run to verify they pass**
 
 Run: `.venv/bin/pytest apps/market apps/migration_ir -q`
 Expected: PASS (inclusive os testes antigos de `assets`/busca).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/market/assets.py apps/market/tests/test_assets.py apps/migration_ir
@@ -575,7 +575,7 @@ git commit -m "✨ feat(migration_ir): cotação dos alvos pela carteira ou pelo
 
 Fixture de teste: `user_with_token_client` e `user_with_token` já existem em `apps/api/tests/conftest.py`; **mover** as duas para o `conftest.py` raiz (junto de `auth_client`) para o app novo usá-las, sem mudar o comportamento. `monkeypatch.setattr("apps.migration_ir.api.dlp.buscar_resumo_carteira", lambda tok: ...)`; `get_series` falso como na Task 5.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```python
 PLAN_BODY = {
@@ -635,19 +635,19 @@ def test_users_are_isolated(...): ...
 
 (`client_resumo` = fixture do app que monkeypatcha `buscar_resumo_carteira` → `RESUMO`, `get_series` falso e `migration_assets_csv`, devolvendo `user_with_token_client`.)
 
-- [ ] **Step 2: Run to verify they fail**
+- [x] **Step 2: Run to verify they fail**
 
 Run: `.venv/bin/pytest apps/migration_ir/tests/test_api.py -v`
 Expected: FAIL — `404` em `/api/v1/migration/wallet` (router não registrado).
 
-- [ ] **Step 3: Implement** schemas, `api.py` (router fino; `portfolio_empty` quando `normalize_wallet` devolve lista vazia ou o payload é `None`), registro em `config/api.py`, mover fixtures para o `conftest.py` raiz.
+- [x] **Step 3: Implement** schemas, `api.py` (router fino; `portfolio_empty` quando `normalize_wallet` devolve lista vazia ou o payload é `None`), registro em `config/api.py`, mover fixtures para o `conftest.py` raiz.
 
-- [ ] **Step 4: Run to verify they pass**
+- [x] **Step 4: Run to verify they pass**
 
 Run: `.venv/bin/pytest -q`
 Expected: PASS na suíte inteira (as fixtures movidas não quebram `apps/api`).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add conftest.py apps/api/tests/conftest.py apps/migration_ir config/api.py
@@ -669,7 +669,7 @@ git commit -m "✨ feat(migration_ir): endpoints /migration/wallet e /migration/
 
 Layout (spec §9): banner azul `(26, 54, 93)`; 1-Parâmetros (modo, teto, caixa, `already_sold_this_month`, pesos `TICKER: N%`); 2-Saldos iniciais por alvo (direto + contados + total); 3-Cronograma: por mês subtabelas VENDER (ativo, qtd, valor, IR est.) | COMPRAR (ticker, valor, qtd sugerida, part. final), linha "IR estimado do mês" e warnings do mês em texto. Rodapé: disclaimer + `Gerado em <dd/mm/aaaa HH:MM> | app-investimentos` + `Página n/{nb}`. Valores formatados `R$ 1.234,56` só aqui.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```python
 def test_pdf_has_dynamic_targets_ir_and_footer(plan_envelope):
@@ -699,19 +699,19 @@ def test_plan_pdf_errors_are_json(client_resumo):
 
 (`plan_envelope` = fixture que chama `compute_plan` via `client_resumo` → `POST /plan` e devolve `r.json()`.)
 
-- [ ] **Step 2: Run to verify they fail**
+- [x] **Step 2: Run to verify they fail**
 
 Run: `.venv/bin/pytest apps/migration_ir/tests/test_pdf.py apps/migration_ir/tests/test_api.py -k pdf -v`
 Expected: FAIL — `ModuleNotFoundError: apps.migration_ir.pdf` / 404.
 
-- [ ] **Step 3: Implement** `render_plan_pdf` (helper `_latin1(s)` = `s.encode("latin-1", "replace").decode("latin-1")` em todo texto; `pdf.compress = compress`) e a rota `POST /plan.pdf` (`HttpResponse(bytes, content_type="application/pdf")` + `Content-Disposition` com `dt.date.today():%Y%m%d`).
+- [x] **Step 3: Implement** `render_plan_pdf` (helper `_latin1(s)` = `s.encode("latin-1", "replace").decode("latin-1")` em todo texto; `pdf.compress = compress`) e a rota `POST /plan.pdf` (`HttpResponse(bytes, content_type="application/pdf")` + `Content-Disposition` com `dt.date.today():%Y%m%d`).
 
-- [ ] **Step 4: Run to verify they pass**
+- [x] **Step 4: Run to verify they pass**
 
 Run: `.venv/bin/pytest apps/migration_ir -q`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add requirements.txt apps/migration_ir
@@ -726,7 +726,7 @@ git commit -m "✨ feat(migration_ir): PDF do plano de migração com IR estimad
 - Create: `apps/migration_ir/tests/test_integration.py`, `../docs/adr/0015-planejador-de-ir.md`
 - Modify: `../docs/adr/README.md` (índice), `../docs/consolidacao_arquitetura_e_migracao.md`, `../docs/README.md`, `README.md`, `CLAUDE.md` (backend, se houver convenção nova)
 
-- [ ] **Step 1: Write the integration test**
+- [x] **Step 1: Write the integration test**
 
 ```python
 pytestmark = pytest.mark.integration
@@ -742,24 +742,24 @@ def test_real_migration_wallet(db, user):
     print("Classes:", sorted({i["classe"] for i in r.json()["data"]}))
 ```
 
-- [ ] **Step 2: Run with the real token**
+- [x] **Step 2: Run with the real token**
 
 Run: `DLP_TEST_TOKEN=... .venv/bin/pytest apps/migration_ir/tests/test_integration.py -m integration -s -v`
 Expected: PASS; conferir na saída que existem `qtd` (ou `quantidade`), `price_fx`, `pm_fx` e que as classes batem com a tabela de `tax.py`. Divergência → ajustar `wallet.py`/`tax.py` com teste novo antes de seguir.
 
-- [ ] **Step 3: Definition of Done**
+- [x] **Step 3: Definition of Done**
 
 Run: `.venv/bin/pytest -q && .venv/bin/python manage.py check`
 Expected: verdes; `no issues`. Roteiro manual no Swagger (`/api/v1/docs`) com o token do Bruno: `/migration/wallet` → `/migration/plan` com 3 alvos livres → baixar `/migration/plan.pdf` e conferir visualmente (o Bruno executa/aprova).
 
-- [ ] **Step 4: ADR 0015 + checklist de documentação** ([`../docs/README.md`](../../README.md#checklist-de-atualização-ao-fechar-uma-fase))
+- [x] **Step 4: ADR 0015 + checklist de documentação** ([`../docs/README.md`](../../README.md#checklist-de-atualização-ao-fechar-uma-fase))
 
 - ADR 0015 "Planejador de IR": alvos livres, associação manual, regra de isenção por classe, estimativa de IR, saldo sem cotação (decisões #1–#6 e D1–D14 do spec §2) + as regras fixadas na Task 4 (mês vazio, ordem das vendas, `purchases` com todos os alvos, `pm` nulo → `not_estimated`).
 - Doc mestre: §Fase 3b concluída com data; §9 `[x]`; §4 com `apps/migration_ir/` como **existente**; §2.x com os endpoints `/migration/*`.
 - `backend/README.md`: estado, estrutura (`apps/migration_ir/`), contagem de testes, `fpdf2`.
 - `backend/CLAUDE.md`: registrar que routers de domínio podem morar no próprio app (`apps/<app>/api.py`) e que núcleos de cálculo novos ficam puros (sem Django) fora de `engine/`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/migration_ir/tests/test_integration.py ../docs README.md CLAUDE.md

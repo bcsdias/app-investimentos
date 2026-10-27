@@ -63,7 +63,7 @@ apps/api/tests/test_integration.py              # M — equivalência filtro em 
 **Interfaces:**
 - Produces: `settings.DLP_BASE_URL: str` (sem barra final). `_BASE` deixa de existir.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```python
 def test_get_uses_settings_base_url(monkeypatch, settings):
@@ -82,22 +82,22 @@ def test_default_base_url_is_dlpinvest():
 
 (O segundo teste assume que `backend/.env` não define `DLP_BASE_URL`; se definir, o teste vale para o default de `_env` — usar `monkeypatch.delenv` + reimport não vale o custo, basta não definir no `.env`.)
 
-- [ ] **Step 2: Run to verify they fail**
+- [x] **Step 2: Run to verify they fail**
 
 Run: `.venv/bin/pytest apps/market/tests/test_sources_dlp.py -k "base_url" -v`
 Expected: FAIL — `AttributeError: 'Settings' object has no attribute 'DLP_BASE_URL'` / URL `dlombelloplanilhas`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `config/settings.py`: `DLP_BASE_URL = _env("DLP_BASE_URL", "https://users.dlpinvest.com.br").rstrip("/")`.
 `dlp._get`: montar a URL com `settings.DLP_BASE_URL` lido **dentro** de `_get` (`from django.conf import settings`), remover `_BASE`. `.env.example`: linha `# DLP_BASE_URL=https://users.dlpinvest.com.br`.
 
-- [ ] **Step 4: Run to verify they pass**
+- [x] **Step 4: Run to verify they pass**
 
 Run: `.venv/bin/pytest apps/market/tests/test_sources_dlp.py -v`
 Expected: PASS (todos, incluindo os antigos).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add config/settings.py .env.example apps/market/services/sources/dlp.py apps/market/tests/test_sources_dlp.py
@@ -126,7 +126,7 @@ _ROWS = [
 ]
 ```
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```python
 def test_filtered_calls_share_one_http_request(monkeypatch):
@@ -193,23 +193,23 @@ def test_filter_missing_column_is_ignored_and_logged(caplog):
     assert "corretora" in caplog.text
 ```
 
-- [ ] **Step 2: Run to verify they fail**
+- [x] **Step 2: Run to verify they fail**
 
 Run: `.venv/bin/pytest apps/market/tests/test_sources_dlp.py -v`
 Expected: FAIL — `calls == [{"classe": "ACAO"}, ...]` (múltiplas chamadas) e `AttributeError: module ... has no attribute '_filter_historico'`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `_filter_historico`: para cada filtro com `str(val).strip() != ""`, achar a coluna por `lower()`; se ausente, `logger.warning("coluna %s ausente no /historico; filtro ignorado", nome)`; senão máscara `col.notna() & (col.astype(str).str.strip() == str(val).strip())`. Resultado vazio → `None`; senão `.reset_index(drop=True)` (já é cópia).
 
 `buscar_historico`: chave única (Global Constraints); dentro de `single_flight` sempre `_get("/historico", token, {})`; `df.empty` → `return None` sem cachear; `_norm_date_col` → `mc.set_df(key, df, ttl=mc.TTL_DLP)`. Nos três caminhos de retorno (hit fora do lock, hit dentro do lock, fetch) devolver `_filter_historico(df, ativo=..., classe=..., corretora=...)`. Remover o import de `json` se ficar sem uso.
 
-- [ ] **Step 4: Run to verify they pass**
+- [x] **Step 4: Run to verify they pass**
 
 Run: `.venv/bin/pytest apps/market/tests/test_sources_dlp.py apps/api engine -q`
 Expected: PASS — inclusive os testes da API e do engine (que chamam `buscar_historico` via mocks).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/market/services/sources/dlp.py apps/market/tests/test_sources_dlp.py
@@ -227,7 +227,7 @@ git commit -m "⚡ perf(market): cache único do /historico por usuário com fil
 **Interfaces:**
 - Produces: `_extract_distinct(df, candidates, label) -> list[str]` — mesma assinatura e mesmo retorno.
 
-- [ ] **Step 1: Write the test (characterization)**
+- [x] **Step 1: Write the test (characterization)**
 
 ```python
 def test_extract_distinct_dedups_strips_and_drops_blanks():
@@ -236,21 +236,21 @@ def test_extract_distinct_dedups_strips_and_drops_blanks():
     assert _extract_distinct(df, ("classe",), "classe") == ["ACAO", "ETF", "FII"]
 ```
 
-- [ ] **Step 2: Run it**
+- [x] **Step 2: Run it**
 
 Run: `.venv/bin/pytest apps/api/tests/test_portfolio_misc.py::test_extract_distinct_dedups_strips_and_drops_blanks -v`
 Expected: PASS com o código atual — é teste de caracterização; ele fixa o comportamento que a refatoração precisa preservar. (Exceção consciente ao "ver falhar": refatoração de performance sem mudança de comportamento.)
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Trocar o corpo do ramo encontrado pelo trecho do spec §4.2 (`pd.unique(df[col].dropna())` → `str(v).strip()` → `sorted({v for v in vals if v})`).
 
-- [ ] **Step 4: Run to verify it still passes**
+- [x] **Step 4: Run to verify it still passes**
 
 Run: `.venv/bin/pytest apps/api/tests/test_portfolio_misc.py -v`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/api/routers/portfolio.py apps/api/tests/test_portfolio_misc.py
@@ -268,7 +268,7 @@ git commit -m "⚡ perf(api): deduplica antes de normalizar em _extract_distinct
 **Interfaces:**
 - Consumes: `dlp.buscar_historico`, `dlp._get` (Task 2).
 
-- [ ] **Step 1: Write the integration test**
+- [x] **Step 1: Write the integration test**
 
 ```python
 def test_real_dlp_in_memory_filter_matches_server_filter():
@@ -286,23 +286,23 @@ def test_real_dlp_in_memory_filter_matches_server_filter():
         pd.testing.assert_frame_equal(mine[sorted(mine.columns)], server[sorted(server.columns)])
 ```
 
-- [ ] **Step 2: Run the integration test with the real token**
+- [x] **Step 2: Run the integration test with the real token**
 
 Run: `DLP_TEST_TOKEN=... .venv/bin/pytest apps/api/tests/test_integration.py -m integration -k in_memory -v` (o Bruno fornece o token).
 Expected: PASS. **Se falhar** (linhas ou colunas diferentes): parar, reportar o diff ao Bruno; a Task 2 não pode ir para produção nesse caso.
 
-- [ ] **Step 3: Full suite + check**
+- [x] **Step 3: Full suite + check**
 
 Run: `.venv/bin/pytest -q && .venv/bin/python manage.py check`
 Expected: todos verdes; `System check identified no issues`.
 
-- [ ] **Step 4: Checklist de documentação** ([`../docs/README.md`](../../README.md#checklist-de-atualização-ao-fechar-uma-fase))
+- [x] **Step 4: Checklist de documentação** ([`../docs/README.md`](../../README.md#checklist-de-atualização-ao-fechar-uma-fase))
 
 - Doc mestre: marcar Fase 3c `[x]` em §9 e anotar em §Fase 3c "concluída" com a data; registrar em §2.x o domínio `users.dlpinvest.com.br` e `DLP_BASE_URL`.
 - `backend/README.md`: `DLP_BASE_URL` na tabela de variáveis; contagem de testes atualizada.
 - ADR: nenhum novo (sem decisão nova além do spec); se o ADR 0014 descreve a chave `dlp:hist:...:<params_hash>`, acrescentar nota "substituída na Fase 3c por chave única + filtro em memória".
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/api/tests/test_integration.py ../docs README.md

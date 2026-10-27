@@ -84,7 +84,7 @@ Ver o guia completo em `docs/ferramentas-de-desenvolvimento.md`. Para as Fases 0
   - Container `lab-redis` (porta host `6379`), *healthy*, na `lab-net`.
   - Script versionado `backend/scripts/bootstrap_db.sh` (idempotente).
 
-- [ ] **Step 1: Criar a rede compartilhada `lab-net`**
+- [x] **Step 1: Criar a rede compartilhada `lab-net`**
 
 Run:
 ```bash
@@ -93,7 +93,7 @@ docker network inspect lab-net --format '{{.Name}} {{.Driver}}'
 ```
 Expected: imprime `lab-net bridge`.
 
-- [ ] **Step 2: Escrever `/data/projetos/lab-redis/docker-compose.yml`**
+- [x] **Step 2: Escrever `/data/projetos/lab-redis/docker-compose.yml`**
 
 ```yaml
 services:
@@ -123,7 +123,7 @@ networks:
     external: true
 ```
 
-- [ ] **Step 3: Substituir `/data/projetos/lab-postgres/docker-compose.yml`**
+- [x] **Step 3: Substituir `/data/projetos/lab-postgres/docker-compose.yml`**
 
 Conteúdo novo (preserva imagem, `banco_lab`, usuário `postgres`, senha, volume e limites; adiciona healthcheck + `lab-net`):
 ```yaml
@@ -158,7 +158,7 @@ networks:
     external: true
 ```
 
-- [ ] **Step 4: Subir/recriar os dois serviços e aguardar healthy**
+- [x] **Step 4: Subir/recriar os dois serviços e aguardar healthy**
 
 Run:
 ```bash
@@ -169,7 +169,7 @@ docker ps --filter name=lab-postgres --filter name=lab-redis --format 'table {{.
 ```
 Expected: ambos `Up ... (healthy)`.
 
-- [ ] **Step 5: Escrever `backend/scripts/bootstrap_db.sh`**
+- [x] **Step 5: Escrever `backend/scripts/bootstrap_db.sh`**
 
 ```bash
 #!/usr/bin/env bash
@@ -214,7 +214,7 @@ Run:
 chmod +x /data/projetos/app-investimentos/backend/scripts/bootstrap_db.sh
 ```
 
-- [ ] **Step 6: Rodar o bootstrap e validar o database**
+- [x] **Step 6: Rodar o bootstrap e validar o database**
 
 Run (escolha uma senha e guarde — vai para `backend/.env` na Task 5):
 ```bash
@@ -224,7 +224,7 @@ docker exec -i lab-postgres psql -U postgres -tAc "SELECT rolname, rolcreatedb F
 ```
 Expected: primeira query imprime `appinvest`; segunda imprime `appinvest|t`.
 
-- [ ] **Step 7: Rodar o bootstrap DE NOVO (prova de idempotência)**
+- [x] **Step 7: Rodar o bootstrap DE NOVO (prova de idempotência)**
 
 Run:
 ```bash
@@ -232,7 +232,7 @@ APPINVEST_DB_PASSWORD='troque-esta-senha' bash /data/projetos/app-investimentos/
 ```
 Expected: termina com `>> OK: appinvest@appinvest pronto.` e as linhas "já existia" — sem erro.
 
-- [ ] **Step 8: Remover o `lab-nginx` de teste**
+- [x] **Step 8: Remover o `lab-nginx` de teste**
 
 Run:
 ```bash
@@ -242,7 +242,7 @@ docker ps -a --filter name=lab-nginx-teste --format '{{.Names}}'
 ```
 Expected: última linha vazia (container removido); diretório não existe mais.
 
-- [ ] **Step 9: Commit do script versionado**
+- [x] **Step 9: Commit do script versionado**
 
 ```bash
 cd /data/projetos/app-investimentos
@@ -291,7 +291,7 @@ remoção do lab-nginx de teste) foi aplicada fora do repo, em /data/projetos."
   - `pytest` executável a partir de `backend/` com `pytest-django`.
   - Pacote `apps.core` (vazio de modelos ainda) e `apps.core.tests`.
 
-- [ ] **Step 1: Criar o virtualenv e o `requirements.txt`**
+- [x] **Step 1: Criar o virtualenv e o `requirements.txt`**
 
 `backend/requirements.txt`:
 ```
@@ -322,7 +322,7 @@ python3 -m venv .venv
 ```
 Expected: imprime `Django 5.2.x`.
 
-- [ ] **Step 2: Criar os arquivos do projeto Django**
+- [x] **Step 2: Criar os arquivos do projeto Django**
 
 `backend/manage.py`:
 ```python
@@ -502,7 +502,7 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
 application = get_asgi_application()
 ```
 
-- [ ] **Step 3: Criar o app `accounts` com o `User` customizado**
+- [x] **Step 3: Criar o app `accounts` com o `User` customizado**
 
 `backend/apps/__init__.py`: vazio.
 `backend/apps/accounts/__init__.py`: vazio.
@@ -552,7 +552,7 @@ class CoreConfig(AppConfig):
     name = "apps.core"
 ```
 
-- [ ] **Step 4: Criar `pytest.ini` e o `.env.example`**
+- [x] **Step 4: Criar `pytest.ini` e o `.env.example`**
 
 `backend/pytest.ini`:
 ```ini
@@ -584,7 +584,7 @@ REDIS_URL=redis://localhost:6379/1
 FERNET_KEY=
 ```
 
-- [ ] **Step 5: Criar o `backend/.env` real (não versionado) para rodar os próximos passos**
+- [x] **Step 5: Criar o `backend/.env` real (não versionado) para rodar os próximos passos**
 
 Run:
 ```bash
@@ -608,7 +608,7 @@ Expected: `grep -c '=$'` imprime `0` (nenhuma chave ficou sem valor). Use a MESM
 
 > Nota de segurança: `.env` está coberto pelo `.gitignore` da raiz (`.env`). Não exiba o conteúdo de `FERNET_KEY` em nenhuma saída.
 
-- [ ] **Step 6: Escrever o teste de usuário (deve falhar)**
+- [x] **Step 6: Escrever o teste de usuário (deve falhar)**
 
 `backend/apps/accounts/tests/test_user.py`:
 ```python
@@ -631,7 +631,7 @@ def test_superuser_flags():
     assert su.is_staff and su.is_superuser
 ```
 
-- [ ] **Step 7: Escrever o smoke de infra (deve falhar por falta de migração)**
+- [x] **Step 7: Escrever o smoke de infra (deve falhar por falta de migração)**
 
 `backend/apps/core/tests/test_smoke.py`:
 ```python
@@ -656,7 +656,7 @@ def test_cache_set_get():
     assert cache.get("smoke-key") == 123
 ```
 
-- [ ] **Step 8: Rodar os testes e ver falhar**
+- [x] **Step 8: Rodar os testes e ver falhar**
 
 Run:
 ```bash
@@ -665,7 +665,7 @@ cd /data/projetos/app-investimentos/backend
 ```
 Expected: FALHA. Erros esperados: `django.db.utils.ProgrammingError` / "relation ... does not exist" (sem migrations) e/ou coleta falhando antes de `migrate`.
 
-- [ ] **Step 9: Gerar e aplicar as migrations**
+- [x] **Step 9: Gerar e aplicar as migrations**
 
 Run:
 ```bash
@@ -675,7 +675,7 @@ cd /data/projetos/app-investimentos/backend
 ```
 Expected: cria `apps/accounts/migrations/0001_initial.py`; `migrate` aplica `contenttypes`, `auth`, `admin`, `sessions`, `accounts`, `core` sem erro. (O app `core` ainda não tem modelos — nenhuma migration de `core` é gerada; tudo bem.)
 
-- [ ] **Step 10: Rodar os testes e ver passar**
+- [x] **Step 10: Rodar os testes e ver passar**
 
 Run:
 ```bash
@@ -684,7 +684,7 @@ cd /data/projetos/app-investimentos/backend
 ```
 Expected: PASSA (`test_user.py` 2 testes, `test_smoke.py` 2 testes — o de cache pode aparecer como `skipped` se o Redis não responder, o que é aceitável).
 
-- [ ] **Step 11: `manage.py check` e confirmação de que nada foi para o `banco_lab`**
+- [x] **Step 11: `manage.py check` e confirmação de que nada foi para o `banco_lab`**
 
 Run:
 ```bash
@@ -695,7 +695,7 @@ docker exec -i lab-postgres psql -U postgres -d banco_lab -c "\dt"
 ```
 Expected: `check` sem erros; `appinvest` contém `accounts_user` e `django_migrations`; `banco_lab` responde `Did not find any relations.` (segue vazio).
 
-- [ ] **Step 12: Ajustar o `.gitignore` da raiz**
+- [x] **Step 12: Ajustar o `.gitignore` da raiz**
 
 Acrescentar ao final de `/data/projetos/app-investimentos/.gitignore`:
 ```
@@ -705,7 +705,7 @@ backend/staticfiles/
 .coverage
 ```
 
-- [ ] **Step 13: Commit**
+- [x] **Step 13: Commit**
 
 ```bash
 cd /data/projetos/app-investimentos
@@ -735,7 +735,7 @@ Redis) passando. Migrations iniciais aplicadas."
   - `apps.core.security.decrypt(ciphertext: str) -> str`
   - (`decrypt` levanta `cryptography.fernet.InvalidToken` para entrada inválida ou cifrada com outra chave.)
 
-- [ ] **Step 1: Escrever o teste (deve falhar)**
+- [x] **Step 1: Escrever o teste (deve falhar)**
 
 `backend/apps/core/tests/test_security.py`:
 ```python
@@ -777,7 +777,7 @@ def test_configured_key_is_32_bytes_base64():
     assert len(base64.urlsafe_b64decode(key)) == 32
 ```
 
-- [ ] **Step 2: Rodar o teste e ver falhar**
+- [x] **Step 2: Rodar o teste e ver falhar**
 
 Run:
 ```bash
@@ -786,7 +786,7 @@ cd /data/projetos/app-investimentos/backend
 ```
 Expected: FALHA com `ModuleNotFoundError: No module named 'apps.core.security'`.
 
-- [ ] **Step 3: Implementar `security.py`**
+- [x] **Step 3: Implementar `security.py`**
 
 `backend/apps/core/security.py`:
 ```python
@@ -812,7 +812,7 @@ def decrypt(ciphertext: str) -> str:
     return _cipher().decrypt(ciphertext.encode()).decode()
 ```
 
-- [ ] **Step 4: Rodar o teste e ver passar**
+- [x] **Step 4: Rodar o teste e ver passar**
 
 Run:
 ```bash
@@ -821,7 +821,7 @@ cd /data/projetos/app-investimentos/backend
 ```
 Expected: PASSA (5 testes).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 cd /data/projetos/app-investimentos
@@ -849,11 +849,11 @@ rejeição de lixo e de token de outra chave, sanidade da chave (32 bytes base64
   - `apps.core.models.UserToken` — `OneToOneField` `user` (`related_name="dlp_token"`, `on_delete=CASCADE`); campo `encrypted_token: TextField`; `created_at`/`updated_at`. Métodos: `set_token(raw: str) -> None`, `get_token() -> str`.
   - `apps.core.models.MarketSeries` — campos `series_key: CharField(120)`, `source: CharField(16)`, `reference_date: DateField`, `value: DecimalField(20, 8)`, `updated_at`. `UniqueConstraint(["series_key", "reference_date"], name="uniq_series_point")`.
 
-- [ ] **Step 1: Criar `backend/apps/core/migrations/__init__.py`**
+- [x] **Step 1: Criar `backend/apps/core/migrations/__init__.py`**
 
 Arquivo vazio.
 
-- [ ] **Step 2: Escrever o teste (deve falhar)**
+- [x] **Step 2: Escrever o teste (deve falhar)**
 
 `backend/apps/core/tests/test_models.py`:
 ```python
@@ -924,7 +924,7 @@ def test_marketseries_allows_same_key_other_date():
     assert MarketSeries.objects.filter(series_key="bcb:12").count() == 2
 ```
 
-- [ ] **Step 3: Rodar o teste e ver falhar**
+- [x] **Step 3: Rodar o teste e ver falhar**
 
 Run:
 ```bash
@@ -933,7 +933,7 @@ cd /data/projetos/app-investimentos/backend
 ```
 Expected: FALHA com `ImportError: cannot import name 'MarketSeries' from 'apps.core.models'` (ou módulo inexistente).
 
-- [ ] **Step 4: Implementar `models.py`**
+- [x] **Step 4: Implementar `models.py`**
 
 `backend/apps/core/models.py`:
 ```python
@@ -987,7 +987,7 @@ class MarketSeries(models.Model):
         return f"{self.series_key}@{self.reference_date}={self.value}"
 ```
 
-- [ ] **Step 5: Gerar e aplicar a migration**
+- [x] **Step 5: Gerar e aplicar a migration**
 
 Run:
 ```bash
@@ -997,7 +997,7 @@ cd /data/projetos/app-investimentos/backend
 ```
 Expected: cria `apps/core/migrations/0001_initial.py` com `UserToken` + `MarketSeries` + constraint `uniq_series_point`; `migrate` aplica sem erro.
 
-- [ ] **Step 6: Rodar o teste e ver passar**
+- [x] **Step 6: Rodar o teste e ver passar**
 
 Run:
 ```bash
@@ -1006,7 +1006,7 @@ cd /data/projetos/app-investimentos/backend
 ```
 Expected: PASSA (6 testes).
 
-- [ ] **Step 7: Rodar a suíte inteira**
+- [x] **Step 7: Rodar a suíte inteira**
 
 Run:
 ```bash
@@ -1015,7 +1015,7 @@ cd /data/projetos/app-investimentos/backend
 ```
 Expected: PASSA (accounts 2 + core security 5 + core models 6 + smoke 2 = 15; cache smoke pode ficar `skipped`).
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 cd /data/projetos/app-investimentos
@@ -1040,7 +1040,7 @@ testes de round-trip, não-vazamento do plano, unicidade e related_name."
 - Consumes: `apps.core.models.UserToken`, `apps.core.models.MarketSeries` (Task 4); `apps.accounts.models.User` admin (Task 2).
 - Produces: painel `/admin` com os três modelos navegáveis; superusuário criado.
 
-- [ ] **Step 1: Implementar `core/admin.py`**
+- [x] **Step 1: Implementar `core/admin.py`**
 
 `backend/apps/core/admin.py`:
 ```python
@@ -1070,7 +1070,7 @@ class MarketSeriesAdmin(admin.ModelAdmin):
     ordering = ("series_key", "reference_date")
 ```
 
-- [ ] **Step 2: `manage.py check` + `makemigrations --check`**
+- [x] **Step 2: `manage.py check` + `makemigrations --check`**
 
 Run:
 ```bash
@@ -1080,7 +1080,7 @@ cd /data/projetos/app-investimentos/backend
 ```
 Expected: `check` sem erros; `makemigrations --check` diz "No changes detected" (exit 0).
 
-- [ ] **Step 3: Criar o superusuário**
+- [x] **Step 3: Criar o superusuário**
 
 Run:
 ```bash
@@ -1089,7 +1089,7 @@ cd /data/projetos/app-investimentos/backend
 ```
 Expected: cria o usuário (definir a senha no prompt).
 
-- [ ] **Step 4: Subir o servidor e checar o Admin manualmente**
+- [x] **Step 4: Subir o servidor e checar o Admin manualmente**
 
 Run:
 ```bash
@@ -1102,7 +1102,7 @@ Verificação manual (outro terminal ou navegador):
 - Em *User tokens*, confirmar que **não há botão "Add"** e que `encrypted_token` é somente leitura.
 - Encerrar o servidor (`Ctrl+C`).
 
-- [ ] **Step 5: Round-trip de token via shell**
+- [x] **Step 5: Round-trip de token via shell**
 
 Run:
 ```bash
@@ -1121,7 +1121,7 @@ u.delete()
 ```
 Expected: imprime `round-trip OK`.
 
-- [ ] **Step 6: Verificação completa da Definition of Done (spec §2)**
+- [x] **Step 6: Verificação completa da Definition of Done (spec §2)**
 
 Run:
 ```bash
@@ -1135,7 +1135,7 @@ docker exec -i lab-postgres psql -U postgres -d banco_lab -c "\dt"        # segu
 ```
 Expected: `lab-net` existe; ambos containers `healthy`; `check` limpo; `pytest` verde; `appinvest` tem `core_usertoken` e `core_marketseries`; `banco_lab` sem relations.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 cd /data/projetos/app-investimentos

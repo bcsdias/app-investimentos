@@ -133,7 +133,7 @@ Ver `docs/ferramentas-de-desenvolvimento.md` §"Fase 2 / 2.5":
   - `pytest.ini` com marker `integration` e `addopts = --reuse-db -m "not integration"`.
   - `backend/apps/market/tests/fixtures/*.csv` — cópias versionadas de `../data/raw` e `../data/static`.
 
-- [ ] **Step 1: Adicionar as dependências ao `requirements.txt`**
+- [x] **Step 1: Adicionar as dependências ao `requirements.txt`**
 
 Inserir na seção `# --- runtime ---` de `backend/requirements.txt`, logo após `gunicorn~=23.0` (pins aproximados — confirmar patch exato via `context7`):
 
@@ -156,7 +156,7 @@ cd /data/projetos/app-investimentos/backend
 ```
 Expected: imprime `deps OK`.
 
-- [ ] **Step 2: Criar o skeleton do app `apps.market`**
+- [x] **Step 2: Criar o skeleton do app `apps.market`**
 
 `backend/apps/market/__init__.py`: arquivo vazio.
 
@@ -172,7 +172,7 @@ class MarketConfig(AppConfig):
 
 `backend/apps/market/tests/__init__.py`: arquivo vazio.
 
-- [ ] **Step 3: Registrar o app e a flag no `settings.py`**
+- [x] **Step 3: Registrar o app e a flag no `settings.py`**
 
 Em `backend/config/settings.py`, no `INSTALLED_APPS`, após `"apps.core",`:
 ```python
@@ -187,7 +187,7 @@ Ao final do arquivo (após o bloco `LOGGING`):
 B3_INGEST_USE_SELENIUM = _env("B3_INGEST_USE_SELENIUM", "0") == "1"
 ```
 
-- [ ] **Step 4: Adicionar o marker `integration` ao `pytest.ini`**
+- [x] **Step 4: Adicionar o marker `integration` ao `pytest.ini`**
 
 `backend/pytest.ini` fica:
 ```ini
@@ -201,7 +201,7 @@ markers =
     integration: chama serviços externos ao vivo (rede) — não roda por padrão
 ```
 
-- [ ] **Step 5: Adicionar o campo `kind` a `MarketSeries`**
+- [x] **Step 5: Adicionar o campo `kind` a `MarketSeries`**
 
 Em `backend/apps/core/models.py`, na classe `MarketSeries`, após o campo `source`:
 ```python
@@ -209,7 +209,7 @@ Em `backend/apps/core/models.py`, na classe `MarketSeries`, após o campo `sourc
     kind = models.CharField(max_length=8, default="level")  # "rate" (cumprod) | "level"
 ```
 
-- [ ] **Step 6: Mostrar `kind` no Admin**
+- [x] **Step 6: Mostrar `kind` no Admin**
 
 Em `backend/apps/core/admin.py`, no `MarketSeriesAdmin`:
 ```python
@@ -222,7 +222,7 @@ class MarketSeriesAdmin(admin.ModelAdmin):
     ordering = ("series_key", "reference_date")
 ```
 
-- [ ] **Step 7: Gerar e aplicar a migration**
+- [x] **Step 7: Gerar e aplicar a migration**
 
 Run:
 ```bash
@@ -232,7 +232,7 @@ cd /data/projetos/app-investimentos/backend
 ```
 Expected: cria `apps/core/migrations/0002_marketseries_kind.py` (AddField `kind`); `migrate` aplica sem erro.
 
-- [ ] **Step 8: Copiar as fixtures de CSV**
+- [x] **Step 8: Copiar as fixtures de CSV**
 
 Run:
 ```bash
@@ -247,7 +247,7 @@ ls backend/apps/market/tests/fixtures/
 ```
 Expected: 7 arquivos listados. (Se `YF_IMAB11_SA.csv` não existir em `data/raw`, usar `YF_B5P211_SA.csv` no lugar e ajustar o nome nos testes da Task 11.)
 
-- [ ] **Step 9: Rodar a suíte inteira — nada pode ter quebrado**
+- [x] **Step 9: Rodar a suíte inteira — nada pode ter quebrado**
 
 Run:
 ```bash
@@ -257,7 +257,7 @@ cd /data/projetos/app-investimentos/backend
 ```
 Expected: `check` limpo; os 15 testes das Fases 0+1 seguem verdes (o smoke de cache pode `skip` sem Redis).
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 cd /data/projetos/app-investimentos
@@ -289,7 +289,7 @@ python-bcb, requests, selenium, webdriver-manager."
   - `apps.market.cache.get_df(key: str) -> pd.Series | pd.DataFrame | None` — desembrulha o envelope; `pd.Series` volta como `Series` (não `DataFrame`); erro/miss → `None`.
   - `apps.market.cache.TTL_SERIES = 86400`, `apps.market.cache.TTL_DLP = 600`.
 
-- [ ] **Step 1: Escrever os testes (devem falhar)**
+- [x] **Step 1: Escrever os testes (devem falhar)**
 
 `backend/apps/market/tests/test_cache.py`:
 ```python
@@ -363,7 +363,7 @@ def test_multiindex_columns_are_flattened():
     assert list(out.columns) == ["Close_PETR4"]
 ```
 
-- [ ] **Step 2: Rodar e ver falhar**
+- [x] **Step 2: Rodar e ver falhar**
 
 Run:
 ```bash
@@ -372,7 +372,7 @@ cd /data/projetos/app-investimentos/backend
 ```
 Expected: FALHA com `ModuleNotFoundError: No module named 'apps.market.cache'`.
 
-- [ ] **Step 3: Implementar `cache.py`**
+- [x] **Step 3: Implementar `cache.py`**
 
 `backend/apps/market/cache.py`:
 ```python
@@ -445,7 +445,7 @@ def get_df(key: str):
     return raw
 ```
 
-- [ ] **Step 4: Rodar e ver passar**
+- [x] **Step 4: Rodar e ver passar**
 
 Run:
 ```bash
@@ -454,7 +454,7 @@ cd /data/projetos/app-investimentos/backend
 ```
 Expected: PASSA (7 testes).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 cd /data/projetos/app-investimentos
@@ -482,7 +482,7 @@ datas na chave. Falha de cache loga e não propaga."
   - `repository.last_date(series_key: str) -> date | None`.
   - `repository.available_keys() -> list[str]` — `distinct series_key` ordenado.
 
-- [ ] **Step 1: Escrever os testes (devem falhar)**
+- [x] **Step 1: Escrever os testes (devem falhar)**
 
 `backend/apps/market/tests/test_repository.py`:
 ```python
@@ -572,7 +572,7 @@ def test_last_date_and_available_keys():
     assert repo.available_keys() == ["bcb:12", "yf:^GSPC"]
 ```
 
-- [ ] **Step 2: Rodar e ver falhar**
+- [x] **Step 2: Rodar e ver falhar**
 
 Run:
 ```bash
@@ -581,7 +581,7 @@ cd /data/projetos/app-investimentos/backend
 ```
 Expected: FALHA com `ModuleNotFoundError: No module named 'apps.market.repository'`.
 
-- [ ] **Step 3: Implementar `repository.py`**
+- [x] **Step 3: Implementar `repository.py`**
 
 `backend/apps/market/repository.py`:
 ```python
@@ -664,7 +664,7 @@ def available_keys() -> list[str]:
     )
 ```
 
-- [ ] **Step 4: Rodar e ver passar**
+- [x] **Step 4: Rodar e ver passar**
 
 Run:
 ```bash
@@ -673,7 +673,7 @@ cd /data/projetos/app-investimentos/backend
 ```
 Expected: PASSA (7 testes).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 cd /data/projetos/app-investimentos
@@ -706,7 +706,7 @@ last_date e available_keys. Sem derivação — Postgres <-> pandas."
   - `bcb.fetch_sgs(codigo: int, start: date, end: date) -> list[RawPoint]` — valor CRU da coluna `str(codigo)`; *chunking* de 5 anos; `raise FetchError` em falha; `[]` só se a API responder sem dados.
   - `ptax.fetch_ptax(start: date, end: date) -> list[RawPoint]` — `cotacaoVenda` diária da API Olinda; 1 ponto por dia (último do dia); `raise FetchError` em falha.
 
-- [ ] **Step 1: Escrever `base.py`**
+- [x] **Step 1: Escrever `base.py`**
 
 `backend/apps/market/services/__init__.py`: vazio.
 `backend/apps/market/services/sources/__init__.py`: vazio.
@@ -739,7 +739,7 @@ class DLPError(Exception):
     """Falha na API DLP (por-usuário)."""
 ```
 
-- [ ] **Step 2: Escrever os testes de `bcb.py` (devem falhar)**
+- [x] **Step 2: Escrever os testes de `bcb.py` (devem falhar)**
 
 `backend/apps/market/tests/test_sources_bcb.py`:
 ```python
@@ -792,7 +792,7 @@ def test_fetch_sgs_empty_response_returns_empty_list(monkeypatch):
     assert bcb.fetch_sgs(12, dt.date(2024, 1, 1), dt.date(2024, 1, 31)) == []
 ```
 
-- [ ] **Step 3: Escrever os testes de `ptax.py` (devem falhar)**
+- [x] **Step 3: Escrever os testes de `ptax.py` (devem falhar)**
 
 `backend/apps/market/tests/test_sources_ptax.py`:
 ```python
@@ -844,7 +844,7 @@ def test_fetch_ptax_raises_on_http_failure(monkeypatch):
         ptax.fetch_ptax(dt.date(2024, 1, 1), dt.date(2024, 1, 31))
 ```
 
-- [ ] **Step 4: Rodar e ver falhar**
+- [x] **Step 4: Rodar e ver falhar**
 
 Run:
 ```bash
@@ -853,7 +853,7 @@ cd /data/projetos/app-investimentos/backend
 ```
 Expected: FALHA com `ModuleNotFoundError` para `apps.market.services.sources.bcb` / `ptax`.
 
-- [ ] **Step 5: Implementar `bcb.py`**
+- [x] **Step 5: Implementar `bcb.py`**
 
 `backend/apps/market/services/sources/bcb.py`:
 ```python
@@ -902,7 +902,7 @@ def fetch_sgs(codigo: int, start: dt.date, end: dt.date) -> list[RawPoint]:
     return [RawPoint(ts.date(), float(v)) for ts, v in series.items()]
 ```
 
-- [ ] **Step 6: Implementar `ptax.py`**
+- [x] **Step 6: Implementar `ptax.py`**
 
 `backend/apps/market/services/sources/ptax.py`:
 ```python
@@ -955,7 +955,7 @@ def fetch_ptax(start: dt.date, end: dt.date) -> list[RawPoint]:
     ]
 ```
 
-- [ ] **Step 7: Rodar e ver passar**
+- [x] **Step 7: Rodar e ver passar**
 
 Run:
 ```bash
@@ -964,7 +964,7 @@ cd /data/projetos/app-investimentos/backend
 ```
 Expected: PASSA (7 testes).
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 cd /data/projetos/app-investimentos
@@ -992,7 +992,7 @@ levantam FetchError em falha; [] só para 'sem dados'."
   - `yahoo.fetch_yahoo(ticker: str, start: date, end: date) -> list[RawPoint]` — coluna `Close` (`auto_adjust=True`); trata colunas MultiIndex; `raise FetchError` em falha; `[]` se o download vier vazio.
   - `tesouro.fetch_tesouro(titulo: str, vencimento: date, start: date, end: date) -> list[RawPoint]` — `PU Base Manhã` filtrado por `Tipo Titulo == titulo` e `Data Vencimento == vencimento`; `raise FetchError` em falha de download/parse; `[]` se o filtro não casar nada.
 
-- [ ] **Step 1: Escrever os testes de `yahoo.py` (devem falhar)**
+- [x] **Step 1: Escrever os testes de `yahoo.py` (devem falhar)**
 
 `backend/apps/market/tests/test_sources_yahoo.py`:
 ```python
@@ -1039,7 +1039,7 @@ def test_fetch_yahoo_raises_on_failure(monkeypatch):
         yahoo.fetch_yahoo("^GSPC", dt.date(2024, 1, 1), dt.date(2024, 1, 31))
 ```
 
-- [ ] **Step 2: Escrever os testes de `tesouro.py` (devem falhar)**
+- [x] **Step 2: Escrever os testes de `tesouro.py` (devem falhar)**
 
 `backend/apps/market/tests/test_sources_tesouro.py`:
 ```python
@@ -1103,7 +1103,7 @@ def test_fetch_tesouro_raises_on_download_failure(monkeypatch, tmp_path):
         )
 ```
 
-- [ ] **Step 3: Rodar e ver falhar**
+- [x] **Step 3: Rodar e ver falhar**
 
 Run:
 ```bash
@@ -1112,7 +1112,7 @@ cd /data/projetos/app-investimentos/backend
 ```
 Expected: FALHA com `ModuleNotFoundError`.
 
-- [ ] **Step 4: Implementar `yahoo.py`**
+- [x] **Step 4: Implementar `yahoo.py`**
 
 `backend/apps/market/services/sources/yahoo.py`:
 ```python
@@ -1158,7 +1158,7 @@ def fetch_yahoo(ticker: str, start: dt.date, end: dt.date) -> list[RawPoint]:
     return [RawPoint(ts.date(), float(v)) for ts, v in close.items()]
 ```
 
-- [ ] **Step 5: Implementar `tesouro.py`**
+- [x] **Step 5: Implementar `tesouro.py`**
 
 `backend/apps/market/services/sources/tesouro.py`:
 ```python
@@ -1223,7 +1223,7 @@ def fetch_tesouro(
     return [RawPoint(ts.date(), float(v)) for ts, v in sel.items()]
 ```
 
-- [ ] **Step 6: Rodar e ver passar**
+- [x] **Step 6: Rodar e ver passar**
 
 Run:
 ```bash
@@ -1232,7 +1232,7 @@ cd /data/projetos/app-investimentos/backend
 ```
 Expected: PASSA (7 testes).
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 cd /data/projetos/app-investimentos
@@ -1263,7 +1263,7 @@ fetch_yahoo (Close ajustado, trata MultiIndex, janela pedida) e fetch_tesouro
   - `dlp.buscar_historico(token: str, ativo=None, classe=None, corretora=None) -> pd.DataFrame | None` — LIVE; cache Redis TTL 600s; `raise DLPError` em erro HTTP; `None` só para "sem histórico".
   - `dlp.buscar_resumo_carteira(token: str) -> dict | None` — LIVE; cache Redis TTL 600s; `raise DLPError` em erro HTTP; `None` só para "sem resumo".
 
-- [ ] **Step 1: Escrever os testes de `b3.py` (devem falhar)**
+- [x] **Step 1: Escrever os testes de `b3.py` (devem falhar)**
 
 `backend/apps/market/tests/test_sources_b3.py`:
 ```python
@@ -1307,7 +1307,7 @@ def test_fetch_b3_selenium_raises_when_webdriver_unavailable(monkeypatch):
         b3.fetch_b3_selenium("IFIX", [2024])
 ```
 
-- [ ] **Step 2: Escrever os testes de `dlp.py` (devem falhar)**
+- [x] **Step 2: Escrever os testes de `dlp.py` (devem falhar)**
 
 `backend/apps/market/tests/test_sources_dlp.py`:
 ```python
@@ -1371,7 +1371,7 @@ def test_buscar_resumo_carteira_roundtrip(monkeypatch):
     assert dlp.buscar_resumo_carteira("DLP-tok") == {"wallet": [1, 2]}
 ```
 
-- [ ] **Step 3: Rodar e ver falhar**
+- [x] **Step 3: Rodar e ver falhar**
 
 Run:
 ```bash
@@ -1380,7 +1380,7 @@ cd /data/projetos/app-investimentos/backend
 ```
 Expected: FALHA com `ModuleNotFoundError`.
 
-- [ ] **Step 4: Implementar `b3.py`**
+- [x] **Step 4: Implementar `b3.py`**
 
 `backend/apps/market/services/sources/b3.py`:
 ```python
@@ -1490,7 +1490,7 @@ def fetch_b3_selenium(
 > legado. Como o path não roda no host, o teste só cobre "levanta `FetchError` quando o
 > `webdriver.Chrome` não está disponível". A Fase 5 valida o fluxo real no container.
 
-- [ ] **Step 5: Implementar `dlp.py`**
+- [x] **Step 5: Implementar `dlp.py`**
 
 `backend/apps/market/services/sources/dlp.py`:
 ```python
@@ -1579,7 +1579,7 @@ def buscar_resumo_carteira(token):
     return payload
 ```
 
-- [ ] **Step 6: Rodar e ver passar**
+- [x] **Step 6: Rodar e ver passar**
 
 Run:
 ```bash
@@ -1588,7 +1588,7 @@ cd /data/projetos/app-investimentos/backend
 ```
 Expected: PASSA (8 testes).
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 cd /data/projetos/app-investimentos
@@ -1616,7 +1616,7 @@ HTTP, None só para 'sem dados'. Não gravam em MarketSeries."
   - `synthetics.SyntheticSpec` — `@dataclass(frozen=True)` com `base: str` (`"IPCA"`|`"CDI"`), `operador: str` (`"+"`|`"%"`), `valor: float`.
   - `synthetics.parse_legacy_string(s: str) -> SyntheticSpec | None` — `"IPCA + 6%"` → `SyntheticSpec("IPCA","+",6.0)`; `"CDI + 2%"` → `("CDI","+",2.0)`; `"110% do CDI"` → `("CDI","%",110.0)`; lixo → `None`.
 
-- [ ] **Step 1: Escrever os testes (devem falhar)**
+- [x] **Step 1: Escrever os testes (devem falhar)**
 
 `backend/apps/market/tests/test_synthetics.py`:
 ```python
@@ -1649,7 +1649,7 @@ def test_spec_is_frozen():
         SyntheticSpec("IPCA", "+", 6.0).valor = 7.0
 ```
 
-- [ ] **Step 2: Rodar e ver falhar**
+- [x] **Step 2: Rodar e ver falhar**
 
 Run:
 ```bash
@@ -1658,7 +1658,7 @@ cd /data/projetos/app-investimentos/backend
 ```
 Expected: FALHA com `ModuleNotFoundError: No module named 'apps.market.synthetics'`.
 
-- [ ] **Step 3: Implementar `synthetics.py`**
+- [x] **Step 3: Implementar `synthetics.py`**
 
 `backend/apps/market/synthetics.py`:
 ```python
@@ -1696,7 +1696,7 @@ def parse_legacy_string(s: str) -> SyntheticSpec | None:
     return None
 ```
 
-- [ ] **Step 4: Rodar e ver passar**
+- [x] **Step 4: Rodar e ver passar**
 
 Run:
 ```bash
@@ -1705,7 +1705,7 @@ cd /data/projetos/app-investimentos/backend
 ```
 Expected: PASSA (11 testes).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 cd /data/projetos/app-investimentos
@@ -1734,7 +1734,7 @@ SyntheticSpec{base, operador, valor}. parse_legacy_string cobre 'IPCA + X%',
   - `transforms.composite(members: dict[str, pd.Series], weights: dict[str, float]) -> pd.Series` — soma dos retornos ponderados → `(1 + ret).cumprod()`.
   - `transforms.rebase_100(series: pd.Series, at: pd.Timestamp | None = None) -> pd.Series` — `(series / base_val) * 100`, `base_val` no 1º índice válido `>= at`.
 
-- [ ] **Step 1: Escrever os testes (devem falhar)**
+- [x] **Step 1: Escrever os testes (devem falhar)**
 
 `backend/apps/market/tests/test_transforms.py`:
 ```python
@@ -1812,7 +1812,7 @@ def test_rebase_100():
     np.testing.assert_allclose(out.values, [100.0, 110.0, 90.0])
 ```
 
-- [ ] **Step 2: Rodar e ver falhar**
+- [x] **Step 2: Rodar e ver falhar**
 
 Run:
 ```bash
@@ -1821,7 +1821,7 @@ cd /data/projetos/app-investimentos/backend
 ```
 Expected: FALHA com `ModuleNotFoundError: No module named 'apps.market.transforms'`.
 
-- [ ] **Step 3: Implementar `transforms.py`**
+- [x] **Step 3: Implementar `transforms.py`**
 
 `backend/apps/market/transforms.py`:
 ```python
@@ -1890,7 +1890,7 @@ def rebase_100(series: pd.Series, at: pd.Timestamp | None = None) -> pd.Series:
     return (series / base_val) * 100
 ```
 
-- [ ] **Step 4: Rodar e ver passar**
+- [x] **Step 4: Rodar e ver passar**
 
 Run:
 ```bash
@@ -1899,7 +1899,7 @@ cd /data/projetos/app-investimentos/backend
 ```
 Expected: PASSA (8 testes).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 cd /data/projetos/app-investimentos
@@ -1930,7 +1930,7 @@ sem I/O — alvo da paridade da Fase 6."
   - `catalog.DEFAULT_BENCHMARKS: list[str]`.
   - `catalog.legacy_csv_name(sdef: SeriesDef) -> str | None` — nome do CSV do repo legado que corresponde à série (para o `backfill`): `bcb:12` → `"BCB_12.csv"`; `yf:^GSPC` → `"YF_GSPC.csv"`; `yf:IVVB11.SA` → `"YF_IVVB11_SA.csv"`; `b3:IFIX` → `"IFIX_all.csv"`; `td:...` → `"TD_Tesouro_IPCAmais_15-05-2035.csv"`; `ptax:USDBRL` → `None` (não há CSV legado).
 
-- [ ] **Step 1: Escrever os testes (devem falhar)**
+- [x] **Step 1: Escrever os testes (devem falhar)**
 
 `backend/apps/market/tests/test_catalog.py`:
 ```python
@@ -1989,7 +1989,7 @@ def test_default_benchmarks_are_resolvable():
         assert cat.resolve(name)
 ```
 
-- [ ] **Step 2: Rodar e ver falhar**
+- [x] **Step 2: Rodar e ver falhar**
 
 Run:
 ```bash
@@ -1998,7 +1998,7 @@ cd /data/projetos/app-investimentos/backend
 ```
 Expected: FALHA com `ModuleNotFoundError: No module named 'apps.market.catalog'`.
 
-- [ ] **Step 3: Implementar `catalog.py`**
+- [x] **Step 3: Implementar `catalog.py`**
 
 `backend/apps/market/catalog.py`:
 ```python
@@ -2127,7 +2127,7 @@ def legacy_csv_name(sdef: SeriesDef) -> str | None:
     return None  # ptax não tem CSV legado
 ```
 
-- [ ] **Step 4: Rodar e ver passar**
+- [x] **Step 4: Rodar e ver passar**
 
 Run:
 ```bash
@@ -2136,7 +2136,7 @@ cd /data/projetos/app-investimentos/backend
 ```
 Expected: PASSA (7 testes). Se `test_legacy_csv_name_mapping` falhar em `S&P 500`, conferir que `yf:^GSPC` → `YF_GSPC.csv` (o `lstrip("^")` cuida do `^`).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 cd /data/projetos/app-investimentos
@@ -2163,7 +2163,7 @@ legacy_csv_name (mapeia SeriesDef -> nome do CSV do repo legado, p/ o backfill).
   - `series.get_many(names: list[str], start: date, end: date) -> dict[str, pd.Series]` — itera `get_series`; nomes vazios/ausentes ficam de fora do dict (com log).
   - `series._materialize(sdef, start, end) -> pd.Series | None` — despacho por `sdef.derivation` (tabela no spec §4.9).
 
-- [ ] **Step 1: Escrever os testes (devem falhar)**
+- [x] **Step 1: Escrever os testes (devem falhar)**
 
 `backend/apps/market/tests/test_series.py`:
 ```python
@@ -2262,7 +2262,7 @@ def test_get_many_skips_missing(monkeypatch):
     assert set(out) == {"CDI"}
 ```
 
-- [ ] **Step 2: Rodar e ver falhar**
+- [x] **Step 2: Rodar e ver falhar**
 
 Run:
 ```bash
@@ -2271,7 +2271,7 @@ cd /data/projetos/app-investimentos/backend
 ```
 Expected: FALHA com `ModuleNotFoundError: No module named 'apps.market.series'`.
 
-- [ ] **Step 3: Implementar `series.py`**
+- [x] **Step 3: Implementar `series.py`**
 
 `backend/apps/market/series.py`:
 ```python
@@ -2358,7 +2358,7 @@ def _materialize(sdef: catalog.SeriesDef, start: dt.date, end: dt.date) -> pd.Se
     raise TypeError(f"derivação não suportada: {type(d).__name__}")
 ```
 
-- [ ] **Step 4: Rodar e ver passar**
+- [x] **Step 4: Rodar e ver passar**
 
 Run:
 ```bash
@@ -2367,7 +2367,7 @@ cd /data/projetos/app-investimentos/backend
 ```
 Expected: PASSA (7 testes).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 cd /data/projetos/app-investimentos
@@ -2396,7 +2396,7 @@ raw/rate, ProxySplice, ToBRL, Synthetic, Composite). Substitui processar_benchma
   - Módulo expõe `_read_csv(path, prefix) -> list[RawPoint]` (parser por família de CSV) — testável isolado.
   - Ao fim: resumo `N séries / M pontos / K puladas` via `self.stdout`; `sys.exit(1)` se alguma série mapeada falhar ao ler.
 
-- [ ] **Step 1: Escrever os testes (devem falhar)**
+- [x] **Step 1: Escrever os testes (devem falhar)**
 
 `backend/apps/market/tests/test_commands.py`:
 ```python
@@ -2459,7 +2459,7 @@ def test_backfill_skips_unmapped_files(tmp_path):
     assert "IBLV-2005.csv" in out.getvalue() or "pulad" in out.getvalue().lower()
 ```
 
-- [ ] **Step 2: Rodar e ver falhar**
+- [x] **Step 2: Rodar e ver falhar**
 
 Run:
 ```bash
@@ -2468,7 +2468,7 @@ cd /data/projetos/app-investimentos/backend
 ```
 Expected: FALHA com `CommandError: Unknown command: 'backfill_market_data'`.
 
-- [ ] **Step 3: Implementar o comando**
+- [x] **Step 3: Implementar o comando**
 
 `backend/apps/market/management/__init__.py`: vazio.
 `backend/apps/market/management/commands/__init__.py`: vazio.
@@ -2578,7 +2578,7 @@ class Command(BaseCommand):
             sys.exit(1)
 ```
 
-- [ ] **Step 4: Rodar e ver passar**
+- [x] **Step 4: Rodar e ver passar**
 
 Run:
 ```bash
@@ -2587,7 +2587,7 @@ cd /data/projetos/app-investimentos/backend
 ```
 Expected: PASSA (5 testes). Se `YF_GSPC.csv` tiver formato diferente do esperado (`skiprows=3`), ajustar `_read_csv` — o header real é `Price,Close` / `Ticker,^GSPC` / `Date,` (3 linhas antes dos dados).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 cd /data/projetos/app-investimentos
@@ -2615,7 +2615,7 @@ arquivos não mapeados são pulados com log; exit 1 se alguma leitura falhar."
   - Módulo expõe `_fetch(sdef, start, end) -> list[RawPoint]` (despacho por `source`) — testável isolado.
   - Política de falha: uma série falha → `logger.error` + contador, **segue**; resumo `N ok / M falhas` + chaves; `sys.exit(1)` se `M > 0`. Após gravar, aquece o cache dos `DEFAULT_BENCHMARKS` (janela 5 anos e "tudo").
 
-- [ ] **Step 1: Escrever os testes (devem falhar)**
+- [x] **Step 1: Escrever os testes (devem falhar)**
 
 Anexar a `backend/apps/market/tests/test_commands.py`:
 ```python
@@ -2678,7 +2678,7 @@ def test_ingest_one_source_fails_others_continue(monkeypatch, db):
     assert MarketSeries.objects.filter(series_key="bcb:11").exists()  # a outra passou
 ```
 
-- [ ] **Step 2: Rodar e ver falhar**
+- [x] **Step 2: Rodar e ver falhar**
 
 Run:
 ```bash
@@ -2687,7 +2687,7 @@ cd /data/projetos/app-investimentos/backend
 ```
 Expected: FALHA com `CommandError: Unknown command: 'ingest_market_data'`.
 
-- [ ] **Step 3: Implementar o comando**
+- [x] **Step 3: Implementar o comando**
 
 `backend/apps/market/management/commands/ingest_market_data.py`:
 ```python
@@ -2795,7 +2795,7 @@ class Command(BaseCommand):
             sys.exit(1)
 ```
 
-- [ ] **Step 4: Rodar e ver passar**
+- [x] **Step 4: Rodar e ver passar**
 
 Run:
 ```bash
@@ -2804,7 +2804,7 @@ cd /data/projetos/app-investimentos/backend
 ```
 Expected: PASSA (backfill 5 + ingest 3 = 8 testes).
 
-- [ ] **Step 5: Rodar a suíte de `apps/market` inteira**
+- [x] **Step 5: Rodar a suíte de `apps/market` inteira**
 
 Run:
 ```bash
@@ -2813,7 +2813,7 @@ cd /data/projetos/app-investimentos/backend
 ```
 Expected: PASSA (todos os `test_*.py` de `apps/market`; nada marcado `integration`).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 cd /data/projetos/app-investimentos
@@ -2840,7 +2840,7 @@ read_b3_static salvo B3_INGEST_USE_SELENIUM."
 - Consumes: tudo das Tasks 1-12.
 - Produces: DoD da Fase 2 (spec §3.3) verificada; docs atualizadas; ADR da modelagem.
 
-- [ ] **Step 1: Suíte completa + `check` + `makemigrations --check`**
+- [x] **Step 1: Suíte completa + `check` + `makemigrations --check`**
 
 Run:
 ```bash
@@ -2851,7 +2851,7 @@ cd /data/projetos/app-investimentos/backend
 ```
 Expected: `check` limpo; "No changes detected"; **toda** a suíte verde (Fases 0+1: 15; Fase 2: ~60).
 
-- [ ] **Step 2: Backfill real + contagem por `source`**
+- [x] **Step 2: Backfill real + contagem por `source`**
 
 Run:
 ```bash
@@ -2868,7 +2868,7 @@ print('kinds:', list(MarketSeries.objects.values_list('kind', flat=True).distinc
 ```
 Expected: `total` > 0; linhas por `source` (`BCB`, `YF`, `B3`, talvez `TD`); `kinds` = `['level', 'rate']` — **nenhuma linha sem `kind`**.
 
-- [ ] **Step 3: `ingest --only bcb:12 --since` + idempotência**
+- [x] **Step 3: `ingest --only bcb:12 --since` + idempotência**
 
 Run:
 ```bash
@@ -2882,7 +2882,7 @@ echo "antes=$BEFORE depois=$AFTER"
 ```
 Expected: `antes == depois` (idempotente — sem linha duplicada). O comando pode logar "sem novos pontos" se o BCB não tiver dado novo, o que é aceitável.
 
-- [ ] **Step 4: `series.get_series` — CDI, IMA-B (splice), e cache hit**
+- [x] **Step 4: `series.get_series` — CDI, IMA-B (splice), e cache hit**
 
 Run:
 ```bash
@@ -2901,7 +2901,7 @@ print('2a chamada IMA-B ok:', ima2 is not None)
 ```
 Expected: `CDI pts` > 0 e `IMA-B pts` > 0 (o splice usou `bcb:12466` + `yf:IMAB11.SA` do backfill; se `YF_IMAB11_SA.csv` não estava no repo, a série IMA-B pode vir só do trecho BCB — aceitável, registrar). A 2ª chamada não deve emitir log de `repository`.
 
-- [ ] **Step 5: Confirmar que nada foi para `banco_lab`**
+- [x] **Step 5: Confirmar que nada foi para `banco_lab`**
 
 Run:
 ```bash
@@ -2910,17 +2910,17 @@ docker exec -i lab-postgres psql -U postgres -d appinvest -c "SELECT count(*) FR
 ```
 Expected: `banco_lab` sem relations; `appinvest.core_marketseries` com contagem > 0.
 
-- [ ] **Step 6: `silent-failure-hunter` sobre o diff de `apps/market/`**
+- [x] **Step 6: `silent-failure-hunter` sobre o diff de `apps/market/`**
 
 Rodar o agente `pr-review-toolkit` → `silent-failure-hunter` com o diff de `backend/apps/market/` (todas as Tasks). Corrigir qualquer `except: ... return None` / exceção engolida que ele apontar, com commit próprio (`🐛 fix(market): ...`). Confirmar: fontes levantam `FetchError`; `series`/`repository` propagam; só `cache` engole (com log).
 
-- [ ] **Step 7: Atualizar `docs/consolidacao_arquitetura_e_migracao.md`**
+- [x] **Step 7: Atualizar `docs/consolidacao_arquitetura_e_migracao.md`**
 
 - Em **§2.0** (tabela "Já implementado"), adicionar linha **Fase 2**: `apps/market/` (sources, repository, cache, catalog, synthetics, transforms, series), migration `core.0002` (`kind`), comandos `ingest_market_data` / `backfill_market_data`, ~60 testes.
 - Em **§2.2** ("O que não existe ainda"), remover o bullet "Sem serviços de mercado (`apps/market/`)"; ajustar o de "Dados ainda no legado" (o cache agora é `lab-redis`; os tokens seguem no Supabase até a fase de migração de dados).
 - Marcar item **3** do checklist §9 como concluído.
 
-- [ ] **Step 8: Atualizar `backend/README.md`**
+- [x] **Step 8: Atualizar `backend/README.md`**
 
 Na seção "Rodar", adicionar:
 ```bash
@@ -2929,16 +2929,16 @@ Na seção "Rodar", adicionar:
 ```
 Na "Estrutura", acrescentar `apps/market/` com uma linha por submódulo.
 
-- [ ] **Step 9: Criar `docs/adr/0011-marketseries-valor-cru-kind.md`**
+- [x] **Step 9: Criar `docs/adr/0011-marketseries-valor-cru-kind.md`**
 
 Registrar: `MarketSeries` guarda **valor cru** por fonte + campo `kind` (`rate`/`level`); toda derivação em `transforms.py` na leitura; Postgres = fonte de verdade, Redis = cache com a janela na chave; contrato sintético estruturado (`SyntheticSpec`). Contexto: corrige o bug do cache windowed do legado e mantém o banco auditável. Consequências: `+` auditável, algoritmo de splice evolui sem re-ingestão; `−` `cumprod` a cada cache-miss (mitigado por Redis). Referenciar o spec.
 Atualizar `docs/adr/README.md` com a linha do 0011.
 
-- [ ] **Step 10: `code-review` + `code-simplifier` no diff completo de `apps/market/`**
+- [x] **Step 10: `code-review` + `code-simplifier` no diff completo de `apps/market/`**
 
 Rodar `/code-review` sobre `backend/apps/market/`. Aplicar correções de correção num commit `🐛 fix(market): ...`; limpezas do `code-simplifier` num `♻️ refactor(market): ...`. Rodar `.venv/bin/pytest apps/market -q` de novo — verde.
 
-- [ ] **Step 11: Commit da documentação**
+- [x] **Step 11: Commit da documentação**
 
 ```bash
 cd /data/projetos/app-investimentos

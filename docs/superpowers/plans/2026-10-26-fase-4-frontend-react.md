@@ -125,19 +125,19 @@ frontend/
 **Interfaces:**
 - Produces: Ambiente de execução Vite com React 18, Tailwind CSS (Zinc/Emerald) e suíte de testes Vitest com `@testing-library/react` e `jsdom`.
 
-- [ ] **Step 1: Criar `frontend/package.json` com todas as dependências pinadas**
+- [x] **Step 1: Criar `frontend/package.json` com todas as dependências pinadas**
   Dependências: `react` (^18.3.1), `react-dom` (^18.3.1), `react-router-dom` (^6.28.0), `axios` (^1.7.9), `@tanstack/react-query` (^5.62.0), `echarts` (^5.5.1), `echarts-for-react` (^3.0.2), `lucide-react` (^0.468.0).
   DevDependencies: `vite` (^6.0.3), `@vitejs/plugin-react` (^4.3.4), `tailwindcss` (^3.4.16), `postcss` (^8.4.49), `autoprefixer` (^10.4.20), `vitest` (^2.1.8), `@testing-library/react` (^16.1.0), `@testing-library/jest-dom` (^6.6.3), `@testing-library/user-event` (^14.5.2), `jsdom` (^25.0.1).
   Scripts: `"dev": "vite"`, `"build": "vite build"`, `"preview": "vite preview"`, `"test": "vitest run"`, `"test:watch": "vitest"`.
 
-- [ ] **Step 2: Configurar `vite.config.js`, `vitest.config.js`, `tailwind.config.js`, `postcss.config.js` e `index.html`**
+- [x] **Step 2: Configurar `vite.config.js`, `vitest.config.js`, `tailwind.config.js`, `postcss.config.js` e `index.html`**
   - `vite.config.js`: plugin `@vitejs/plugin-react`, server proxy de `/api/v1` e `/admin` para `http://localhost:8000`.
   - `vitest.config.js`: `globals: true`, `environment: 'jsdom'`, `setupFiles: './src/test/setup.js'`.
   - `tailwind.config.js`: `darkMode: 'class'`, content em `./index.html` e `./src/**/*.{js,jsx}`, cores tema escuro (`zinc-900`, `zinc-800`, `emerald-500`, etc.).
   - `src/index.css`: `@tailwind base; @tailwind components; @tailwind utilities;` + reset de scrollbar.
   - `src/test/setup.js`: `import '@testing-library/jest-dom';` + mocks para `matchMedia` e `ResizeObserver`.
 
-- [ ] **Step 3: Escrever o teste de fumaça (smoke test) `frontend/src/test/smoke.test.jsx`**
+- [x] **Step 3: Escrever o teste de fumaça (smoke test) `frontend/src/test/smoke.test.jsx`**
 
 ```jsx
 import { render, screen } from '@testing-library/react';
@@ -153,13 +153,13 @@ describe('Frontend Environment Smoke Test', () => {
 });
 ```
 
-- [ ] **Step 4: Instalar dependências e rodar teste de fumaça e build**
+- [x] **Step 4: Instalar dependências e rodar teste de fumaça e build**
   Executar: `cd frontend && npm install && npm test`
   Resultado esperado: `1 passed`
   Executar: `npm run build`
   Resultado esperado: Build Vite concluído gerando pasta `dist/` sem erros de sintaxe.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add frontend/
@@ -182,7 +182,7 @@ git commit -m "feat(frontend): inicializar projeto Vite com Tailwind CSS e Vites
   - `AuthContext`: provê `{ user, isAuthenticated, isLoading, login, logout, checkAuth }`.
   - `<RequireAuth>`: componente wrapper que renderiza `<Outlet />` se autenticado ou redireciona para `/login`.
 
-- [ ] **Step 1: Escrever teste automatizado para o cliente Axios, interceptores e AuthContext**
+- [x] **Step 1: Escrever teste automatizado para o cliente Axios, interceptores e AuthContext**
   Arquivo: `frontend/src/test/api-auth.test.jsx`.
   Testar:
   - Injeção de `X-CSRFToken` ao chamar método `post` quando o cookie `csrftoken` existe.
@@ -190,22 +190,22 @@ git commit -m "feat(frontend): inicializar projeto Vite com Tailwind CSS e Vites
   - Interceptação de erro 422 (`dlp_token_rejected`) dispara o evento window `open-dlp-modal` com detalhe `reason: "rejected"`.
   - `AuthContext` atualiza `user` ao chamar `login()` com sucesso e limpa ao chamar `logout()`.
 
-- [ ] **Step 2: Rodar teste para verificar que falha**
+- [x] **Step 2: Rodar teste para verificar que falha**
   Executar: `cd frontend && npm test src/test/api-auth.test.jsx`
   Resultado esperado: FAIL ("cannot find module api/client")
 
-- [ ] **Step 3: Implementar `client.js`, `auth.js`, `dlp.js`, `AuthContext.jsx` e `RequireAuth.jsx`**
+- [x] **Step 3: Implementar `client.js`, `auth.js`, `dlp.js`, `AuthContext.jsx` e `RequireAuth.jsx`**
   - `client.js`: Criar instância com `baseURL: '/api/v1'`, `withCredentials: true`. Interceptor de request busca cookie `csrftoken` e insere `X-CSRFToken` para métodos de escrita. Interceptor de response redireciona 401 para `/login` (quando fora de `/login`) e dispara evento customizado para 409/422.
   - `auth.js`: Funções REST encapsulando `GET /auth/csrf`, `POST /auth/login`, `POST /auth/logout`, `GET /auth/me`.
   - `dlp.js`: Funções REST para `GET /dlp/token-status`, `POST /dlp/token`, `DELETE /dlp/token`.
   - `AuthContext.jsx`: Hook `useAuth()` e provider com carregamento assíncrono inicial chamando `getMe()` e `getCsrf()`.
   - `RequireAuth.jsx`: Verifica `isLoading` (renderiza loader) e se `!isAuthenticated` redireciona para `<Navigate to="/login" replace />`.
 
-- [ ] **Step 4: Rodar teste para verificar que passa**
+- [x] **Step 4: Rodar teste para verificar que passa**
   Executar: `cd frontend && npm test src/test/api-auth.test.jsx`
   Resultado esperado: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add frontend/src/api/ frontend/src/context/AuthContext.jsx frontend/src/components/common/RequireAuth.jsx frontend/src/test/api-auth.test.jsx
@@ -227,7 +227,7 @@ git commit -m "feat(frontend): implementar cliente Axios com CSRF, AuthContext e
   - `<DlpTokenModal isOpen onClose />`: Modal interativo para salvar ou remover token DLP com máscara de exibição e feedback de status.
   - Primitivas reutilizáveis: `Button`, `Card`, `Modal`, `Badge`, `Skeleton`, `Tabs`, `EmptyState`.
 
-- [ ] **Step 1: Escrever teste automatizado para Header e DlpTokenModal**
+- [x] **Step 1: Escrever teste automatizado para Header e DlpTokenModal**
   Arquivo: `frontend/src/test/header-dlp.test.jsx`.
   Testar:
   - Header exibe badge verde quando `configured: true` e amarelo de alerta quando `configured: false`.
@@ -235,21 +235,21 @@ git commit -m "feat(frontend): implementar cliente Axios com CSRF, AuthContext e
   - Submissão com token preenchido chama `dlpApi.saveToken` e atualiza o estado para `configured: true`.
   - Botão "Atualizar Dados" chama `POST /api/v1/portfolio/refresh` e aciona invalidação de queries do TanStack Query.
 
-- [ ] **Step 2: Rodar teste para verificar que falha**
+- [x] **Step 2: Rodar teste para verificar que falha**
   Executar: `cd frontend && npm test src/test/header-dlp.test.jsx`
   Resultado esperado: FAIL ("cannot find module components/layout/Header")
 
-- [ ] **Step 3: Implementar componentes visuais primitivos, Header e DlpTokenModal**
+- [x] **Step 3: Implementar componentes visuais primitivos, Header e DlpTokenModal**
   - Implementar primitivas em `components/common/` com design system Tailwind (tema escuro, focus rings acessíveis).
   - Implementar `DlpTokenModal.jsx`: formulário com input protegido (`type="password"` com botão de revelar), validação de string não vazia, chamada a `POST /dlp/token` e botão opcional de remover token via `DELETE /dlp/token`.
   - Implementar `Header.jsx`: consome `useQuery` de `/dlp/token-status` para exibir badge com `updated_at` formatado, botão com ícone `RefreshCw` da Lucide animado durante o carregamento de `POST /portfolio/refresh`, links de navegação para `/` e `/migracao-ir`.
   - Implementar `Layout.jsx`: envoltório padrão da aplicação contendo `<Header />` e container responsivo principal (`max-w-7xl mx-auto px-4 py-6`).
 
-- [ ] **Step 4: Rodar teste para verificar que passa**
+- [x] **Step 4: Rodar teste para verificar que passa**
   Executar: `cd frontend && npm test src/test/header-dlp.test.jsx`
   Resultado esperado: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add frontend/src/components/
@@ -271,7 +271,7 @@ git commit -m "feat(frontend): implementar componentes base, Header, Layout e Dl
   - `<FiltersBar />`: Barra horizontal com botões de período (`1A`, `2A`, `5A`, `Tudo`, `Personalizado`), seletores de `ativo` e `classe`, e o seletor de benchmarks.
   - `<BenchmarkSelector />`: Dropdown multiselect para índices do catálogo, busca de tickers (`assets/search`) com opção "Versão em BRL", e modal de criação de índice sintético (`{base, operador, valor}`).
 
-- [ ] **Step 1: Escrever teste automatizado para PortfolioFilterContext e FiltersBar**
+- [x] **Step 1: Escrever teste automatizado para PortfolioFilterContext e FiltersBar**
   Arquivo: `frontend/src/test/filters-bar.test.jsx`.
   Testar:
   - Selecionar `1A` calcula `start` de 365 dias atrás e `end` atual (formato ISO `YYYY-MM-DD`).
@@ -280,11 +280,11 @@ git commit -m "feat(frontend): implementar componentes base, Header, Layout e Dl
   - Buscar ativo e selecionar com BRL marcado adiciona `${yf_ticker} BRL` (ex: `AAPL BRL`).
   - Adicionar sintético insere objeto `{base: "CDI", operador: "+", valor: 2}` na lista `synthetics`.
 
-- [ ] **Step 2: Rodar teste para verificar que falha**
+- [x] **Step 2: Rodar teste para verificar que falha**
   Executar: `cd frontend && npm test src/test/filters-bar.test.jsx`
   Resultado esperado: FAIL ("cannot find module context/PortfolioFilterContext")
 
-- [ ] **Step 3: Implementar chamadas de API, Contexto de Filtros e Componentes de Controle**
+- [x] **Step 3: Implementar chamadas de API, Contexto de Filtros e Componentes de Controle**
   - `api/benchmarks.js`: `getCatalog()` chamando `GET /benchmarks/catalog`.
   - `api/assets.js`: `searchAssets(query)` chamando `GET /assets/search?q=${encodeURIComponent(query)}`.
   - `api/portfolio.js`: `getFilters()` chamando `GET /portfolio/filters`.
@@ -292,11 +292,11 @@ git commit -m "feat(frontend): implementar componentes base, Header, Layout e Dl
   - `BenchmarkSelector.jsx`: popover com abas "Catálogo", "Buscar Ticker" (com debounce de 300ms) e "Sintético" (validação de número positivo e limites: `valor <= 50` para `+` e `valor <= 500` para `%`).
   - `FiltersBar.jsx`: botões estilizados com visual pill ativo/inativo, inputs de data quando em modo "Personalizado", e badges para filtros ativos com botão de remoção rápida.
 
-- [ ] **Step 4: Rodar teste para verificar que passa**
+- [x] **Step 4: Rodar teste para verificar que passa**
   Executar: `cd frontend && npm test src/test/filters-bar.test.jsx`
   Resultado esperado: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add frontend/src/api/benchmarks.js frontend/src/api/assets.js frontend/src/api/portfolio.js frontend/src/context/PortfolioFilterContext.jsx frontend/src/components/portfolio/
@@ -317,26 +317,26 @@ git commit -m "feat(frontend): implementar contexto de filtros, FiltersBar e Ben
   - `<SummaryCards data={summaryData} isLoading={isLoading} isError={isError} />`: Exibe 5 cards (Patrimônio Fim, Total Aportado, Ganho de Capital, Rentabilidade TWR e XIRR Anualizada).
   - `<BaseChart option={option} height={height} isLoading={isLoading} />`: Wrapper seguro sobre `ReactECharts` com suporte a redimensionamento responsivo, tema escuro zinc, tooltips customizados e visual de loading.
 
-- [ ] **Step 1: Escrever teste automatizado para SummaryCards e BaseChart**
+- [x] **Step 1: Escrever teste automatizado para SummaryCards e BaseChart**
   Arquivo: `frontend/src/test/summary-cards-chart.test.jsx`.
   Testar:
   - `SummaryCards` exibe skeletons quando `isLoading: true`.
   - `SummaryCards` formata valores monetários em BRL (`R$ 150.000,00`) e percentuais com sinal (`+15,40%` em verde, `-2,10%` em vermelho).
   - `BaseChart` repassa as opções para o ECharts aplicando o tema escuro e habilitando o resize observer.
 
-- [ ] **Step 2: Rodar teste para verificar que falha**
+- [x] **Step 2: Rodar teste para verificar que falha**
   Executar: `cd frontend && npm test src/test/summary-cards-chart.test.jsx`
   Resultado esperado: FAIL ("cannot find module components/portfolio/SummaryCards")
 
-- [ ] **Step 3: Implementar `SummaryCards.jsx` e `BaseChart.jsx`**
+- [x] **Step 3: Implementar `SummaryCards.jsx` e `BaseChart.jsx`**
   - `SummaryCards.jsx`: Grade responsiva (1 coluna no mobile, 5 no desktop). Mapeia campos do backend: `pat_fim`, `aportes`, `ganho`, `twr` (multiplicado por 100 para percentual), `xirr` (multiplicado por 100).
   - `BaseChart.jsx`: Utiliza `ReactECharts` importado de `echarts-for-react`. Configura cores padrão (paleta: esmeralda `#10b981`, azul `#3b82f6`, âmbar `#f59e0b`, roxo `#8b5cf6`, vermelho `#ef4444`), fonte Inter/sans-serif, fundo transparente, tooltip com `trigger: 'axis'` e `backgroundColor: '#18181b'`, `borderColor: '#27272a'`.
 
-- [ ] **Step 4: Rodar teste para verificar que passa**
+- [x] **Step 4: Rodar teste para verificar que passa**
   Executar: `cd frontend && npm test src/test/summary-cards-chart.test.jsx`
   Resultado esperado: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add frontend/src/components/portfolio/SummaryCards.jsx frontend/src/components/portfolio/charts/BaseChart.jsx frontend/src/test/summary-cards-chart.test.jsx
@@ -360,7 +360,7 @@ git commit -m "feat(frontend): implementar SummaryCards de métricas e BaseChart
   - `<ShadowChart data={shadowData} isLoading={...} />`: Gráfico de evolução patrimonial comparada.
   - `<IrrEvolutionChart data={irrData} isLoading={...} />`: Curva histórica da taxa interna de retorno.
 
-- [ ] **Step 1: Escrever teste automatizado para `usePortfolioQueries` e componentes de Performance**
+- [x] **Step 1: Escrever teste automatizado para `usePortfolioQueries` e componentes de Performance**
   Arquivo: `frontend/src/test/performance-charts.test.jsx`.
   Testar:
   - `usePortfolioQueries` propaga o `AbortController.signal` para as chamadas Axios.
@@ -368,22 +368,22 @@ git commit -m "feat(frontend): implementar SummaryCards de métricas e BaseChart
   - `YearlyTable` renderiza cabeçalho com anos e células com percentuais coloridos (verde positivo, vermelho negativo).
   - Valores nulos em séries temporais são repassados ao ECharts sem quebrar.
 
-- [ ] **Step 2: Rodar teste para verificar que falha**
+- [x] **Step 2: Rodar teste para verificar que falha**
   Executar: `cd frontend && npm test src/test/performance-charts.test.jsx`
   Resultado esperado: FAIL ("cannot find module hooks/usePortfolioQueries")
 
-- [ ] **Step 3: Implementar hook `usePortfolioQueries` e os 4 componentes de Performance**
+- [x] **Step 3: Implementar hook `usePortfolioQueries` e os 4 componentes de Performance**
   - `usePortfolioQueries.js`: Usa `useQueries` do TanStack Query. Define `staleTime: 5 * 60 * 1000` e repassa `signal`. Cria funções em `api/portfolio.js` para cada endpoint analítico (`fetchSummary`, `fetchTwrEvolution`, `fetchShadow`, `fetchYearlySummary`, `fetchIrrEvolution`, `fetchDrawdown`, `fetchRollingMetrics`, `fetchRiskReturn`).
   - `TwrChart.jsx`: Configura gráfico de linha com `xAxis.type = 'time'`, `dataZoom` inferior, tooltip formatando valores em índice (ex: `142.50 (+42.50%)`).
   - `YearlyTable.jsx`: Tabela estilizada em Tailwind com cabeçalho fixo, linhas zebradas sutis e badges coloridos para retorno anual.
   - `ShadowChart.jsx`: Gráfico de área/linha monetária com tooltip formatando em R$.
   - `IrrEvolutionChart.jsx`: Gráfico de linha temporal com percentual anualizado no eixo Y.
 
-- [ ] **Step 4: Rodar teste para verificar que passa**
+- [x] **Step 4: Rodar teste para verificar que passa**
   Executar: `cd frontend && npm test src/test/performance-charts.test.jsx`
   Resultado esperado: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add frontend/src/hooks/usePortfolioQueries.js frontend/src/api/portfolio.js frontend/src/components/portfolio/charts/TwrChart.jsx frontend/src/components/portfolio/tables/YearlyTable.jsx frontend/src/components/portfolio/charts/ShadowChart.jsx frontend/src/components/portfolio/charts/IrrEvolutionChart.jsx frontend/src/test/performance-charts.test.jsx
@@ -406,7 +406,7 @@ git commit -m "feat(frontend): implementar usePortfolioQueries e gráficos da ab
   - `<RiskReturnChart data={...} isLoading={...} />`: Scatter plot Risco (Volatilidade anualizada %) no eixo X e Retorno (CAGR %) no eixo Y com quadrantes de dispersão.
   - `<PortfolioPage />`: Página principal agregando `FiltersBar`, `SummaryCards`, abas `Performance` e `Risco`.
 
-- [ ] **Step 1: Escrever teste automatizado para os gráficos de Risco e a PortfolioPage**
+- [x] **Step 1: Escrever teste automatizado para os gráficos de Risco e a PortfolioPage**
   Arquivo: `frontend/src/test/risk-charts-page.test.jsx`.
   Testar:
   - `DrawdownChart` formata o eixo Y em percentual negativo (`-15.2%`).
@@ -414,21 +414,21 @@ git commit -m "feat(frontend): implementar usePortfolioQueries e gráficos da ab
   - `RiskReturnChart` monta série do tipo `scatter` associando nome do ativo/benchmark ao ponto.
   - `PortfolioPage` renderiza os componentes da aba Performance por padrão e troca para a aba Risco ao clicar sem disparar recargas na rede se os dados já estiverem em cache.
 
-- [ ] **Step 2: Rodar teste para verificar que falha**
+- [x] **Step 2: Rodar teste para verificar que falha**
   Executar: `cd frontend && npm test src/test/risk-charts-page.test.jsx`
   Resultado esperado: FAIL ("cannot find module components/portfolio/charts/DrawdownChart")
 
-- [ ] **Step 3: Implementar gráficos de Risco e a PortfolioPage**
+- [x] **Step 3: Implementar gráficos de Risco e a PortfolioPage**
   - `DrawdownChart.jsx`: ECharts com `areaStyle` em gradiente vermelho translúcido (`rgba(239, 68, 68, 0.25)`), linha `#ef4444`, `max: 0`.
   - `RollingSharpeChart.jsx`: ECharts dual-axis (eixo esquerdo para Sharpe Ratio com linha de referência zero, eixo direito para Volatilidade em %).
   - `RiskReturnChart.jsx`: Scatter plot com tooltips contendo `{name, vol, cagr}` formatados e linhas de média para criar quadrantes visuais.
   - `PortfolioPage.jsx`: Layout estruturado com `<FiltersBar />`, `<SummaryCards />`, seletor de abas `<Tabs>` (Performance e Risco). Ambos os grupos de gráficos são mantidos no DOM ou ativados sem recarregar estado, consumindo o hook `usePortfolioQueries()`.
 
-- [ ] **Step 4: Rodar teste para verificar que passa**
+- [x] **Step 4: Rodar teste para verificar que passa**
   Executar: `cd frontend && npm test src/test/risk-charts-page.test.jsx`
   Resultado esperado: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add frontend/src/components/portfolio/charts/DrawdownChart.jsx frontend/src/components/portfolio/charts/RollingSharpeChart.jsx frontend/src/components/portfolio/charts/RiskReturnChart.jsx frontend/src/pages/PortfolioPage.jsx frontend/src/test/risk-charts-page.test.jsx
@@ -454,7 +454,7 @@ git commit -m "feat(frontend): implementar gráficos de Risco e Dashboard Portfo
   - `<ExportPdfButton />`: Dispara o download de `POST /migration/plan.pdf` como blob `application/pdf`.
   - `<MigrationPage />`: Tela consolidada do planejador.
 
-- [ ] **Step 1: Escrever teste automatizado para o módulo de Migração de IR**
+- [x] **Step 1: Escrever teste automatizado para o módulo de Migração de IR**
   Arquivo: `frontend/src/test/migration-ir.test.jsx`.
   Testar:
   - `HoldingsTable` renderiza badges fiscais corretos para `ACAO` (`exempt_20k`) e `FII` (`taxed`).
@@ -464,11 +464,11 @@ git commit -m "feat(frontend): implementar gráficos de Risco e Dashboard Portfo
   - `MonthlyPurchasesTable` exibe vendas agrupadas por mês e alertas fiscais (`exceeds_cap`, `exceeds_exemption`).
   - `ExportPdfButton` recebe blob e cria link de download simulado no DOM.
 
-- [ ] **Step 2: Rodar teste para verificar que falha**
+- [x] **Step 2: Rodar teste para verificar que falha**
   Executar: `cd frontend && npm test src/test/migration-ir.test.jsx`
   Resultado esperado: FAIL ("cannot find module components/migration/HoldingsTable")
 
-- [ ] **Step 3: Implementar API de migração, hook `useMigrationPlan`, componentes e tela `MigrationPage`**
+- [x] **Step 3: Implementar API de migração, hook `useMigrationPlan`, componentes e tela `MigrationPage`**
   - `api/migration.js`: chamadas REST para `/wallet`, `/plan` e `/plan.pdf` (configurado com `responseType: 'blob'`).
   - `HoldingsTable.jsx`: tabela com colunas Ativo, Classe, Qtd, Preço Médio, Cotação, Saldo, Ação. Rascunhos de edições são lidos e sincronizados com `sessionStorage`.
   - `TargetAllocationForm.jsx`: lista dinâmica com botões de adicionar/remover alvos, input com autocomplete para ticker, input de peso (com badge verde quando soma for 100% e vermelho caso contrário).
@@ -476,11 +476,11 @@ git commit -m "feat(frontend): implementar gráficos de Risco e Dashboard Portfo
   - `ExportPdfButton.jsx`: manipula `window.URL.createObjectURL(blob)`, cria elemento `<a>`, aciona `.click()` e revoga o objeto URL.
   - `MigrationPage.jsx`: integra os blocos em um fluxo com 3 etapas claras: 1) Revisão da Custódia, 2) Definição de Metas, 3) Cronograma e Exportação.
 
-- [ ] **Step 4: Rodar teste para verificar que passa**
+- [x] **Step 4: Rodar teste para verificar que passa**
   Executar: `cd frontend && npm test src/test/migration-ir.test.jsx`
   Resultado esperado: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add frontend/src/api/migration.js frontend/src/hooks/useMigrationPlan.js frontend/src/components/migration/ frontend/src/pages/MigrationPage.jsx frontend/src/test/migration-ir.test.jsx
@@ -503,7 +503,7 @@ git commit -m "feat(frontend): implementar módulo completo de Migração de IR 
   - `<App />`: Roteador raiz com `BrowserRouter`, `QueryClientProvider`, `AuthProvider`, `PortfolioFilterProvider`, `<RequireAuth>` em rotas protegidas e rota `/login`.
   - `main.jsx`: Ponto de entrada React 18 montando no `#root`.
 
-- [ ] **Step 1: Escrever teste de integração de roteamento e fluxos de tela**
+- [x] **Step 1: Escrever teste de integração de roteamento e fluxos de tela**
   Arquivo: `frontend/src/test/app-routing.test.jsx`.
   Testar:
   - Navegar para `/` sem autenticação redireciona para `/login`.
@@ -511,11 +511,11 @@ git commit -m "feat(frontend): implementar módulo completo de Migração de IR 
   - Alternar links no Header navega entre `/` (Carteira) e `/migracao-ir` (Planejador) sem recarregar a página.
   - Clicar no botão de logout limpa a sessão e retorna para `/login`.
 
-- [ ] **Step 2: Rodar teste para verificar que falha**
+- [x] **Step 2: Rodar teste para verificar que falha**
   Executar: `cd frontend && npm test src/test/app-routing.test.jsx`
   Resultado esperado: FAIL ("cannot find module pages/LoginPage")
 
-- [ ] **Step 3: Implementar `LoginPage.jsx`, `App.jsx` e `main.jsx`**
+- [x] **Step 3: Implementar `LoginPage.jsx`, `App.jsx` e `main.jsx`**
   - `LoginPage.jsx`: Card centralizado com visual escuro elegante, logo da plataforma, inputs estilizados com ícones da Lucide (`User`, `Lock`), botão de login com spinner durante requisição e banner de erro em caso de falha.
   - `App.jsx`: Configura `QueryClient` com defaults resilientes (`refetchOnWindowFocus: false`, `retry: 1`). Define rotas com `react-router-dom`:
     - Rota pública: `/login`.
@@ -523,13 +523,13 @@ git commit -m "feat(frontend): implementar módulo completo de Migração de IR 
     - Rota curinga `*` redirecionando para `/`.
   - `main.jsx`: `ReactDOM.createRoot` montando `<App />` com import de `index.css`.
 
-- [ ] **Step 4: Rodar todos os testes da aplicação e validar build de produção**
+- [x] **Step 4: Rodar todos os testes da aplicação e validar build de produção**
   Executar: `cd frontend && npm test`
   Resultado esperado: Todos os arquivos de teste passando (`X passed, 0 failed`).
   Executar: `npm run build`
   Resultado esperado: Build Vite finalizado gerando os assets estáticos em `frontend/dist/` sem warnings impeditivos.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add frontend/src/pages/LoginPage.jsx frontend/src/App.jsx frontend/src/main.jsx frontend/src/test/app-routing.test.jsx

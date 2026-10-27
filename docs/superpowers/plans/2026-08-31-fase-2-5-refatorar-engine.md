@@ -95,7 +95,7 @@ Ver `docs/ferramentas-de-desenvolvimento.md` §"Fase 2 / 2.5":
   - `engine.irr.calculate_xirr(cash_flows, dates) -> float | None` — idêntico.
   - `engine.metrics.calculate_drawdown(df) -> pd.DataFrame`, `calculate_rolling_volatility(df, window=252) -> pd.DataFrame`, `calculate_rolling_sharpe(df, rf_series=None, rf_constant=0.10, window=252) -> pd.DataFrame` — idênticos, exceto `pct_change(fill_method=None)`.
 
-- [ ] **Step 1: Copiar os três módulos**
+- [x] **Step 1: Copiar os três módulos**
 
 Run:
 ```bash
@@ -107,7 +107,7 @@ cp src/engine/irr.py backend/engine/irr.py
 cp src/engine/metrics.py backend/engine/metrics.py
 ```
 
-- [ ] **Step 2: Aplicar `fill_method=None` em `engine/metrics.py`** (única exceção — spec §5.4)
+- [x] **Step 2: Aplicar `fill_method=None` em `engine/metrics.py`** (única exceção — spec §5.4)
 
 Em `backend/engine/metrics.py`, trocar as duas ocorrências de `df.pct_change()` por `df.pct_change(fill_method=None)`:
 - em `calculate_rolling_volatility`: `daily_ret = df.pct_change(fill_method=None)`
@@ -120,7 +120,7 @@ Adicionar um comentário no topo do arquivo:
 # ÚNICO desvio da cópia literal de src/engine/metrics.py. Ver ADR 0012.
 ```
 
-- [ ] **Step 3: Portar os três testes (trocar só o import)**
+- [x] **Step 3: Portar os três testes (trocar só o import)**
 
 Run:
 ```bash
@@ -132,14 +132,14 @@ grep -n "^from engine\." backend/engine/tests/test_*.py
 ```
 Expected: cada arquivo tem `from engine.twr import ...` / `from engine.irr import ...` / `from engine.metrics import ...`.
 
-- [ ] **Step 4: Apontar o `pytest.ini` para `engine`**
+- [x] **Step 4: Apontar o `pytest.ini` para `engine`**
 
 Em `backend/pytest.ini`, trocar `testpaths = apps` por:
 ```ini
 testpaths = apps engine
 ```
 
-- [ ] **Step 5: Rodar os testes portados e ver passar**
+- [x] **Step 5: Rodar os testes portados e ver passar**
 
 Run:
 ```bash
@@ -148,7 +148,7 @@ cd /data/projetos/app-investimentos/backend
 ```
 Expected: PASSA — `test_twr.py` (5), `test_irr.py` (4), `test_metrics.py` (3). Os testes de `metrics` usam séries sintéticas de retorno constante (sem NaN a preencher), então o `fill_method=None` não muda os asserts. Se **algum** assert de `test_metrics.py` falhar, aplicar `superpowers:systematic-debugging`, entender a diferença numérica, e **documentar no commit** por que o assert mudou (não "consertar" o número sem entender).
 
-- [ ] **Step 6: Rodar a suíte inteira — nada quebrou**
+- [x] **Step 6: Rodar a suíte inteira — nada quebrou**
 
 Run:
 ```bash
@@ -157,7 +157,7 @@ cd /data/projetos/app-investimentos/backend
 ```
 Expected: PASSA — Fases 0+1 (15) + Fase 2 (~60) + engine portado (12).
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 cd /data/projetos/app-investimentos
@@ -192,7 +192,7 @@ testpaths = apps engine."
   - `compute.compute_shadow(portfolio_df: pd.DataFrame, df_combined: pd.DataFrame) -> pd.DataFrame` — colunas: `Carteira Real`, `Total Investido`, e uma por benchmark.
   - `compute.compute_yearly_summary(df_combined: pd.DataFrame) -> pd.DataFrame` — retorno ano a ano (colunas = anos) + coluna `Total Acum.` (valores numéricos, **não** formatados).
 
-- [ ] **Step 1: Escrever os testes (devem falhar)**
+- [x] **Step 1: Escrever os testes (devem falhar)**
 
 `backend/engine/tests/test_compute.py`:
 ```python
@@ -286,7 +286,7 @@ def test_yearly_summary_has_years_and_total():
     assert pd.api.types.is_numeric_dtype(ys["Total Acum."])
 ```
 
-- [ ] **Step 2: Rodar e ver falhar**
+- [x] **Step 2: Rodar e ver falhar**
 
 Run:
 ```bash
@@ -295,7 +295,7 @@ cd /data/projetos/app-investimentos/backend
 ```
 Expected: FALHA com `ModuleNotFoundError: No module named 'engine.compute'`.
 
-- [ ] **Step 3: Implementar `compute.py`**
+- [x] **Step 3: Implementar `compute.py`**
 
 `backend/engine/compute.py`:
 ```python
@@ -436,7 +436,7 @@ def compute_yearly_summary(df_combined: pd.DataFrame) -> pd.DataFrame:
     return summary
 ```
 
-- [ ] **Step 4: Rodar e ver passar**
+- [x] **Step 4: Rodar e ver passar**
 
 Run:
 ```bash
@@ -445,7 +445,7 @@ cd /data/projetos/app-investimentos/backend
 ```
 Expected: PASSA (7 testes).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 cd /data/projetos/app-investimentos
@@ -473,7 +473,7 @@ pct_change(fill_method=None) em todo lugar."
   - `dataset.fetch_user_portfolio(token: str, ativo=None, classe=None, start_date=None, end_date=None) -> tuple[pd.Series | None, pd.DataFrame | None]` — `(twr_series, portfolio_df)`; porta de `FinancialReport.fetch_user_portfolio`, chamando `dlp.buscar_historico` e `twr.calculate_twr`.
   - `dataset.build_dataset(user_series: pd.Series | None = None, benchmarks: list[str] | None = None, extra_specs: list[SyntheticSpec] | None = None, start_date: str | None = None, end_date: str | None = None, portfolio_df: pd.DataFrame | None = None) -> DatasetResult` — monta `df_combined` (`Carteira` + benchmarks, tudo rebased a 100); `selic_series` vem de `get_series("SELIC", ...)`; **não** usa `processar_benchmarks`; **corrige o bug `self.logger`**.
 
-- [ ] **Step 1: Escrever os testes (devem falhar)**
+- [x] **Step 1: Escrever os testes (devem falhar)**
 
 `backend/engine/tests/test_dataset.py`:
 ```python
@@ -559,7 +559,7 @@ def test_fetch_user_portfolio_none_history_returns_none(monkeypatch):
     assert dataset.fetch_user_portfolio("DLP-tok") == (None, None)
 ```
 
-- [ ] **Step 2: Rodar e ver falhar**
+- [x] **Step 2: Rodar e ver falhar**
 
 Run:
 ```bash
@@ -568,7 +568,7 @@ cd /data/projetos/app-investimentos/backend
 ```
 Expected: FALHA com `ModuleNotFoundError: No module named 'engine.dataset'`.
 
-- [ ] **Step 3: Implementar `dataset.py`**
+- [x] **Step 3: Implementar `dataset.py`**
 
 `backend/engine/dataset.py`:
 ```python
@@ -701,7 +701,7 @@ def build_dataset(
     return DatasetResult(df_combined=raw, selic_series=selic, portfolio_df=portfolio_df)
 ```
 
-- [ ] **Step 4: Rodar e ver passar**
+- [x] **Step 4: Rodar e ver passar**
 
 Run:
 ```bash
@@ -710,7 +710,7 @@ cd /data/projetos/app-investimentos/backend
 ```
 Expected: PASSA (5 testes).
 
-- [ ] **Step 5: Rodar a suíte inteira**
+- [x] **Step 5: Rodar a suíte inteira**
 
 Run:
 ```bash
@@ -719,7 +719,7 @@ cd /data/projetos/app-investimentos/backend
 ```
 Expected: PASSA — Fases 0+1 + Fase 2 + engine (portado 12 + compute 7 + dataset 5).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 cd /data/projetos/app-investimentos
@@ -752,7 +752,7 @@ sintéticos ad-hoc. Corrige o bug self.logger (regressão coberta por teste)."
   - `report_legacy.export_all(result: DatasetResult, out_dir: str) -> list[str]` — salva os PNGs, devolve os caminhos.
   - **Nada aqui é importado por `apps/` nem por `engine/compute.py` / `engine/dataset.py`.**
 
-- [ ] **Step 1: Adicionar `matplotlib` ao `requirements.txt`**
+- [x] **Step 1: Adicionar `matplotlib` ao `requirements.txt`**
 
 Em `backend/requirements.txt`, na seção runtime (após as deps da Fase 2):
 ```
@@ -768,7 +768,7 @@ cd /data/projetos/app-investimentos/backend
 ```
 Expected: imprime a versão.
 
-- [ ] **Step 2: Escrever os testes (devem falhar)**
+- [x] **Step 2: Escrever os testes (devem falhar)**
 
 `backend/engine/tests/test_report_legacy.py`:
 ```python
@@ -817,7 +817,7 @@ def test_export_all_writes_pngs(tmp_path):
         assert (tmp_path / p.split("/")[-1]).exists()
 ```
 
-- [ ] **Step 3: Rodar e ver falhar**
+- [x] **Step 3: Rodar e ver falhar**
 
 Run:
 ```bash
@@ -826,7 +826,7 @@ cd /data/projetos/app-investimentos/backend
 ```
 Expected: FALHA com `ModuleNotFoundError: No module named 'engine.report_legacy'`.
 
-- [ ] **Step 4: Implementar `report_legacy.py`**
+- [x] **Step 4: Implementar `report_legacy.py`**
 
 `backend/engine/report_legacy.py`:
 ```python
@@ -927,7 +927,7 @@ def export_all(result: DatasetResult, out_dir: str) -> list[str]:
     return paths
 ```
 
-- [ ] **Step 5: Rodar e ver passar**
+- [x] **Step 5: Rodar e ver passar**
 
 Run:
 ```bash
@@ -936,7 +936,7 @@ cd /data/projetos/app-investimentos/backend
 ```
 Expected: PASSA (4 testes).
 
-- [ ] **Step 6: Confirmar que a API não importa Matplotlib**
+- [x] **Step 6: Confirmar que a API não importa Matplotlib**
 
 Run:
 ```bash
@@ -945,7 +945,7 @@ grep -rn "matplotlib" apps config engine/compute.py engine/dataset.py || echo "O
 ```
 Expected: imprime `OK — sem matplotlib fora de report_legacy`.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 cd /data/projetos/app-investimentos
@@ -971,7 +971,7 @@ importado pela API — matplotlib vive só aqui. matplotlib~=3.9 no requirements
 - Consumes: tudo das Tasks 1-4.
 - Produces: DoD da Fase 2.5 (spec §3.3) verificada; ADR do débito técnico; docs atualizadas.
 
-- [ ] **Step 1: Suíte completa + `check` + `makemigrations --check`**
+- [x] **Step 1: Suíte completa + `check` + `makemigrations --check`**
 
 Run:
 ```bash
@@ -982,7 +982,7 @@ cd /data/projetos/app-investimentos/backend
 ```
 Expected: `check` limpo; "No changes detected" (a Fase 2.5 não mexe em modelos); **toda** a suíte verde.
 
-- [ ] **Step 2: Confirmar os 3 testes portados sem alteração de lógica**
+- [x] **Step 2: Confirmar os 3 testes portados sem alteração de lógica**
 
 Run:
 ```bash
@@ -992,7 +992,7 @@ git diff --no-index tests/test_twr.py engine/tests/test_twr.py | grep '^[+-]' | 
 ```
 Expected: 12 testes verdes; o `diff` mostra que **só o import** mudou em cada teste portado (ou, se `test_metrics.py` mudou um assert por causa do `fill_method`, que isso está explicado no commit da Task 1).
 
-- [ ] **Step 3: `grep` de Matplotlib fora do `report_legacy`**
+- [x] **Step 3: `grep` de Matplotlib fora do `report_legacy`**
 
 Run:
 ```bash
@@ -1001,7 +1001,7 @@ grep -rn "import matplotlib\|from matplotlib" apps config engine/compute.py engi
 ```
 Expected: **nenhuma saída**.
 
-- [ ] **Step 4: Smoke ponta a ponta — dataset real + export CLI**
+- [x] **Step 4: Smoke ponta a ponta — dataset real + export CLI**
 
 Run (usa o `MarketSeries` semeado pelo `backfill` da Fase 2):
 ```bash
@@ -1018,7 +1018,7 @@ ls -la /tmp/relatorio_fase25/
 ```
 Expected: `df_combined` não-vazio com colunas `CDI`/`IMA-B` (base 100); PNGs gerados em `/tmp/relatorio_fase25/`.
 
-- [ ] **Step 5: Criar `docs/adr/0012-engine-copia-literal-fase-2-5.md`**
+- [x] **Step 5: Criar `docs/adr/0012-engine-copia-literal-fase-2-5.md`**
 
 Conteúdo (formato dos ADRs existentes — Status/Data/Fase, Contexto, Decisão, Consequências):
 
@@ -1033,25 +1033,25 @@ Conteúdo (formato dos ADRs existentes — Status/Data/Fase, Contexto, Decisão,
 
 Atualizar `docs/adr/README.md` com a linha do `0012`.
 
-- [ ] **Step 6: Atualizar `docs/consolidacao_arquitetura_e_migracao.md`**
+- [x] **Step 6: Atualizar `docs/consolidacao_arquitetura_e_migracao.md`**
 
 - **§2.0** (tabela "Já implementado"): adicionar linha **Fase 2.5** — `backend/engine/` (cópia literal `twr`/`irr`/`metrics` + `compute.py` + `dataset.py` + `report_legacy.py`), bug `self.logger` corrigido, ~28 testes; `pytest.ini` com `testpaths = apps engine`.
 - **§2.2** ("O que não existe ainda"): ajustar/remover a menção a `financial_report.py` misturando cálculo + plotagem (agora separado em `compute.py` / `report_legacy.py`).
 - **§2.3** (dívida técnica): adicionar o item do engine (`irr.py`/`twr.py`/`metrics.py` — cópia literal na 2.5, revisão pós-Fase 6, ver ADR 0012); marcar o bug `self.logger` como **corrigido** (mantendo o registro histórico).
 - Marcar item **4** do checklist §9 como concluído.
 
-- [ ] **Step 7: Atualizar `backend/README.md`**
+- [x] **Step 7: Atualizar `backend/README.md`**
 
 Na "Estrutura", acrescentar o bloco `engine/` (com uma linha por módulo). Na seção "Rodar", mencionar:
 ```bash
 .venv/bin/python manage.py shell -c "from engine import dataset, report_legacy; ..."  # export CLI dos gráficos
 ```
 
-- [ ] **Step 8: `code-review` + `code-simplifier` no diff de `backend/engine/`**
+- [x] **Step 8: `code-review` + `code-simplifier` no diff de `backend/engine/`**
 
 Rodar `/code-review` sobre `backend/engine/` (Tasks 1-4). Correções de correção → commit `🐛 fix(engine): ...`; limpezas → `♻️ refactor(engine): ...`. Rodar `.venv/bin/pytest engine -q` de novo — verde. **Não** aceitar sugestões que alterem a lógica de `twr.py`/`irr.py`/`metrics.py` (cópia literal — qualquer mudança ali vira item do ADR 0012, não um fix agora).
 
-- [ ] **Step 9: Commit da documentação**
+- [x] **Step 9: Commit da documentação**
 
 ```bash
 cd /data/projetos/app-investimentos

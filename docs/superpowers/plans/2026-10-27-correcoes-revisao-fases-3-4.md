@@ -57,14 +57,14 @@
 
 `.gemini/settings.json` e `.github/hooks/impeccable.json` foram gravados pelo instalador global do `impeccable` e apontam para caminhos da máquina (`/home/ubuntu/.gemini/skills/...`, `$HOME/.github/skills/...`). Não pertencem ao repositório (que é público) nem servem a outro clone.
 
-- [ ] **Step 1:** Acrescentar ao `.git/info/exclude` (não ao `.gitignore`, para não versionar uma regra pessoal):
+- [x] **Step 1:** Acrescentar ao `.git/info/exclude` (não ao `.gitignore`, para não versionar uma regra pessoal):
 
 ```
 .gemini/settings.json
 .github/hooks/impeccable.json
 ```
 
-- [ ] **Step 2:** Verificar: `git status --short` → não lista mais `.gemini/settings.json` nem `.github/hooks/`.
+- [x] **Step 2:** Verificar: `git status --short` → não lista mais `.gemini/settings.json` nem `.github/hooks/`.
 
 ---
 
@@ -77,7 +77,7 @@
 **Interfaces:**
 - Produces: constante `ERR_TTL = 30` (segundos) em `dlp.py`; chave de falha `<key>:err` (onde `<key>` é a chave já existente `dlp:hist:<hash>:<gen>` / `dlp:resumo:<hash>:<gen>`). Comportamento público inalterado: continuam levantando `DLPUnavailableError` / `DLPAuthError` / `DLPError`.
 
-- [ ] **Step 1: Testes que falham** (usar `_Resp`, `monkeypatch` e o fixture `_locmem_cache` já existentes no arquivo)
+- [x] **Step 1: Testes que falham** (usar `_Resp`, `monkeypatch` e o fixture `_locmem_cache` já existentes no arquivo)
 
 ```python
 def test_recent_unavailable_is_cached_and_skips_dlp(monkeypatch):
@@ -115,17 +115,17 @@ def test_non_object_json_raises_unavailable(monkeypatch, payload):
     ...  # _Resp(payload) -> pytest.raises(DLPUnavailableError) em buscar_historico
 ```
 
-- [ ] **Step 2:** `cd backend && .venv/bin/pytest apps/market/tests/test_sources_dlp.py -q` → os 6 novos FAIL.
+- [x] **Step 2:** `cd backend && .venv/bin/pytest apps/market/tests/test_sources_dlp.py -q` → os 6 novos FAIL.
 
-- [ ] **Step 3: Implementar em `dlp.py`**
+- [x] **Step 3: Implementar em `dlp.py`**
   - `_get`: trocar `except (requests.Timeout, requests.ConnectionError)` por `except requests.RequestException`; após `resp.json()`, se `not isinstance(payload, dict)` → `raise DLPUnavailableError(f"DLP {path}: resposta não é um objeto JSON")`. A mensagem nunca inclui o token.
   - Helpers privados `_failed_recently(key) -> bool` (`cache.get(key + ":err")`, com `try/except` + warning como `_generation`) e `_mark_failed(key) -> None` (`cache.set(key + ":err", 1, ERR_TTL)`).
   - Em `buscar_historico` e `buscar_resumo_carteira`: checar `_failed_recently(key)` **antes** do `single_flight` e de novo **dentro** dele (depois do re-check do cache); se verdadeiro, `raise DLPUnavailableError("DLP indisponível (falha recente)")`. Envolver só o `_get(...)` em `try/except DLPUnavailableError: _mark_failed(key); raise`. `DLPAuthError`/`DLPError` não marcam.
   - Como `<key>` já contém a geração, `POST /portfolio/refresh` (que incrementa a geração) libera nova tentativa sem código extra.
 
-- [ ] **Step 4:** `.venv/bin/pytest apps/market/tests/test_sources_dlp.py apps/api -q` → PASS.
+- [x] **Step 4:** `.venv/bin/pytest apps/market/tests/test_sources_dlp.py apps/api -q` → PASS.
 
-- [ ] **Step 5: Commit** — `🐛 fix(market): DLP indisponível fica em cache por 30s e erros de rede não viram 500`
+- [x] **Step 5: Commit** — `🐛 fix(market): DLP indisponível fica em cache por 30s e erros de rede não viram 500`
 
 ---
 
@@ -138,7 +138,7 @@ def test_non_object_json_raises_unavailable(monkeypatch, payload):
 **Interfaces:**
 - Produces: `MIN_CAP = 100.0`, `MAX_MONTHS = 240` em `planner.py`. Erros novos usam `PlanError("invalid_parameters", ...)` (já mapeado para 422 por `plan_errors()`).
 
-- [ ] **Step 1: Testes que falham**
+- [x] **Step 1: Testes que falham**
 
 ```python
 # test_planner_validate.py (usar o helper _v existente)
@@ -175,15 +175,15 @@ def test_unit_slightly_over_remaining_is_not_sold():
 
 (Montar `inp` como os testes existentes de `test_planner_build.py` fazem; o executor segue o padrão local.)
 
-- [ ] **Step 2:** `.venv/bin/pytest apps/migration_ir -q` → novos FAIL.
+- [x] **Step 2:** `.venv/bin/pytest apps/migration_ir -q` → novos FAIL.
 
-- [ ] **Step 3: Implementar**
+- [x] **Step 3: Implementar**
   - `_validate_params`: rejeitar se qualquer um de `monthly_cap`, `initial_cash`, `already_sold` não for `math.isfinite`; trocar a faixa para `MIN_CAP <= monthly_cap <= MAX_CAP` com mensagem `"O teto mensal deve estar entre R$ 100 e R$ 20.000."`.
   - `_schedule_stocks`: linha do `n = ...` passa a `math.floor((remaining + _EPS) / price)`; em `close()`, depois do `append`, se `len(months) > MAX_MONTHS` → `raise PlanError("invalid_parameters", f"O plano passaria de {MAX_MONTHS} meses; aumente o teto mensal ou venda menos papéis.")`. Isso limita CPU antes de montar compras.
 
-- [ ] **Step 4:** `.venv/bin/pytest -q` (suíte inteira) → PASS.
+- [x] **Step 4:** `.venv/bin/pytest -q` (suíte inteira) → PASS.
 
-- [ ] **Step 5: Commit** — `🐛 fix(migration_ir): limita teto e meses do plano, folga em reais e rejeita NaN`
+- [x] **Step 5: Commit** — `🐛 fix(migration_ir): limita teto e meses do plano, folga em reais e rejeita NaN`
 
 ---
 
@@ -200,7 +200,7 @@ def test_unit_slightly_over_remaining_is_not_sold():
   - `async parseBlobErrorData(data) -> any` — se `data instanceof Blob` e `data.type` contém `json`, devolve `JSON.parse(await data.text())`; caso contrário devolve `data`.
   - `shouldRetry(failureCount, err) -> boolean` — `true` só se `failureCount < 1` **e** (`!err.response` ou `status >= 500`).
 
-- [ ] **Step 1: Testes que falham**
+- [x] **Step 1: Testes que falham**
 
 ```js
 it('getApiError lê code/message do envelope ApiError', ...)        // {status:422, code:'invalid_period', message:'...'}
@@ -223,13 +223,13 @@ it('interceptor abre modal DLP quando erro 409 vem como Blob', async () => {
 });
 ```
 
-- [ ] **Step 2:** `cd frontend && npx vitest run src/test/api-errors.test.js` → FAIL.
+- [x] **Step 2:** `cd frontend && npx vitest run src/test/api-errors.test.js` → FAIL.
 
-- [ ] **Step 3: Implementar** `errors.js`; no `client.js` tornar o handler de erro `async`, fazer `error.response.data = await parseBlobErrorData(error.response.data)` antes de ler `code`/`message` (o resto do handler fica igual).
+- [x] **Step 3: Implementar** `errors.js`; no `client.js` tornar o handler de erro `async`, fazer `error.response.data = await parseBlobErrorData(error.response.data)` antes de ler `code`/`message` (o resto do handler fica igual).
 
-- [ ] **Step 4:** `npx vitest run` → PASS (inclusive `api-auth.test.jsx`).
+- [x] **Step 4:** `npx vitest run` → PASS (inclusive `api-auth.test.jsx`).
 
-- [ ] **Step 5: Commit** — `✨ feat(frontend): helper getApiError, retry só em 5xx e erros em Blob legíveis`
+- [x] **Step 5: Commit** — `✨ feat(frontend): helper getApiError, retry só em 5xx e erros em Blob legíveis`
 
 ---
 
@@ -247,7 +247,7 @@ it('interceptor abre modal DLP quando erro 409 vem como Blob', async () => {
 
 Por que `1900-01-01`: o backend recorta pelo início real do `df_combined` (`analysis.py`, `effective_start`) e devolve a data efetiva em `meta.start`; mandar uma data antiga não muda o contrato (escolha recomendada na revisão, em vez de redefinir `start: null` na ADR 0013).
 
-- [ ] **Step 1: Testes que falham**
+- [x] **Step 1: Testes que falham**
 
 ```js
 it('Tudo envia start 1900-01-01 e end null', ...)            // substitui o teste que afirmava null
@@ -263,13 +263,13 @@ it('PeriodNotice mostra período efetivo e benchmarks sem dados', () => {
 });
 ```
 
-- [ ] **Step 2:** `npx vitest run src/test/filters-bar.test.jsx` → FAIL.
+- [x] **Step 2:** `npx vitest run src/test/filters-bar.test.jsx` → FAIL.
 
-- [ ] **Step 3: Implementar.** `computePresetDates` usa `toLocalISODate` nos presets; `resetFilters` usa `computePresetDates('Tudo')`. Formatar `dd/mm/aaaa` a partir da string `YYYY-MM-DD` por split (sem `new Date(str)`, que interpreta como UTC). Na `PortfolioPage`, `<PeriodNotice meta={summary.data?.meta} />`.
+- [x] **Step 3: Implementar.** `computePresetDates` usa `toLocalISODate` nos presets; `resetFilters` usa `computePresetDates('Tudo')`. Formatar `dd/mm/aaaa` a partir da string `YYYY-MM-DD` por split (sem `new Date(str)`, que interpreta como UTC). Na `PortfolioPage`, `<PeriodNotice meta={summary.data?.meta} />`.
 
-- [ ] **Step 4:** `npx vitest run` → PASS.
+- [x] **Step 4:** `npx vitest run` → PASS.
 
-- [ ] **Step 5: Commit** — `🐛 fix(frontend): preset Tudo analisa o histórico completo e datas locais nos presets`
+- [x] **Step 5: Commit** — `🐛 fix(frontend): preset Tudo analisa o histórico completo e datas locais nos presets`
 
 ---
 
@@ -281,15 +281,15 @@ it('PeriodNotice mostra período efetivo e benchmarks sem dados', () => {
 
 **Interfaces:** contrato de backend: `volatilidade`, `retorno_cagr`, volatilidade móvel e drawdown são **frações** (ADR 0013). Sharpe não é percentual e não muda.
 
-- [ ] **Step 1: Teste que falha** — exportar o helper de `RiskReturnChart.jsx` como `toPct` e testar `toPct(2.14) === 214`, `toPct(0.15) === 15`, `toPct(null) === 0` (manter o comportamento atual para nulo). Idem `toVolPercent(2.5) === 250`.
+- [x] **Step 1: Teste que falha** — exportar o helper de `RiskReturnChart.jsx` como `toPct` e testar `toPct(2.14) === 214`, `toPct(0.15) === 15`, `toPct(null) === 0` (manter o comportamento atual para nulo). Idem `toVolPercent(2.5) === 250`.
 
-- [ ] **Step 2:** `npx vitest run src/test/risk-charts-page.test.jsx` → FAIL.
+- [x] **Step 2:** `npx vitest run src/test/risk-charts-page.test.jsx` → FAIL.
 
-- [ ] **Step 3:** Multiplicar por 100 sempre nos três helpers (remover o `Math.abs(num) <= 2 ? ... : num`).
+- [x] **Step 3:** Multiplicar por 100 sempre nos três helpers (remover o `Math.abs(num) <= 2 ? ... : num`).
 
-- [ ] **Step 4:** `npx vitest run` → PASS.
+- [x] **Step 4:** `npx vitest run` → PASS.
 
-- [ ] **Step 5: Commit** — `🐛 fix(frontend): percentuais de risco sempre convertidos de fração`
+- [x] **Step 5: Commit** — `🐛 fix(frontend): percentuais de risco sempre convertidos de fração`
 
 ---
 
@@ -301,15 +301,15 @@ it('PeriodNotice mostra período efetivo e benchmarks sem dados', () => {
 
 **Interfaces:** Consumes `shouldRetry` (Task 3).
 
-- [ ] **Step 1: Teste que falha** — renderizar um componente com `useQuery` sob o `QueryClient` criado pelo `App` (extrair `export function createQueryClient()` de `App.jsx` para isso) cujo `queryFn` rejeita com `{ response: { status: 409 } }`; esperar que o `queryFn` tenha sido chamado exatamente 1 vez.
+- [x] **Step 1: Teste que falha** — renderizar um componente com `useQuery` sob o `QueryClient` criado pelo `App` (extrair `export function createQueryClient()` de `App.jsx` para isso) cujo `queryFn` rejeita com `{ response: { status: 409 } }`; esperar que o `queryFn` tenha sido chamado exatamente 1 vez.
 
-- [ ] **Step 2:** FAIL (hoje chama 2x).
+- [x] **Step 2:** FAIL (hoje chama 2x).
 
-- [ ] **Step 3:** `createQueryClient()` com `retry: shouldRetry`; `App` usa `useMemo(createQueryClient, [])`.
+- [x] **Step 3:** `createQueryClient()` com `retry: shouldRetry`; `App` usa `useMemo(createQueryClient, [])`.
 
-- [ ] **Step 4:** `npx vitest run` → PASS.
+- [x] **Step 4:** `npx vitest run` → PASS.
 
-- [ ] **Step 5: Commit** — `🐛 fix(frontend): não repetir requisições com erro 4xx`
+- [x] **Step 5: Commit** — `🐛 fix(frontend): não repetir requisições com erro 4xx`
 
 ---
 
@@ -324,18 +324,18 @@ it('PeriodNotice mostra período efetivo e benchmarks sem dados', () => {
 - Produces: `useDlpTokenStatus() -> UseQueryResult<{configured: boolean, ...}>` com `queryKey: ['dlp', 'token-status']`, `queryFn: dlpApi.getTokenStatus`, `staleTime: 60_000` (mesmos valores de hoje no `Header`).
 - `usePortfolioQueries()` e `useMigrationPlan()` passam `enabled: tokenStatus?.configured === true` em todas as queries e expõem `tokenConfigured: boolean | undefined` (undefined enquanto o status carrega).
 
-- [ ] **Step 1: Testes que falham**
+- [x] **Step 1: Testes que falham**
   - `PortfolioPage` com `dlpApi.getTokenStatus` → `{configured:false}`: nenhum `portfolioApi.fetch*` chamado; aparece `EmptyState` com título `Configure seu token DLP` e botão `Configurar token` que dispara `window` event `open-dlp-modal` (`reason: 'missing'`).
   - `MigrationPage` com `configured:false`: `migrationApi.getWallet` não chamado; mesmo `EmptyState`.
   - Com `configured:true`: comportamento atual (testes existentes continuam passando — ajustar seus mocks para `getTokenStatus` → `{configured:true}`).
 
-- [ ] **Step 2:** FAIL.
+- [x] **Step 2:** FAIL.
 
-- [ ] **Step 3: Implementar** o hook, o `enabled` e o `EmptyState` (enquanto `tokenConfigured === undefined`, mostrar os skeletons atuais).
+- [x] **Step 3: Implementar** o hook, o `enabled` e o `EmptyState` (enquanto `tokenConfigured === undefined`, mostrar os skeletons atuais).
 
-- [ ] **Step 4:** `npx vitest run` → PASS.
+- [x] **Step 4:** `npx vitest run` → PASS.
 
-- [ ] **Step 5: Commit** — `🐛 fix(frontend): carteira e planejador só consultam a API com token DLP configurado`
+- [x] **Step 5: Commit** — `🐛 fix(frontend): carteira e planejador só consultam a API com token DLP configurado`
 
 ---
 
@@ -352,13 +352,13 @@ it('PeriodNotice mostra período efetivo e benchmarks sem dados', () => {
 - `BaseChart` ganha props `error` e `onRetry`; com `error` renderiza `ErrorState` no lugar do gráfico (mesma altura). Cada gráfico/tabela repassa `error`/`onRetry`. Na `PortfolioPage`: `error={q.error} onRetry={q.refetch}` para cada query. Erro 404 `portfolio_empty` continua no `EmptyState` existente.
 - `MigrationPage`: `walletQuery.isError` que não seja `portfolio_empty` → `ErrorState` com `onRetry={walletQuery.refetch}`; a mensagem de erro do plano passa a usar `getApiError(planMutation.error).message`.
 
-- [ ] **Step 1: Testes que falham**
+- [x] **Step 1: Testes que falham**
   - `PortfolioPage` com `fetchDrawdown` rejeitando `{response:{status:502,data:{code:'dlp_unavailable',message:'DLP indisponível'}}}` (aba Risco): aparece `DLP indisponível` e clicar `Tentar novamente` chama `fetchDrawdown` de novo.
   - `MigrationPage` com `getWallet` rejeitando 502: aparece a mensagem e o botão; `HoldingsTable` não é renderizada.
 
-- [ ] **Step 2:** FAIL. **Step 3:** implementar. **Step 4:** `npx vitest run` → PASS.
+- [x] **Step 2:** FAIL. **Step 3:** implementar. **Step 4:** `npx vitest run` → PASS.
 
-- [ ] **Step 5: Commit** — `✨ feat(frontend): estados de erro com nova tentativa nos gráficos e no planejador`
+- [x] **Step 5: Commit** — `✨ feat(frontend): estados de erro com nova tentativa nos gráficos e no planejador`
 
 ---
 
@@ -373,16 +373,16 @@ it('PeriodNotice mostra período efetivo e benchmarks sem dados', () => {
 - `TargetAllocationForm` ganha props `initialCash`, `onChangeInitialCash`, `contributionsOnly`, `onChangeContributionsOnly` (rótulos `Caixa disponível para aportes (R$)` e `Apenas aportes (não vender nada)`); `MigrationPage` liga ao hook (os setters já existem).
 - `isTargetListValid`: tolerância `Math.abs(total - 100) > 1e-6` (igual a `_WEIGHT_TOL` do backend).
 
-- [ ] **Step 1: Testes que falham**
+- [x] **Step 1: Testes que falham**
   - Sem nenhuma escolha do usuário, `planPayload.holdings` tem todas as ações `ignore` (inclusive papéis com cotação).
   - `HoldingsTable` mostra `Ignorar` selecionado por padrão num papel com cotação.
   - Digitar `5000` em `Caixa disponível…` → `planPayload.initial_cash === 5000`; marcar `Apenas aportes` → `contributions_only === true`.
   - `isTargetListValid([{ticker:'A',weight:33.333},{ticker:'B',weight:33.333},{ticker:'C',weight:33.334}])` → `true`; com `33.333 × 3` → `false`.
   - Ajustar o teste existente "alinha planPayload com validate_plan_input" para o novo padrão.
 
-- [ ] **Step 2:** FAIL. **Step 3:** implementar. Drafts antigos em `sessionStorage` com `action: 'sell'` explícito continuam respeitados (só o padrão muda). **Step 4:** `npx vitest run` → PASS.
+- [x] **Step 2:** FAIL. **Step 3:** implementar. Drafts antigos em `sessionStorage` com `action: 'sell'` explícito continuam respeitados (só o padrão muda). **Step 4:** `npx vitest run` → PASS.
 
-- [ ] **Step 5: Commit** — `🐛 fix(frontend): planejador não vende nada por padrão e aceita caixa inicial`
+- [x] **Step 5: Commit** — `🐛 fix(frontend): planejador não vende nada por padrão e aceita caixa inicial`
 
 ---
 
@@ -410,11 +410,11 @@ it('PeriodNotice mostra período efetivo e benchmarks sem dados', () => {
 - `MonthlyPurchasesTable` aplica `formatPlanWarning` em `meta.warnings` e `m.warnings`, e, se `totals.ir_not_estimated.length > 0`, mostra `IR não estimado para: X, Y` no subtítulo do card.
 - `useMigrationPlan`: quando `planPayload` muda (comparar `JSON.stringify`) depois de um plano calculado, chamar `planMutation.reset()` — o plano exibido e o PDF sempre correspondem às entradas atuais.
 
-- [ ] **Step 1: Testes que falham** — `formatPlanWarning('fx_approx:VWRA11')` contém `VWRA11` e `PTAX`; `MonthlyPurchasesTable` com `m.warnings: ['exceeds_exemption']` não mostra o código cru; com `totals.ir_not_estimated: ['FI_X']` mostra `IR não estimado para: FI_X`; após calcular um plano, mudar o peso de um alvo remove o `MonthlyPurchasesTable`.
+- [x] **Step 1: Testes que falham** — `formatPlanWarning('fx_approx:VWRA11')` contém `VWRA11` e `PTAX`; `MonthlyPurchasesTable` com `m.warnings: ['exceeds_exemption']` não mostra o código cru; com `totals.ir_not_estimated: ['FI_X']` mostra `IR não estimado para: FI_X`; após calcular um plano, mudar o peso de um alvo remove o `MonthlyPurchasesTable`.
 
-- [ ] **Step 2:** FAIL. **Step 3:** implementar. **Step 4:** `npx vitest run` → PASS.
+- [x] **Step 2:** FAIL. **Step 3:** implementar. **Step 4:** `npx vitest run` → PASS.
 
-- [ ] **Step 5: Commit** — `✨ feat(frontend): avisos do plano de IR em português e plano limpo ao mudar entradas`
+- [x] **Step 5: Commit** — `✨ feat(frontend): avisos do plano de IR em português e plano limpo ao mudar entradas`
 
 ---
 
@@ -425,7 +425,7 @@ it('PeriodNotice mostra período efetivo e benchmarks sem dados', () => {
 - Modify: `docs/adr/0015-planejador-de-ir.md` (teto mínimo R$ 100, `MAX_MONTHS = 240`, padrão `ignore` agora também na UI)
 - Modify: `docs/adr/0013-contrato-da-api-v1.md` (nota: `start` nulo = 1 ano; a SPA envia `1900-01-01` para "Tudo" e lê `meta.start`)
 
-- [ ] **Step 1:** Editar os três documentos.
-- [ ] **Step 2:** `cd backend && .venv/bin/pytest -q && .venv/bin/python manage.py check` → tudo verde, 0 issues.
-- [ ] **Step 3:** `cd frontend && npx vitest run && npm run build` → verde, build ok.
-- [ ] **Step 4: Commit** — `📝 docs: registra correções da revisão das Fases 3/4 e backlog`
+- [x] **Step 1:** Editar os três documentos.
+- [x] **Step 2:** `cd backend && .venv/bin/pytest -q && .venv/bin/python manage.py check` → tudo verde, 0 issues.
+- [x] **Step 3:** `cd frontend && npx vitest run && npm run build` → verde, build ok.
+- [x] **Step 4: Commit** — `📝 docs: registra correções da revisão das Fases 3/4 e backlog`
