@@ -3,11 +3,18 @@ import { render, screen, waitFor, fireEvent, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+vi.mock('echarts-for-react', () => ({ default: () => <div data-testid="echarts-mock" /> }));
+
 import { AuthProvider } from '../context/AuthContext';
 import { authApi } from '../api/auth';
 import { dlpApi } from '../api/dlp';
 import { api } from '../api/client';
 import { Header } from '../components/layout/Header';
+import { PortfolioFilterProvider } from '../context/PortfolioFilterContext';
+import { PortfolioPage } from '../pages/PortfolioPage';
+import { portfolioApi } from '../api/portfolio';
+import { benchmarksApi } from '../api/benchmarks';
 
 function renderHeader(queryClient) {
   return render(
@@ -136,5 +143,61 @@ describe('Header, DlpTokenModal e Primitivas de UI', () => {
     await waitFor(() => {
       expect(refreshBtn).not.toBeDisabled();
     });
+  });
+
+  it('salvar o primeiro token dispara cada análise da carteira uma única vez', async () => {
+    let isConfigured = false;
+    // latência de rede: o refetch do status não resolve no mesmo tick
+    vi.spyOn(dlpApi, 'getTokenStatus').mockImplementation(
+      () =>
+        new Promise((resolve) =>
+          setTimeout(() => resolve({ configured: isConfigured, updated_at: null }), 20)
+        )
+    );
+    vi.spyOn(dlpApi, 'saveToken').mockImplementation(async () => {
+      isConfigured = true;
+      return { configured: true, updated_at: '2026-10-27T12:00:00Z' };
+    });
+    vi.spyOn(portfolioApi, 'getFilters').mockResolvedValue({ ativos: [], classes: [] });
+    vi.spyOn(benchmarksApi, 'getCatalog').mockResolvedValue({
+      groups: [],
+      defaults: [],
+      synthetic: { bases: [], operadores: [] },
+    });
+    const slow = () => new Promise((resolve) => setTimeout(() => resolve({ data: {} }), 30));
+    const summarySpy = vi.spyOn(portfolioApi, 'fetchSummary').mockImplementation(slow);
+    [
+      'fetchTwrEvolution',
+      'fetchDrawdown',
+      'fetchRollingMetrics',
+      'fetchRiskReturn',
+      'fetchShadow',
+      'fetchYearlySummary',
+      'fetchIrrEvolution',
+    ].forEach((name) => vi.spyOn(portfolioApi, name).mockImplementation(slow));
+
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={qc}>
+        <MemoryRouter>
+          <AuthProvider queryClient={qc}>
+            <PortfolioFilterProvider>
+              <Header />
+              <PortfolioPage />
+            </PortfolioFilterProvider>
+          </AuthProvider>
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Configurar token' }));
+    fireEvent.change(await screen.findByPlaceholderText(/Cole seu token DLP/i), {
+      target: { value: 'tok-novo' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Salvar Token/i }));
+
+    await waitFor(() => expect(summarySpy).toHaveBeenCalled());
+    await new Promise((r) => setTimeout(r, 200));
+    expect(summarySpy).toHaveBeenCalledTimes(1);
   });
 });
