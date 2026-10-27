@@ -57,5 +57,5 @@ ENV CHROME_BINARY=/usr/bin/chromium \
     TZ=America/Sao_Paulo
 
 USER app
-CMD ["supercronic", "/app/backend/deploy/crontab"]
+CMD ["/usr/local/bin/supercronic", "/app/backend/deploy/crontab"]
 
