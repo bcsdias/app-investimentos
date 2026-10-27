@@ -30,7 +30,7 @@ paralelo até a Fase 6.
 cd backend
 python3 -m venv .venv
 .venv/bin/pip install --upgrade pip
-.venv/bin/pip install -r requirements.txt
+.venv/bin/pip install -r requirements-dev.txt
 ```
 
 Sempre use `.venv/bin/python` / `.venv/bin/pytest` — não há `python` no PATH da VM.
@@ -140,7 +140,8 @@ backend/
 ├── scripts/
 │   ├── bootstrap_db.sh      cria role/database appinvest (idempotente)  — versionado
 │   └── rotate_db_password.sh rotaciona a senha: gera + aplica no PG + espelha no .env
-├── requirements.txt        pins com ~= (runtime + dev/test)
+├── requirements.txt        pins com ~= (runtime — usado nos containers)
+├── requirements-dev.txt    -r requirements.txt + pytest*, model-bakery, matplotlib (host)
 └── pytest.ini              DJANGO_SETTINGS_MODULE=config.settings, testpaths=apps engine, --reuse-db
 ```
 

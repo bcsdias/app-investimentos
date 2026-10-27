@@ -12,7 +12,7 @@ Instruções para agentes trabalhando neste diretório. Complementa
 
 ## Ambiente
 
-- Virtualenv em `backend/.venv/`. **Sempre** `.venv/bin/python` e `.venv/bin/pytest` —
+- Virtualenv em `backend/.venv/` (instalado com `.venv/bin/pip install -r requirements-dev.txt`). **Sempre** `.venv/bin/python` e `.venv/bin/pytest` —
   não existe `python` no PATH da VM, e `python3` é o do sistema (sem deps).
 - Config vem só de `backend/.env` (via `python-dotenv`, sem expansão custom) — ver
   [ADR 0010](../docs/adr/0010-python-dotenv-puro.md).
