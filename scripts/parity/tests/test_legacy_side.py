@@ -43,6 +43,22 @@ def test_isolate_legacy_disables_upstash_and_file_log():
     )
 
 
+def test_legacy_patches_restore_financial_report_on_first_import(monkeypatch):
+    # Se financial_report só for importado dentro do patch, o seu
+    # `from market_data import buscar_historico` captura o fake e o mock
+    # "restaura" para o fake — a camada 2 passaria a usar o histórico congelado.
+    import sys
+
+    from src.data.sources import market_data
+
+    monkeypatch.delitem(sys.modules, "src.engine.financial_report", raising=False)
+    with legacy_patches(make_snapshot(), make_hist()):
+        pass
+    fr = sys.modules["src.engine.financial_report"]
+    assert fr.buscar_historico is market_data.buscar_historico
+    assert market_data.buscar_historico.__module__ == "src.data.sources.market_data"
+
+
 def test_fake_bcb_rate_matches_legacy_accumulation():
     from src.data.sources import market_data
 

@@ -82,6 +82,11 @@ def _fake_dolar(snapshot: MarketSnapshot):
 
 @contextlib.contextmanager
 def legacy_patches(snapshot: MarketSnapshot, hist: pd.DataFrame):
+    # Importar antes de qualquer patch: se o mock importasse financial_report já com
+    # market_data.buscar_historico trocado, o `from ... import` capturaria o fake e a
+    # restauração devolveria o fake (a camada 2 usaria o histórico congelado).
+    import src.engine.financial_report  # noqa: F401
+
     hist_fake = lambda *a, **k: hist.copy(deep=True)  # noqa: E731
     with contextlib.ExitStack() as stack:
         for target, fake in (
