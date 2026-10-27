@@ -8,7 +8,7 @@ export function toVolPercent(val) {
   return num * 100;
 }
 
-export function RollingSharpeChart({ data, isLoading = false }) {
+export function RollingSharpeChart({ data, isLoading = false, error = null, onRetry }) {
   const payload = data?.data || data || {};
   const sharpeSeries = payload.sharpe || [];
   const volSeries = payload.volatility || [];
@@ -78,7 +78,7 @@ export function RollingSharpeChart({ data, isLoading = false }) {
       title="Sharpe e Volatilidade Móvel (252 d.u.)"
       subtitle="Evolução da relação risco-retorno anualizada em janela móvel de 1 ano"
     >
-      <BaseChart option={option} height={360} isLoading={isLoading} />
+      <BaseChart option={option} height={360} isLoading={isLoading} error={error} onRetry={onRetry} />
     </Card>
   );
 }

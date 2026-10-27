@@ -8,7 +8,7 @@ export function toPercentPoint(val) {
   return num * 100;
 }
 
-export function DrawdownChart({ data, isLoading = false }) {
+export function DrawdownChart({ data, isLoading = false, error = null, onRetry }) {
   const seriesList = data?.data?.series || data?.series || [];
 
   const option = useMemo(() => {
@@ -72,7 +72,7 @@ export function DrawdownChart({ data, isLoading = false }) {
       title="Drawdown Subaquático (%)"
       subtitle="Queda percentual em relação à máxima histórica da cota"
     >
-      <BaseChart option={option} height={340} isLoading={isLoading} />
+      <BaseChart option={option} height={340} isLoading={isLoading} error={error} onRetry={onRetry} />
     </Card>
   );
 }

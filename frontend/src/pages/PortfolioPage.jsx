@@ -64,23 +64,25 @@ export function PortfolioPage() {
             data={summary.data}
             isLoading={summary.isLoading}
             isError={summary.isError}
+            error={summary.error}
+            onRetry={summary.refetch}
           />
 
           {activeTab === 'performance' ? (
             <div className="space-y-6">
-              <TwrChart data={twr.data} isLoading={twr.isLoading} />
-              <YearlyTable data={yearly.data} isLoading={yearly.isLoading} />
+              <TwrChart data={twr.data} isLoading={twr.isLoading} error={twr.error} onRetry={twr.refetch} />
+              <YearlyTable data={yearly.data} isLoading={yearly.isLoading} error={yearly.error} onRetry={yearly.refetch} />
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <ShadowChart data={shadow.data} isLoading={shadow.isLoading} />
-                <IrrEvolutionChart data={irr.data} isLoading={irr.isLoading} />
+                <ShadowChart data={shadow.data} isLoading={shadow.isLoading} error={shadow.error} onRetry={shadow.refetch} />
+                <IrrEvolutionChart data={irr.data} isLoading={irr.isLoading} error={irr.error} onRetry={irr.refetch} />
               </div>
             </div>
           ) : (
             <div className="space-y-6">
-              <DrawdownChart data={drawdown.data} isLoading={drawdown.isLoading} />
+              <DrawdownChart data={drawdown.data} isLoading={drawdown.isLoading} error={drawdown.error} onRetry={drawdown.refetch} />
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <RollingSharpeChart data={rolling.data} isLoading={rolling.isLoading} />
-                <RiskReturnChart data={riskReturn.data} isLoading={riskReturn.isLoading} />
+                <RollingSharpeChart data={rolling.data} isLoading={rolling.isLoading} error={rolling.error} onRetry={rolling.refetch} />
+                <RiskReturnChart data={riskReturn.data} isLoading={riskReturn.isLoading} error={riskReturn.error} onRetry={riskReturn.refetch} />
               </div>
             </div>
           )}

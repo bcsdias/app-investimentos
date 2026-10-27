@@ -8,7 +8,7 @@ export function toPct(val) {
   return num * 100;
 }
 
-export function RiskReturnChart({ data, isLoading = false }) {
+export function RiskReturnChart({ data, isLoading = false, error = null, onRetry }) {
   const rows = data?.data?.rows || data?.rows || [];
 
   const option = useMemo(() => {
@@ -99,7 +99,7 @@ export function RiskReturnChart({ data, isLoading = false }) {
       title="Dispersão Risco × Retorno (Volatilidade vs CAGR)"
       subtitle="Comparação de eficiência anualizada e quadrantes médios do período"
     >
-      <BaseChart option={option} height={360} isLoading={isLoading} />
+      <BaseChart option={option} height={360} isLoading={isLoading} error={error} onRetry={onRetry} />
     </Card>
   );
 }

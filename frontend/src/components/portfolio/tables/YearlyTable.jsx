@@ -1,6 +1,7 @@
 import React from 'react';
 import { Card } from '../../common/Card';
 import { Skeleton } from '../../common/Skeleton';
+import { ErrorState } from '../../common/ErrorState';
 
 function formatYearReturn(value) {
   if (value === null || value === undefined || Number.isNaN(Number(value))) {
@@ -18,7 +19,15 @@ function formatYearReturn(value) {
   return { text, colorClass };
 }
 
-export function YearlyTable({ data, isLoading = false }) {
+export function YearlyTable({ data, isLoading = false, error = null, onRetry }) {
+  if (error) {
+    return (
+      <Card title="Rentabilidade Ano a Ano" subtitle="Retorno anual por série e acumulado no período">
+        <ErrorState error={error} onRetry={onRetry} />
+      </Card>
+    );
+  }
+
   if (isLoading) {
     return (
       <Card title="Rentabilidade Ano a Ano" subtitle="Retorno anual por série e acumulado no período">

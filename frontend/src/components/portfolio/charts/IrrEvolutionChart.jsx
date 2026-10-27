@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { Card } from '../../common/Card';
 import { BaseChart } from './BaseChart';
 
-export function IrrEvolutionChart({ data, isLoading = false }) {
+export function IrrEvolutionChart({ data, isLoading = false, error = null, onRetry }) {
   const seriesList = data?.data?.series || data?.series || [];
 
   const option = useMemo(() => {
@@ -54,7 +54,7 @@ export function IrrEvolutionChart({ data, isLoading = false }) {
       title="Evolução Histórica da TIR (XIRR a.a.)"
       subtitle="Taxa interna de retorno anualizada acumulada mês a mês"
     >
-      <BaseChart option={option} height={340} isLoading={isLoading} />
+      <BaseChart option={option} height={340} isLoading={isLoading} error={error} onRetry={onRetry} />
     </Card>
   );
 }

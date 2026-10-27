@@ -9,6 +9,8 @@ import { MonthlyPurchasesTable } from '../components/migration/MonthlyPurchasesT
 import { ExportPdfButton } from '../components/migration/ExportPdfButton';
 import { Skeleton } from '../components/common/Skeleton';
 import { EmptyState } from '../components/common/EmptyState';
+import { ErrorState } from '../components/common/ErrorState';
+import { getApiError } from '../api/errors';
 import { DlpTokenRequiredState } from '../components/dlp/DlpTokenRequiredState';
 
 export function MigrationPage() {
@@ -58,6 +60,8 @@ export function MigrationPage() {
           title="Nenhum papel encontrado na custódia"
           description="Sua carteira não possui ativos com saldo positivo na DLP Invest. Cadastre suas movimentações ou verifique o token DLP configurado."
         />
+      ) : walletQuery.isError ? (
+        <ErrorState error={walletQuery.error} onRetry={walletQuery.refetch} />
       ) : (
         <>
           <HoldingsTable
@@ -87,7 +91,7 @@ export function MigrationPage() {
 
           {planMutation.isError && (
             <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-sm text-red-300">
-              {planMutation.error?.response?.data?.message ||
+              {getApiError(planMutation.error).message ||
                 'Não foi possível calcular o plano de migração. Verifique os dados informados.'}
             </div>
           )}

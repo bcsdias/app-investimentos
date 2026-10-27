@@ -3,7 +3,7 @@ import { Card } from '../../common/Card';
 import { BaseChart } from './BaseChart';
 import { formatCurrencyBRL } from '../SummaryCards';
 
-export function ShadowChart({ data, isLoading = false }) {
+export function ShadowChart({ data, isLoading = false, error = null, onRetry }) {
   const seriesList = data?.data?.series || data?.series || [];
 
   const option = useMemo(() => {
@@ -61,7 +61,7 @@ export function ShadowChart({ data, isLoading = false }) {
       title="Shadow Portfolio (Evolução Patrimonial R$)"
       subtitle="Simulação dos mesmos aportes aplicados diretamente nos benchmarks"
     >
-      <BaseChart option={option} height={340} isLoading={isLoading} />
+      <BaseChart option={option} height={340} isLoading={isLoading} error={error} onRetry={onRetry} />
     </Card>
   );
 }

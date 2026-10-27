@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { Card } from '../../common/Card';
 import { BaseChart } from './BaseChart';
 
-export function TwrChart({ data, isLoading = false }) {
+export function TwrChart({ data, isLoading = false, error = null, onRetry }) {
   const seriesList = data?.data?.series || data?.series || [];
 
   const option = useMemo(() => {
@@ -74,7 +74,7 @@ export function TwrChart({ data, isLoading = false }) {
       title="Evolução da Cota (TWR — Base 100)"
       subtitle="Rentabilidade ponderada pelo tempo comparada aos benchmarks selecionados"
     >
-      <BaseChart option={option} height={380} isLoading={isLoading} />
+      <BaseChart option={option} height={380} isLoading={isLoading} error={error} onRetry={onRetry} />
     </Card>
   );
 }

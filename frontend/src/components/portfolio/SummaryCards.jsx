@@ -1,6 +1,7 @@
 import React from 'react';
 import { Wallet, ArrowDownToLine, TrendingUp, Percent, Activity } from 'lucide-react';
 import { Skeleton } from '../common/Skeleton';
+import { ErrorState } from '../common/ErrorState';
 
 export function formatCurrencyBRL(value) {
   if (value === null || value === undefined || Number.isNaN(Number(value))) {
@@ -23,7 +24,7 @@ export function formatSignedPercent(pctValue) {
   return `${sign}${num.toFixed(2).replace('.', ',')}%`;
 }
 
-export function SummaryCards({ data, isLoading = false, isError = false }) {
+export function SummaryCards({ data, isLoading = false, isError = false, error = null, onRetry }) {
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
@@ -40,12 +41,8 @@ export function SummaryCards({ data, isLoading = false, isError = false }) {
     );
   }
 
-  if (isError) {
-    return (
-      <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-sm text-red-300">
-        Não foi possível carregar o resumo patrimonial do período selecionado.
-      </div>
-    );
+  if (isError || error) {
+    return <ErrorState error={error} onRetry={onRetry} />;
   }
 
   const raw = data?.data || data || {};

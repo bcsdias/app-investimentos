@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import ReactECharts from 'echarts-for-react';
 import { Skeleton } from '../../common/Skeleton';
+import { ErrorState } from '../../common/ErrorState';
 
 export const CHART_PALETTE = [
   '#10b981', // emerald-500
@@ -13,7 +14,14 @@ export const CHART_PALETTE = [
   '#eab308', // yellow-500
 ];
 
-export function BaseChart({ option, height = 360, isLoading = false, className = '' }) {
+export function BaseChart({
+  option,
+  height = 360,
+  isLoading = false,
+  error = null,
+  onRetry,
+  className = '',
+}) {
   const mergedOption = useMemo(() => {
     const baseOption = {
       backgroundColor: 'transparent',
@@ -59,6 +67,14 @@ export function BaseChart({ option, height = 360, isLoading = false, className =
       legend: option?.legend === false ? { show: false } : baseOption.legend,
     };
   }, [option]);
+
+  if (error) {
+    return (
+      <div className={`w-full ${className}`} style={{ height }}>
+        <ErrorState error={error} onRetry={onRetry} className="h-full" />
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
