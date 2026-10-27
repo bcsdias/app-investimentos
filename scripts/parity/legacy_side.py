@@ -6,6 +6,7 @@ Importa src: sai junto com o legado na Task 9 da Fase 6.
 from __future__ import annotations
 
 import contextlib
+import dataclasses
 import datetime as dt
 from unittest import mock
 
@@ -17,14 +18,19 @@ from parity.cases import Case
 from parity.compare import (
     ADR0012_METRICS,
     FALHA,
+    INVESTIGAR,
+    OK,
     REL_TOL_L1,
+    REL_TOL_L2,
     SeriesDiff,
     apply_adr0012_recheck,
+    classify_origin,
     compare_frames,
 )
 from parity.engine_side import METRICS, irr_frame, normalize_yearly, portfolio_frame, run_engine
 from parity.frozen import MarketSnapshot
 from parity.kpis import derive_kpis
+from parity.live import ApiClient, ApiError, api_outputs
 
 # Cópia de src/data/sources/market_data.py:397 (codigos_indices): séries do BCB que
 # já vêm como número-índice e não como taxa.
@@ -220,3 +226,31 @@ def run_layer1(case: Case, snapshot: MarketSnapshot, hist: pd.DataFrame):
     diffs = apply_adr0012_recheck(diffs, legacy_metrics_fill_none(report), new_out)
     return diffs, legacy_out, new_out
 
+
+def run_layer2(case: Case, token: str, client: ApiClient):
+    """Legado ao vivo (sem patches) × API em execução; divergências viram INVESTIGAR."""
+    notes: list[str] = []
+    legacy_out: dict = {}
+    new_out: dict = {}
+
+    legacy = run_legacy(token, case)
+    if legacy is None:
+        notes.append("legado: sem carteira")
+    else:
+        legacy_out = legacy[1]
+
+    try:
+        new_out = api_outputs(client, case)
+    except ApiError as exc:
+        notes.append(f"API: {exc}")
+
+    if notes:
+        return [], notes, legacy_out, new_out
+
+    diffs: list[SeriesDiff] = []
+    for metric in METRICS:
+        if metric not in new_out:  # portfolio: só na camada 1
+            continue
+        for d in compare_frames(metric, legacy_out[metric], new_out[metric], REL_TOL_L2, INVESTIGAR):
+            diffs.append(d if d.status == OK else dataclasses.replace(d, origin=classify_origin(d)))
+    return diffs, notes, legacy_out, new_out
