@@ -5,10 +5,13 @@ import { Button } from '../common/Button';
 import { Badge } from '../common/Badge';
 import { assetsApi } from '../../api/assets';
 
+// Mesma tolerância de `_WEIGHT_TOL` em backend/apps/migration_ir/planner.py.
+const WEIGHT_TOLERANCE = 1e-6;
+
 export function isTargetListValid(targets = []) {
   if (!Array.isArray(targets) || targets.length === 0) return false;
   const totalWeight = targets.reduce((acc, t) => acc + (Number(t.weight) || 0), 0);
-  if (Math.abs(totalWeight - 100) >= 0.01) return false;
+  if (Math.abs(totalWeight - 100) > WEIGHT_TOLERANCE) return false;
 
   const seen = new Set();
   for (const t of targets) {
@@ -29,6 +32,10 @@ export function TargetAllocationForm({
   onChangeMonthlyCap,
   alreadySold = 0,
   onChangeAlreadySold,
+  initialCash = 0,
+  onChangeInitialCash,
+  contributionsOnly = false,
+  onChangeContributionsOnly,
   onSimulate,
   isSimulating = false,
   actionSlot = null,
@@ -201,6 +208,38 @@ export function TargetAllocationForm({
               }
               className="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100"
             />
+          </div>
+          <div>
+            <label
+              htmlFor="initial-cash-input"
+              className="block text-xs font-medium text-zinc-400 mb-1"
+            >
+              Caixa disponível para aportes (R$)
+            </label>
+            <input
+              id="initial-cash-input"
+              type="number"
+              min="0"
+              step="100"
+              value={initialCash}
+              onChange={(e) =>
+                onChangeInitialCash && onChangeInitialCash(Number(e.target.value))
+              }
+              className="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100"
+            />
+          </div>
+          <div className="flex items-end">
+            <label className="inline-flex items-center gap-2 text-sm text-zinc-300 pb-2">
+              <input
+                type="checkbox"
+                checked={contributionsOnly}
+                onChange={(e) =>
+                  onChangeContributionsOnly && onChangeContributionsOnly(e.target.checked)
+                }
+                className="accent-emerald-500"
+              />
+              Apenas aportes (não vender nada)
+            </label>
           </div>
         </div>
 

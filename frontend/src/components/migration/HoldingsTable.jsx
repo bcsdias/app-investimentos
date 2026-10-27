@@ -2,6 +2,7 @@ import React from 'react';
 import { Card } from '../common/Card';
 import { Badge } from '../common/Badge';
 import { formatCurrencyBRL } from '../portfolio/SummaryCards';
+import { defaultActionFor } from '../../hooks/useMigrationPlan';
 
 function getTaxBadge(taxTreatment) {
   switch (taxTreatment) {
@@ -60,7 +61,7 @@ export function HoldingsTable({
                 (t) => t.ticker.trim().toUpperCase() === (h.ativo || '').toUpperCase()
               );
               const hasPrice = h.price !== null && h.price !== undefined;
-              const defaultAction = isTargetHolding || !hasPrice ? 'ignore' : 'sell';
+              const defaultAction = defaultActionFor(h, isTargetHolding);
               const selectVal = isTargetHolding
                 ? 'ignore'
                 : cfg.action === 'count_as' && cfg.target

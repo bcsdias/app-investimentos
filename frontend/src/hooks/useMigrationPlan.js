@@ -5,6 +5,11 @@ import { useDlpTokenConfigured } from './useDlpTokenStatus';
 
 const STORAGE_KEY = 'migration_ir_draft_v1';
 
+// ADR 0015 §2: nenhum papel é vendido sem o usuário marcar.
+export function defaultActionFor() {
+  return 'ignore';
+}
+
 function loadDraft() {
   if (typeof window === 'undefined' || !window.sessionStorage) return null;
   try {
@@ -105,8 +110,7 @@ export function useMigrationPlan() {
         };
       }
 
-      const defaultAction = h.price === null || h.price === undefined ? 'ignore' : 'sell';
-      let resolvedAction = cfg.action || defaultAction;
+      let resolvedAction = cfg.action || defaultActionFor(h, isTargetHolding);
       if (resolvedAction === 'sell' && (h.price === null || h.price === undefined)) {
         resolvedAction = 'ignore';
       }

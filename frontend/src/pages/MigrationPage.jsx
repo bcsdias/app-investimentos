@@ -27,6 +27,10 @@ export function MigrationPage() {
     setMonthlyCap,
     alreadySold,
     setAlreadySold,
+    initialCash,
+    setInitialCash,
+    contributionsOnly,
+    setContributionsOnly,
     planPayload,
     planMutation,
   } = useMigrationPlan();
@@ -79,6 +83,10 @@ export function MigrationPage() {
             onChangeMonthlyCap={setMonthlyCap}
             alreadySold={alreadySold}
             onChangeAlreadySold={setAlreadySold}
+            initialCash={initialCash}
+            onChangeInitialCash={setInitialCash}
+            contributionsOnly={contributionsOnly}
+            onChangeContributionsOnly={setContributionsOnly}
             onSimulate={() => planMutation.mutate(planPayload)}
             isSimulating={planMutation.isPending}
             actionSlot={
