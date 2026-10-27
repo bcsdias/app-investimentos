@@ -233,3 +233,69 @@ def test_filter_missing_column_is_ignored_and_logged(caplog):
     out = dlp._filter_historico(df, corretora="XP")
     assert len(out) == 1
     assert "corretora" in caplog.text
+
+
+def _timeout_get(calls):
+    def fake_get(*a, **k):
+        calls.append(1)
+        raise requests.Timeout("t")
+
+    return fake_get
+
+
+def test_recent_unavailable_is_cached_and_skips_dlp(monkeypatch):
+    calls = []
+    monkeypatch.setattr(dlp.requests, "get", _timeout_get(calls))
+    with pytest.raises(DLPUnavailableError):
+        dlp.buscar_historico("DLP-tok")
+    with pytest.raises(DLPUnavailableError):
+        dlp.buscar_historico("DLP-tok", ativo="PETR4")
+    assert len(calls) == 1
+
+
+def test_refresh_clears_cached_failure(monkeypatch):
+    calls = []
+    monkeypatch.setattr(dlp.requests, "get", _timeout_get(calls))
+    with pytest.raises(DLPUnavailableError):
+        dlp.buscar_historico("DLP-tok")
+    dlp.invalidate_user_cache("DLP-tok")
+    monkeypatch.setattr(dlp.requests, "get", lambda *a, **k: calls.append(1) or _Resp(_OK))
+    df = dlp.buscar_historico("DLP-tok")
+    assert len(calls) == 2 and isinstance(df, pd.DataFrame)
+
+
+def test_auth_error_is_not_cached_as_failure(monkeypatch):
+    calls = []
+    monkeypatch.setattr(dlp.requests, "get", lambda *a, **k: calls.append(1) or _Resp({}, status=401))
+    for _ in range(2):
+        with pytest.raises(DLPAuthError):
+            dlp.buscar_historico("DLP-tok")
+    assert len(calls) == 2
+
+
+def test_resumo_failure_is_cached(monkeypatch):
+    calls = []
+    monkeypatch.setattr(dlp.requests, "get", _timeout_get(calls))
+    for _ in range(2):
+        with pytest.raises(DLPUnavailableError):
+            dlp.buscar_resumo_carteira("DLP-tok")
+    assert len(calls) == 1
+
+
+@pytest.mark.parametrize(
+    "exc", [requests.exceptions.ChunkedEncodingError, requests.exceptions.TooManyRedirects]
+)
+def test_other_request_exceptions_raise_unavailable(monkeypatch, exc):
+    def boom(*a, **k):
+        raise exc("x")
+
+    monkeypatch.setattr(dlp.requests, "get", boom)
+    with pytest.raises(DLPUnavailableError):
+        dlp.buscar_historico("t")
+
+
+@pytest.mark.parametrize("payload", [[], None, "x"])
+def test_non_object_json_raises_unavailable(monkeypatch, payload):
+    monkeypatch.setattr(dlp.requests, "get", lambda *a, **k: _Resp(payload))
+    with pytest.raises(DLPUnavailableError):
+        dlp.buscar_historico("t")

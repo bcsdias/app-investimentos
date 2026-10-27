@@ -59,7 +59,7 @@ def _get(path: str, token: str, params: dict) -> dict:
             params=params,
             timeout=60,
         )
-    except (requests.Timeout, requests.ConnectionError) as exc:
+    except requests.RequestException as exc:
         raise DLPUnavailableError(f"DLP {path}: {type(exc).__name__}") from None
     status = resp.status_code
     if status in (401, 403):
@@ -69,9 +69,41 @@ def _get(path: str, token: str, params: dict) -> dict:
     if status >= 400:
         raise DLPError(f"DLP {path}: HTTP {status}")
     try:
-        return resp.json()
+        payload = resp.json()
     except ValueError:
         raise DLPUnavailableError(f"DLP {path}: resposta JSON inválida") from None
+    if not isinstance(payload, dict):
+        raise DLPUnavailableError(f"DLP {path}: resposta não é um objeto JSON")
+    return payload
+
+
+ERR_TTL = 30  # s — falha recente da DLP; o refresh (nova geração) libera nova tentativa
+
+
+def _failed_recently(key: str) -> bool:
+    try:
+        return bool(cache.get(key + ":err"))
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("dlp err get falhou: %s", exc)
+        return False
+
+
+def _mark_failed(key: str) -> None:
+    try:
+        cache.set(key + ":err", 1, ERR_TTL)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("dlp err set falhou: %s", exc)
+
+
+def _get_or_mark(key: str, path: str, token: str, params: dict) -> dict:
+    """`_get` que lembra DLPUnavailableError por ERR_TTL (não serializa timeouts no single-flight)."""
+    if _failed_recently(key):
+        raise DLPUnavailableError("DLP indisponível (falha recente)")
+    try:
+        return _get(path, token, params)
+    except DLPUnavailableError:
+        _mark_failed(key)
+        raise
 
 
 _FILTER_COLUMNS = ("ativo", "classe", "corretora")
@@ -103,12 +135,14 @@ def buscar_historico(token, ativo=None, classe=None, corretora=None):
     cached = mc.get_df(key)
     if cached is not None:
         return _filter_historico(_norm_date_col(cached), **filters)
+    if _failed_recently(key):
+        raise DLPUnavailableError("DLP indisponível (falha recente)")
 
     with mc.single_flight(key):
         cached = mc.get_df(key)
         if cached is not None:
             return _filter_historico(_norm_date_col(cached), **filters)
-        payload = _get("/historico", token, {})
+        payload = _get_or_mark(key, "/historico", token, {})
         df = pd.DataFrame(payload.get("historico", []))
         if df.empty:
             return None
@@ -122,13 +156,15 @@ def buscar_resumo_carteira(token):
     cached = mc.get_df(key)
     if cached is not None:
         return cached
+    if _failed_recently(key):
+        raise DLPUnavailableError("DLP indisponível (falha recente)")
 
     with mc.single_flight(key):
         cached = mc.get_df(key)
         if cached is not None:
             return cached
-        payload = _get(
-            "/resumo", token,
+        payload = _get_or_mark(
+            key, "/resumo", token,
             {"summary": "true", "wallet": "true", "multiwallet": "false", "notifications": "false"},
         )
         if not payload:
