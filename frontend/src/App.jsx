@@ -8,20 +8,21 @@ import { Layout } from './components/layout/Layout';
 import { LoginPage } from './pages/LoginPage';
 import { PortfolioPage } from './pages/PortfolioPage';
 import { MigrationPage } from './pages/MigrationPage';
+import { shouldRetry } from './api/errors';
+
+export function createQueryClient() {
+  return new QueryClient({
+    defaultOptions: {
+      queries: {
+        refetchOnWindowFocus: false,
+        retry: shouldRetry,
+      },
+    },
+  });
+}
 
 export function App() {
-  const queryClient = useMemo(
-    () =>
-      new QueryClient({
-        defaultOptions: {
-          queries: {
-            refetchOnWindowFocus: false,
-            retry: 1,
-          },
-        },
-      }),
-    []
-  );
+  const queryClient = useMemo(createQueryClient, []);
 
   return (
     <QueryClientProvider client={queryClient}>
