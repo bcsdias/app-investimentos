@@ -159,7 +159,7 @@ describe('Módulo de Migração de IR e Exportação PDF', () => {
             cash_in: 21500,
             purchase_total: 21500,
             ir_estimado_total: 300,
-            warnings: ['exceeds_exemption: Venda unitária acima do limite mensal'],
+            warnings: ['exceeds_exemption'],
             sales: [
               {
                 ativo: 'PETR4',
@@ -196,7 +196,7 @@ describe('Módulo de Migração de IR e Exportação PDF', () => {
       meta: {
         monthly_cap: 20000,
         disclaimer: 'Simulação meramente informativa.',
-        warnings: ['exceeds_cap: Ativo indivisível excedeu teto'],
+        warnings: ['exceeds_cap'],
       },
     };
 
@@ -205,8 +205,8 @@ describe('Módulo de Migração de IR e Exportação PDF', () => {
     expect(screen.getByText(/Mês 1/i)).toBeInTheDocument();
     expect(screen.getByText('PETR4')).toBeInTheDocument();
     expect(screen.getByText('IVVB11')).toBeInTheDocument();
-    expect(screen.getByText(/exceeds_cap/i)).toBeInTheDocument();
-    expect(screen.getByText(/exceeds_exemption/i)).toBeInTheDocument();
+    expect(screen.getByText(/Uma única unidade ultrapassa o teto mensal/)).toBeInTheDocument();
+    expect(screen.getByText(/o lucro do mês é tributado/)).toBeInTheDocument();
   });
 
   it('ExportPdfButton recebe blob de migrationApi.downloadPdf e dispara download no DOM', async () => {

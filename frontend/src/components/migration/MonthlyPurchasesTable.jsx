@@ -3,6 +3,7 @@ import { AlertTriangle, Calendar, ArrowUpRight, ArrowDownLeft } from 'lucide-rea
 import { Card } from '../common/Card';
 import { Badge } from '../common/Badge';
 import { formatCurrencyBRL } from '../portfolio/SummaryCards';
+import { formatPlanWarning } from './planWarnings';
 
 export function MonthlyPurchasesTable({ plan }) {
   if (!plan) return null;
@@ -12,6 +13,7 @@ export function MonthlyPurchasesTable({ plan }) {
   const months = data.months || [];
   const totals = data.totals || {};
   const globalWarnings = meta.warnings || [];
+  const irNotEstimated = totals.ir_not_estimated || [];
 
   return (
     <div className="space-y-4">
@@ -23,7 +25,7 @@ export function MonthlyPurchasesTable({ plan }) {
           </div>
           <ul className="list-disc list-inside text-xs text-amber-200/90 space-y-1">
             {globalWarnings.map((w, i) => (
-              <li key={i}>{w}</li>
+              <li key={i}>{formatPlanWarning(w)}</li>
             ))}
           </ul>
         </div>
@@ -31,7 +33,7 @@ export function MonthlyPurchasesTable({ plan }) {
 
       <Card
         title="3. Cronograma Mensal de Migração"
-        subtitle={`Plano estimado em ${totals.months || months.length} mes(es) • Total vendido: ${formatCurrencyBRL(totals.sold || 0)} • DARF total estimado: ${formatCurrencyBRL(totals.ir_estimado || 0)}`}
+        subtitle={`Plano estimado em ${totals.months || months.length} mes(es) • Total vendido: ${formatCurrencyBRL(totals.sold || 0)} • DARF total estimado: ${formatCurrencyBRL(totals.ir_estimado || 0)}${irNotEstimated.length > 0 ? ` • IR não estimado para: ${irNotEstimated.join(', ')}` : ''}`}
       >
         <div className="space-y-6">
           {months.map((m) => (
@@ -64,7 +66,7 @@ export function MonthlyPurchasesTable({ plan }) {
               {Array.isArray(m.warnings) && m.warnings.length > 0 && (
                 <div className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-xs text-amber-300 space-y-1">
                   {m.warnings.map((mw, idx) => (
-                    <p key={idx}>• {mw}</p>
+                    <p key={idx}>• {formatPlanWarning(mw)}</p>
                   ))}
                 </div>
               )}

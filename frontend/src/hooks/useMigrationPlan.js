@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { migrationApi } from '../api/migration';
 import { useDlpTokenConfigured } from './useDlpTokenStatus';
@@ -143,6 +143,17 @@ export function useMigrationPlan() {
     mutationFn: (customPayload) =>
       migrationApi.calculatePlan(customPayload || planPayload),
   });
+
+  // Plano exibido (e o PDF) sempre correspondem às entradas atuais.
+  const payloadKey = JSON.stringify(planPayload);
+  const { reset: resetPlan } = planMutation;
+  const lastPayloadKey = useRef(payloadKey);
+  useEffect(() => {
+    if (lastPayloadKey.current !== payloadKey) {
+      lastPayloadKey.current = payloadKey;
+      resetPlan();
+    }
+  }, [payloadKey, resetPlan]);
 
   return {
     tokenConfigured,
