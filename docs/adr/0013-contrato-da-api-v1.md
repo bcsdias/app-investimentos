@@ -15,6 +15,7 @@ A Fase 3 expõe o núcleo de cálculo (`engine/`) e os serviços de mercado (`ap
 3. **Invalidação explícita do cache DLP (D2):** `POST /api/v1/portfolio/refresh` invalida o cache DLP do usuário autenticado antes de recarregar os gráficos, evitando um parâmetro `refresh=true` replicado em 8 chamadas simultâneas.
 4. **Envelope e formato de séries (D4, D5):**
    - Toda resposta analítica usa `{"data": ..., "meta": {"start": "YYYY-MM-DD", "end": "YYYY-MM-DD", "missing": [str]}}`, onde `start`/`end` refletem o período efetivo do `df_combined` e `missing` lista benchmarks/sintéticos sem dados no período.
+     - *Nota (2026-10-27):* no request, `start` nulo significa **"último ano"** (`hoje − 1 ano`), não "desde o início". Para o histórico completo a SPA envia `start = "1900-01-01"` (preset "Tudo") e exibe o período real a partir de `meta.start`/`meta.end`.
    - Séries temporais seguem `{"name": str, "data": [["YYYY-MM-DD", float|null], ...]}` (`NaN`/`±inf` convertidos para `null`), compatível diretamente com o eixo `time` do ECharts.
    - **A API não converte unidades:** devolve os números exatos do `engine` para preservar a verificação de paridade da Fase 6.
 5. **Contrato de erros e distinção 401 vs 422 (D3):**

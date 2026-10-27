@@ -3,11 +3,11 @@
 Backend Django da migração Streamlit → Django + React (ver [`../docs/consolidacao_arquitetura_e_migracao.md`](../docs/consolidacao_arquitetura_e_migracao.md)).
 Nesta fase roda **no host** (Python 3.12); conteinerização é a Fase 5.
 
-**Estado:** Fases 0 + 1 + 2 + 2.5 + 3 + 3b + 3c concluídas — infra LAB + esqueleto Django (`User` customizado,
+**Estado:** Fases 0 + 1 + 2 + 2.5 + 3 + 3b + 3c concluídas (e a SPA da Fase 4 em `../frontend/` consome esta API) — infra LAB + esqueleto Django (`User` customizado,
 wrapper Fernet, modelos `UserToken` / `MarketSeries`, Admin), app `apps.market` (fontes de
 mercado, `repository`, `cache`, `catalog`, `assets` + `ativos.csv`, `synthetics`, `transforms`, `series` com fetch-on-read, comandos
 `ingest`/`backfill`), pacote puro `engine/` (`twr`/`irr`/`metrics` + `compute` + `dataset` +
-`report_legacy`) e API REST JSON em `/api/v1/` (`apps.api` + `apps.accounts.api`, Swagger em `/api/v1/docs`) e planejador de IR (`apps.migration_ir`, `/api/v1/migration/*`). Suíte `pytest` verde (329 testes). O `src/` (Streamlit legado) continua funcionando em
+`report_legacy`) e API REST JSON em `/api/v1/` (`apps.api` + `apps.accounts.api`, Swagger em `/api/v1/docs`) e planejador de IR (`apps.migration_ir`, `/api/v1/migration/*`). Suíte `pytest` verde (350 testes). O `src/` (Streamlit legado) continua funcionando em
 paralelo até a Fase 6.
 
 ---
@@ -81,7 +81,7 @@ cp .env.example .env
 ```bash
 .venv/bin/python manage.py runserver 0.0.0.0:8000   # Admin em /admin/, Swagger em /api/v1/docs
 .venv/bin/python manage.py check
-.venv/bin/pytest -q                                 # 329 testes (+ 5 integration com -m integration)
+.venv/bin/pytest -q                                 # 350 testes (+ 5 integration com -m integration)
 .venv/bin/python manage.py backfill_market_data      # bootstrap: semeia MarketSeries dos CSVs do repo (uma vez)
 .venv/bin/python manage.py ingest_market_data        # ingestão ao vivo (incremental); agendamento é Fase 5
 .venv/bin/python manage.py shell -c "from engine import dataset, report_legacy; ..."  # export CLI dos gráficos

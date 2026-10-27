@@ -99,11 +99,11 @@ benchmarks de mercado e avaliação de risco financeiro.
 > o **estado real do repositório hoje**, na branch `migracao-django` (publicada em
 > `origin/migracao-django`; `main` e `dev` intactas).
 >
-> **Fases 0 + 1 concluídas em 2026-08-28; Fases 2 + 2.5 em 2026-08-31; Fase 3 em 2026-10-26** — ver §2.0. As
+> **Fases 0 + 1 concluídas em 2026-08-28; Fases 2 + 2.5 em 2026-08-31; Fase 3 em 2026-10-26; Fase 4 em 2026-10-27** — ver §2.0. As
 > decisões travadas estão em [`adr/`](adr/README.md); a orientação de trabalho no backend em
 > [`../backend/CLAUDE.md`](../backend/CLAUDE.md).
 
-### 2.0. Já implementado — Fases 0 + 1 (2026-08-28), Fases 2 + 2.5 (2026-08-31), Fases 3, 3b e 3c (2026-10-26)
+### 2.0. Já implementado — Fases 0 + 1 (2026-08-28), Fases 2 + 2.5 (2026-08-31), Fases 3, 3b e 3c (2026-10-26), Fase 4 (2026-10-27)
 
 | Camada | Local | Situação |
 |---|---|---|
@@ -114,7 +114,7 @@ benchmarks de mercado e avaliação de risco financeiro.
 | **Cripto** | `backend/apps/core/security.py` | `encrypt()` / `decrypt()` Fernet sobre `settings.FERNET_KEY` — **mesma chave do app legado**, compat. testada nos dois sentidos. [ADR 0003](adr/0003-reuso-da-chave-fernet-do-legado.md). |
 | **Modelos** | `backend/apps/core/models.py` | `UserToken` (OneToOne, token cifrado em repouso, `set_token`/`get_token`) e `MarketSeries` (`UniqueConstraint(series_key, reference_date)`). Migration `core.0001`. [ADR 0007](adr/0007-modelagem-usertoken-marketseries.md). |
 | **Admin** | `backend/apps/core/admin.py` | `UserToken` sem "add", `encrypted_token` read-only; `MarketSeries` com filtro por `source` e navegação por data. |
-| **Testes** | `backend/{apps,engine}/*/tests/` + `backend/pytest.ini` | `pytest-django`, `--reuse-db`, marker `integration` desmarcado por padrão. **Total atual: 329 testes unitários/contrato (+ 5 `integration`)** verdes. |
+| **Testes** | `backend/{apps,engine}/*/tests/` + `backend/pytest.ini` | `pytest-django`, `--reuse-db`, marker `integration` desmarcado por padrão. **Total atual: 350 testes unitários/contrato (+ 5 `integration`, rodados com token real em 2026-10-27)** verdes. Frontend: **65 testes Vitest** (`frontend/src/test/`). |
 | **Scripts** | `backend/scripts/` | `bootstrap_db.sh` (cria role/database) e `rotate_db_password.sh` (rotaciona a senha). |
 | **Docs** | `backend/README.md`, `backend/CLAUDE.md`, `docs/adr/` | Setup/rodar, convenções do agente, e ADRs 0001–0015. |
 | **Serviços de Mercado (Fase 2 + Fase 3)** | `backend/apps/market/` | App `apps.market`: `services/sources/{base,bcb,ptax,yahoo,tesouro,b3,dlp}.py` (erros DLP tipados `DLPAuthError`/`DLPUnavailableError`, invalidação por geração e single-flight via `cache.add`), `repository.py`, `cache.py` (`single_flight`), `catalog.py` (`SeriesDef`), `assets.py` + `data/ativos.csv` (universo de ~7.500 tickers + variante BRL), `synthetics.py` (`SyntheticSpec` + `display_name`), `transforms.py`, `series.py` (catálogo + fetch-on-read de tickers sob demanda). Migration `core.0002` (`kind`), comandos `ingest_market_data` (inclui tickers sob demanda) / `backfill_market_data`. [ADR 0011](adr/0011-marketseries-valor-cru-kind.md), [ADR 0014](adr/0014-tickers-sob-demanda.md). |
@@ -122,6 +122,8 @@ benchmarks de mercado e avaliação de risco financeiro.
 | **Planejador de IR (Fase 3b)** | `backend/apps/migration_ir/` | `GET /migration/wallet`, `POST /migration/plan`, `POST /migration/plan.pdf` (fpdf2). Núcleo puro (`wallet`, `tax`, `planner`) + `prices` (carteira → `apps.market`, `assets.lookup`) + router fino. Alvos livres, associação manual `sell`/`count_as`/`ignore`, isenção de R$ 20 mil só para `ACAO`, IR estimado por classe, `price_unavailable` em vez de preço inventado. Stateless. [ADR 0015](adr/0015-planejador-de-ir.md). |
 | **Otimizações DLP (Fase 3c)** | `backend/apps/market/services/sources/dlp.py`, `backend/apps/api/routers/portfolio.py`, `backend/config/settings.py` | `/historico` cacheado **uma vez por `(usuário, geração)`** (`dlp:hist:<token_hash>:<gen>`) com filtros `ativo`/`classe`/`corretora` aplicados em memória (`_filter_historico`); `_extract_distinct` deduplica com `pd.unique` antes de normalizar; URL base em `settings.DLP_BASE_URL` (default `https://users.dlpinvest.com.br`). `engine/` intocado. Teste `integration` de equivalência com o filtro da DLP escrito — **pendente de rodar com token real** (§2.3). |
 | **Correções de revisão (Fases 2 / 2.5)** | `backend/apps/market/`, `backend/engine/` | Revisão pós-implementação (`code-review` + manual, 2026-08-31): 6 defeitos corrigidos com TDD — ver §2.3. |
+| **Frontend SPA (Fase 4)** | `frontend/` | React 18 + Vite + Tailwind + TanStack Query v5 + ECharts (`echarts-for-react`) + Vitest. `api/` (Axios com CSRF, `errors.js` com `getApiError`/`shouldRetry`/parse de erro em `Blob`), `context/` (sessão, filtros), `hooks/` (`usePortfolioQueries`, `useMigrationPlan`, `useDlpTokenStatus`), `pages/` (Login, Portfolio com abas Performance/Risco, Migração de IR), 7 gráficos + tabela anual + planejador com export PDF. Queries só disparam com token DLP configurado; preset "Tudo" envia `start=1900-01-01` e exibe o período efetivo de `meta`. Dev: proxy `/api` do Vite → backend. Ainda sem Dockerfile (Fase 5). |
+| **Correções de revisão (Fases 3/4)** | `backend/apps/{market,migration_ir}/`, `frontend/` | Revisão pós-implementação (2026-10-27): plano [`2026-10-27-correcoes-revisao-fases-3-4.md`](superpowers/plans/2026-10-27-correcoes-revisao-fases-3-4.md) — ver §2.3. |
 | **API da Carteira (Fase 3)** | `backend/config/api.py`, `backend/apps/api/`, `backend/apps/accounts/api.py` | `NinjaAPI` em `/api/v1/` (Swagger em `/api/v1/docs`), `ApiSessionAuth` (sessão + CSRF no envelope `ApiError`), `/auth/{csrf,login,logout,me}`, `/dlp/{token,token-status}`, `/portfolio/{filters,refresh,summary,twr-evolution,drawdown,rolling-metrics,risk-return,shadow,yearly-summary,irr-evolution}`, `/benchmarks/catalog`, `/assets/search`. Integração ao vivo validada contra DLP (HTTP 401/403 em token inválido → `422 dlp_token_rejected`) e Yahoo Finance (`AAPL` sob demanda). **238 testes verdes** (`.venv/bin/pytest -q`), `manage.py check` limpo, sem migrations pendentes. [ADR 0013](adr/0013-contrato-da-api-v1.md), [ADR 0014](adr/0014-tickers-sob-demanda.md). |
 
 > Driver Postgres: `psycopg[binary]` 3.x ([ADR 0004](adr/0004-psycopg-binary-3.md)). Sem
@@ -146,7 +148,6 @@ benchmarks de mercado e avaliação de risco financeiro.
 
 ### 2.2. O que **não** existe ainda
 
-- **Sem `frontend/`, sem `package.json`** — zero JS/Node no repositório (Fase 4).
 - **Sem Dockerfiles do app** nem compose final/nginx único — o backend roda no host (Fase 5).
   Só os containers de **infra** (`lab-postgres`, `lab-redis`) existem.
 - **Dados ainda no legado**: os tokens continuam no Supabase (a migração `user_tokens` → `UserToken` ocorre na fase correspondente); o cache já está integrado no `lab-redis`.
@@ -169,9 +170,16 @@ benchmarks de mercado e avaliação de risco financeiro.
   - `CATALOGO_TD` **vazio de propósito** — `services/sources/tesouro.py` + ramos `td:` de `catalog`/`backfill` são caminho dormente, testados só com fixture. Renda fixa hoje é modelada pelos índices ANBIMA (IMA-B/IRF-M/IMA-S via BCB SGS + emenda com ETF), não por PU de título individual.
   - `test_sources_b3.py::test_fetch_b3_selenium_*` fica verde porque `ChromeDriverManager().install()` falha antes do mock — cobre o `raise FetchError`, mas pelo motivo errado.
   - Alguns testes de `engine/tests/test_dataset.py` usam `@pytest.mark.django_db` sem tocar o banco (monkeypatch total).
-- **Fase 3b — campos de `/resumo → wallet` não confirmados ao vivo:** `apps/migration_ir/tests/test_integration.py::test_real_migration_wallet` precisa rodar com `DLP_TEST_TOKEN` (confere `qtd`/`quantidade`, `price_fx`/`pm_fx` e os valores de `classe` contra `tax.py`).
+- ~~**Fase 3b — campos de `/resumo → wallet` não confirmados ao vivo**~~ — **confirmado em 2026-10-27**: `test_real_migration_wallet` verde com `DLP_TEST_TOKEN` real.
 - **Fase 3b — regras fiscais simplificadas de propósito** (sem day-trade, sem compensação de prejuízo, BDR 15 %, classes complexas `not_estimated`) — ver [ADR 0015](adr/0015-planejador-de-ir.md).
-- **Fase 3c — equivalência do filtro em memória ainda não confirmada ao vivo:** `apps/api/tests/test_integration.py::test_real_dlp_in_memory_filter_matches_server_filter` precisa rodar com `DLP_TEST_TOKEN` antes da Fase 4 depender dele; se divergir, reverter o commit do cache único.
+- ~~**Fase 3c — equivalência do filtro em memória ainda não confirmada ao vivo**~~ — **confirmado em 2026-10-27** com token real: filtro em memória == `GET /historico?classe=…`/`?ativo=…` em linhas e valores. O teste só divergia no dtype de `date` (o envelope do cache devolve `datetime64`); corrigido no teste.
+- **Revisão pós-Fases 3/3b/3c e 4 (2026-10-27) — corrigido com TDD** (plano [`2026-10-27-correcoes-revisao-fases-3-4.md`](superpowers/plans/2026-10-27-correcoes-revisao-fases-3-4.md)):
+  1. Preset "Tudo" (padrão da SPA) mandava `start: null`, que a API trata como "1 ano" — agora envia `1900-01-01` e mostra `meta.start/end` + `meta.missing`.
+  2. Planejador da SPA marcava `sell` por padrão (contra a ADR 0015) — agora `ignore`; campos de caixa inicial e "apenas aportes" expostos; tolerância de pesos igual à do backend (1e-6).
+  3. DLP fora do ar: o single-flight serializava timeouts de 60 s — falha `DLPUnavailableError` fica 30 s em cache (`<chave>:err`, liberada pelo refresh); `requests.RequestException` e payload não-objeto viram `DLPUnavailableError` (antes 500).
+  4. Planejador sem limite de meses — teto mínimo R$ 100, `MAX_MONTHS = 240`, folga `_EPS` em reais e valores não finitos rejeitados.
+  5. SPA: `retry` só em 5xx/rede; queries só com token configurado (fim dos 9× 409 e do modal reabrindo); erros de PDF em `Blob` legíveis; estados de erro com "Tentar novamente"; % de risco sempre convertido de fração; datas locais nos presets; avisos do plano traduzidos e `ir_not_estimated` exibido; plano limpo ao mudar entradas.
+- **Backlog da revisão de 2026-10-27 (assumido de propósito, não bloqueia a Fase 5):** lock do `single_flight` sem dono; geração do cache DLP despejável pelo LRU do Redis; corrida no `save_token` (`IntegrityError` em POST concorrente); 422 de schema do Ninja fora do envelope `ApiError`; cálculo dentro do router `summary`; `start` default relativo a hoje quando só `end` vem; filtro DLP ignorado se a coluna faltar; layout do PDF em quebra de página; rate limit de login; **timeout DLP (60 s) × gunicorn (30 s) — decidir na Fase 5**; `catalog.defaults` não usado pela SPA; busca de ticker sem debounce; `Content-Disposition`/`revokeObjectURL` no download; `location.state.from` no login; filtros sobrevivendo ao logout; token não salvo persistindo no modal; acessibilidade do `Modal`; mensagem de "primeira carga DLP"; `period` na URL (D6); bundle de 1,4 MB sem code-splitting; código morto (`data?.data?.x || data?.x`, branch shorthand do `SummaryCards`).
 - `redis.py` na raiz (script solto de 12 linhas) faz *shadow* do pacote `redis`.
 - `ativos.csv` duplicado (raiz + `data/`).
 - Arquivos de scratch do Gemini/Antigravity commitados (`.gemini/antigravity/.../scratch/*.py`).
@@ -321,7 +329,7 @@ flowchart TD
 >
 > **Nota:** os blocos `config/`, `apps/accounts/`, `apps/market/`, `apps/api/` e `engine/` abaixo refletem o que foi **efetivamente
 > construído** nas Fases 1, 2, 2.5, 3 e 3b.
-> `frontend/` (Fase 4) segue sendo **alvo**.
+> `frontend/` foi construído na Fase 4 com layout diferente do alvo abaixo: `src/{api,context,hooks,pages}/` + `components/{common,dlp,layout,portfolio/{charts,tables},migration}/` (7 gráficos: TWR, TIR, Shadow, Drawdown, Sharpe/Vol móveis, Risco×Retorno + `YearlyTable`). O desenho abaixo fica como registro do alvo original.
 > Estrutura viva e detalhada do backend em [`../backend/README.md`](../backend/README.md).
 
 ```
@@ -686,7 +694,7 @@ python scripts/parity_check.py --token <TOKEN> --start 2020-01-01 --end 2024-12-
 5. [x] **Fase 3** — endpoints Ninja da carteira (auth, token DLP, 8 análises + filters/refresh, benchmarks, busca e fetch-on-read de tickers); Swagger em `/api/v1/docs`.
 6. [x] **Fase 3b** — Planejador de Isenção de IR (`/migration/*` + PDF `fpdf2`).
 7. [x] **Fase 3c** — Otimizações DLP sem impacto no engine (cache único de `/historico` com filtro em memória, `unique()` em `/filters`, domínio `dlpinvest.com.br` parametrizado) (ver §Fase 3c).
-8. [ ] **Fase 4** — SPA React (auth, filtros, gráficos ECharts, tabela anual, planejador de IR).
+8. [x] **Fase 4** — SPA React (auth, filtros, gráficos ECharts, tabela anual, planejador de IR) + correções da revisão de 2026-10-27.
 9. [ ] **Fase 5** — Dockerfiles (backend / ingestion-com-Chrome / frontend), compose final, nginx único.
 10. [ ] **Migração de dados** — import dos tokens do Supabase; `ingest_market_data` inicial.
 11. [ ] **Fase 6** — validação de paridade; só então remover `src/` e libs legadas.
