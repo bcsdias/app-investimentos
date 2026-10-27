@@ -19,11 +19,13 @@ import { DrawdownChart } from '../components/portfolio/charts/DrawdownChart';
 import { RollingSharpeChart } from '../components/portfolio/charts/RollingSharpeChart';
 import { RiskReturnChart } from '../components/portfolio/charts/RiskReturnChart';
 import { PortfolioPage } from '../pages/PortfolioPage';
+import { dlpApi } from '../api/dlp';
 
 describe('Gráficos da Aba Risco e PortfolioPage', () => {
   beforeEach(() => {
     lastRenderedOptions = [];
     vi.restoreAllMocks();
+    vi.spyOn(dlpApi, 'getTokenStatus').mockResolvedValue({ configured: true });
   });
 
   it('DrawdownChart configura max: 0 e formata o eixo Y em percentual negativo (-15.2%)', () => {

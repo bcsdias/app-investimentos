@@ -8,10 +8,12 @@ import { TargetAllocationForm } from '../components/migration/TargetAllocationFo
 import { MonthlyPurchasesTable } from '../components/migration/MonthlyPurchasesTable';
 import { ExportPdfButton } from '../components/migration/ExportPdfButton';
 import { MigrationPage } from '../pages/MigrationPage';
+import { dlpApi } from '../api/dlp';
 
 describe('Módulo de Migração de IR e Exportação PDF', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    vi.spyOn(dlpApi, 'getTokenStatus').mockResolvedValue({ configured: true });
     window.sessionStorage.clear();
   });
 

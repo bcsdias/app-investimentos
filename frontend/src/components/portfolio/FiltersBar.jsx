@@ -6,6 +6,7 @@ import {
   formatSyntheticLabel,
 } from '../../context/PortfolioFilterContext';
 import { portfolioApi } from '../../api/portfolio';
+import { useDlpTokenConfigured } from '../../hooks/useDlpTokenStatus';
 import { BenchmarkSelector } from './BenchmarkSelector';
 import { Badge } from '../common/Badge';
 
@@ -28,10 +29,12 @@ export function FiltersBar() {
     setClasse,
     resetFilters,
   } = usePortfolioFilters();
+  const tokenConfigured = useDlpTokenConfigured();
 
   const { data: filterOptions } = useQuery({
     queryKey: ['portfolio', 'filters'],
     queryFn: ({ signal }) => portfolioApi.getFilters(signal),
+    enabled: tokenConfigured === true,
     staleTime: 5 * 60 * 1000,
   });
 

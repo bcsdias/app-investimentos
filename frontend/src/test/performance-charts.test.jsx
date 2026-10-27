@@ -16,6 +16,7 @@ import { TwrChart } from '../components/portfolio/charts/TwrChart';
 import { YearlyTable } from '../components/portfolio/tables/YearlyTable';
 import { ShadowChart } from '../components/portfolio/charts/ShadowChart';
 import { IrrEvolutionChart } from '../components/portfolio/charts/IrrEvolutionChart';
+import { dlpApi } from '../api/dlp';
 
 function QueriesInspector() {
   const queries = usePortfolioQueries();
@@ -29,6 +30,7 @@ function QueriesInspector() {
 describe('usePortfolioQueries e Componentes da Aba Performance', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    vi.spyOn(dlpApi, 'getTokenStatus').mockResolvedValue({ configured: true });
   });
 
   it('usePortfolioQueries dispara as 8 queries analíticas e propaga o AbortController.signal', async () => {

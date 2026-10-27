@@ -9,9 +9,11 @@ import { MonthlyPurchasesTable } from '../components/migration/MonthlyPurchasesT
 import { ExportPdfButton } from '../components/migration/ExportPdfButton';
 import { Skeleton } from '../components/common/Skeleton';
 import { EmptyState } from '../components/common/EmptyState';
+import { DlpTokenRequiredState } from '../components/dlp/DlpTokenRequiredState';
 
 export function MigrationPage() {
   const {
+    tokenConfigured,
     walletQuery,
     holdings,
     targets,
@@ -44,7 +46,9 @@ export function MigrationPage() {
         </p>
       </div>
 
-      {walletQuery.isLoading ? (
+      {tokenConfigured === false ? (
+        <DlpTokenRequiredState />
+      ) : tokenConfigured === undefined || walletQuery.isLoading ? (
         <div className="space-y-4">
           <Skeleton className="h-64 w-full" />
           <Skeleton className="h-48 w-full" />

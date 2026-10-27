@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   TrendingUp,
   RefreshCw,
@@ -12,7 +12,7 @@ import {
   LineChart,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { dlpApi } from '../../api/dlp';
+import { useDlpTokenStatus, DLP_TOKEN_STATUS_KEY } from '../../hooks/useDlpTokenStatus';
 import { api } from '../../api/client';
 import { Button } from '../common/Button';
 import { DlpTokenModal } from '../dlp/DlpTokenModal';
@@ -24,11 +24,7 @@ export function Header() {
   const [alertInfo, setAlertInfo] = useState({ reason: null, message: null });
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const { data: tokenStatus, refetch: refetchTokenStatus } = useQuery({
-    queryKey: ['dlp', 'token-status'],
-    queryFn: () => dlpApi.getTokenStatus(),
-    staleTime: 60 * 1000,
-  });
+  const { data: tokenStatus, refetch: refetchTokenStatus } = useDlpTokenStatus();
 
   useEffect(() => {
     const handleOpenDlpModal = (event) => {
@@ -54,7 +50,7 @@ export function Header() {
   };
 
   const handleStatusUpdated = async (newStatus) => {
-    queryClient.setQueryData(['dlp', 'token-status'], newStatus);
+    queryClient.setQueryData(DLP_TOKEN_STATUS_KEY, newStatus);
     setAlertInfo({ reason: null, message: null });
     await refetchTokenStatus();
     await queryClient.invalidateQueries({ queryKey: ['portfolio'] });

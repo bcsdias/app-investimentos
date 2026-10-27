@@ -5,6 +5,8 @@ import { PeriodNotice } from '../components/portfolio/PeriodNotice';
 import { SummaryCards } from '../components/portfolio/SummaryCards';
 import { Tabs } from '../components/common/Tabs';
 import { EmptyState } from '../components/common/EmptyState';
+import { Skeleton } from '../components/common/Skeleton';
+import { DlpTokenRequiredState } from '../components/dlp/DlpTokenRequiredState';
 import { TwrChart } from '../components/portfolio/charts/TwrChart';
 import { YearlyTable } from '../components/portfolio/tables/YearlyTable';
 import { ShadowChart } from '../components/portfolio/charts/ShadowChart';
@@ -20,7 +22,7 @@ const DASHBOARD_TABS = [
 
 export function PortfolioPage() {
   const [activeTab, setActiveTab] = useState('performance');
-  const { summary, twr, drawdown, rolling, riskReturn, shadow, yearly, irr } =
+  const { tokenConfigured, summary, twr, drawdown, rolling, riskReturn, shadow, yearly, irr } =
     usePortfolioQueries();
 
   const isPortfolioEmpty =
@@ -44,7 +46,14 @@ export function PortfolioPage() {
       <FiltersBar />
       <PeriodNotice meta={summary.data?.meta} />
 
-      {isPortfolioEmpty ? (
+      {tokenConfigured === false ? (
+        <DlpTokenRequiredState />
+      ) : tokenConfigured === undefined ? (
+        <div className="space-y-4" data-testid="token-status-loading">
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-80 w-full" />
+        </div>
+      ) : isPortfolioEmpty ? (
         <EmptyState
           title="Carteira sem movimentações registradas"
           description="Nenhuma movimentação foi encontrada na DLP Invest para os filtros selecionados. Verifique seu token DLP ou limpe os filtros ativos."

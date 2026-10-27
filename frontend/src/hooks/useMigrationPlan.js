@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { migrationApi } from '../api/migration';
+import { useDlpTokenConfigured } from './useDlpTokenStatus';
 
 const STORAGE_KEY = 'migration_ir_draft_v1';
 
@@ -47,10 +48,12 @@ export function useMigrationPlan() {
     }
   }, [targets, actionsMap, monthlyCap, initialCash, alreadySold, contributionsOnly]);
 
+  const tokenConfigured = useDlpTokenConfigured();
   const walletQuery = useQuery({
     queryKey: ['migration', 'wallet'],
     queryFn: ({ signal }) => migrationApi.getWallet(signal),
     staleTime: 5 * 60 * 1000,
+    enabled: tokenConfigured === true,
   });
 
   const holdings = walletQuery.data?.data || [];
@@ -138,6 +141,7 @@ export function useMigrationPlan() {
   });
 
   return {
+    tokenConfigured,
     walletQuery,
     holdings,
     targets,
