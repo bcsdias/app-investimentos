@@ -99,11 +99,11 @@ benchmarks de mercado e avaliação de risco financeiro.
 > o **estado real do repositório hoje**, na branch `migracao-django` (publicada em
 > `origin/migracao-django`; `main` e `dev` intactas).
 >
-> **Fases 0 + 1 concluídas em 2026-08-28; Fases 2 + 2.5 em 2026-08-31; Fases 3, 3b e 3c em 2026-10-26; Fases 4 e 5 em 2026-10-27** — ver §2.0. As
+> **Fases 0 + 1 concluídas em 2026-08-28; Fases 2 + 2.5 em 2026-08-31; Fases 3, 3b e 3c em 2026-10-26; Fases 4, 5 e 6 em 2026-10-27** — ver §2.0. As
 > decisões travadas estão em [`adr/`](adr/README.md); a orientação de trabalho no backend em
 > [`../backend/CLAUDE.md`](../backend/CLAUDE.md).
 
-### 2.0. Já implementado — Fases 0 + 1 (2026-08-28), Fases 2 + 2.5 (2026-08-31), Fases 3, 3b e 3c (2026-10-26), Fases 4 e 5 (2026-10-27)
+### 2.0. Já implementado — Fases 0 + 1 (2026-08-28), Fases 2 + 2.5 (2026-08-31), Fases 3, 3b e 3c (2026-10-26), Fases 4, 5 e 6 (2026-10-27)
 
 | Camada | Local | Situação |
 |---|---|---|
@@ -114,9 +114,9 @@ benchmarks de mercado e avaliação de risco financeiro.
 | **Cripto** | `backend/apps/core/security.py` | `encrypt()` / `decrypt()` Fernet sobre `settings.FERNET_KEY` — **mesma chave do app legado**, compat. testada nos dois sentidos. [ADR 0003](adr/0003-reuso-da-chave-fernet-do-legado.md). |
 | **Modelos** | `backend/apps/core/models.py` | `UserToken` (OneToOne, token cifrado em repouso, `set_token`/`get_token`) e `MarketSeries` (`UniqueConstraint(series_key, reference_date)`). Migration `core.0001`. [ADR 0007](adr/0007-modelagem-usertoken-marketseries.md). |
 | **Admin** | `backend/apps/core/admin.py` | `UserToken` sem "add", `encrypted_token` read-only; `MarketSeries` com filtro por `source` e navegação por data. |
-| **Testes** | `backend/{apps,engine}/*/tests/` + `backend/pytest.ini` | `pytest-django`, `--reuse-db`, marker `integration` desmarcado por padrão. **Total atual: 354 testes unitários/contrato (+ 5 `integration`, rodados com token real em 2026-10-27)** verdes. Frontend: **68 testes Vitest** (`frontend/src/test/`). |
+| **Testes** | `backend/{apps,engine}/*/tests/` + `backend/pytest.ini` | `pytest-django`, `--reuse-db`, marker `integration` desmarcado por padrão. **Total atual: 356 testes unitários/contrato (+ 5 `integration`, rodados com token real em 2026-10-27)** verdes; harness de paridade `scripts/parity/` com 33 testes. Frontend: **68 testes Vitest** (`frontend/src/test/`). |
 | **Scripts** | `backend/scripts/` | `bootstrap_db.sh` (cria role/database) e `rotate_db_password.sh` (rotaciona a senha). |
-| **Docs** | `backend/README.md`, `backend/CLAUDE.md`, `docs/adr/` | Setup/rodar, convenções do agente, e ADRs 0001–0016. |
+| **Docs** | `backend/README.md`, `backend/CLAUDE.md`, `docs/adr/` | Setup/rodar, convenções do agente, e ADRs 0001–0017. |
 | **Serviços de Mercado (Fase 2 + Fase 3)** | `backend/apps/market/` | App `apps.market`: `services/sources/{base,bcb,ptax,yahoo,tesouro,b3,dlp}.py` (erros DLP tipados `DLPAuthError`/`DLPUnavailableError`, invalidação por geração e single-flight via `cache.add`), `repository.py`, `cache.py` (`single_flight`), `catalog.py` (`SeriesDef`), `assets.py` + `data/ativos.csv` (universo de ~7.500 tickers + variante BRL), `synthetics.py` (`SyntheticSpec` + `display_name`), `transforms.py`, `series.py` (catálogo + fetch-on-read de tickers sob demanda). Migration `core.0002` (`kind`), comandos `ingest_market_data` (inclui tickers sob demanda) / `backfill_market_data`. [ADR 0011](adr/0011-marketseries-valor-cru-kind.md), [ADR 0014](adr/0014-tickers-sob-demanda.md). |
 | **Engine de Cálculo (Fase 2.5)** | `backend/engine/` | Pacote puro `engine` (irmão de `apps/`, sem `models.py`): `twr.py` / `irr.py` cópia literal de `src/engine/`; `metrics.py` idem + `pct_change(fill_method=None)`; `compute.py` (7 funções puras extraídas dos `plot_*`); `dataset.py` (`fetch_user_portfolio` + `build_dataset`, consome `apps.market.series`); `report_legacy.py` (export CLI Matplotlib, nunca importado pela API). Bug `self.logger` corrigido. `pytest.ini` → `testpaths = apps engine`. [ADR 0012](adr/0012-engine-copia-literal-fase-2-5.md). |
 | **Planejador de IR (Fase 3b)** | `backend/apps/migration_ir/` | `GET /migration/wallet`, `POST /migration/plan`, `POST /migration/plan.pdf` (fpdf2). Núcleo puro (`wallet`, `tax`, `planner`) + `prices` (carteira → `apps.market`, `assets.lookup`) + router fino. Alvos livres, associação manual `sell`/`count_as`/`ignore`, isenção de R$ 20 mil só para `ACAO`, IR estimado por classe, `price_unavailable` em vez de preço inventado. Stateless. [ADR 0015](adr/0015-planejador-de-ir.md). |
@@ -126,32 +126,26 @@ benchmarks de mercado e avaliação de risco financeiro.
 | **Correções de revisão (Fases 3/4)** | `backend/apps/{market,migration_ir}/`, `frontend/` | Revisão pós-implementação (2026-10-27): plano [`2026-10-27-correcoes-revisao-fases-3-4.md`](superpowers/plans/2026-10-27-correcoes-revisao-fases-3-4.md) — ver §2.3. |
 | **API da Carteira (Fase 3)** | `backend/config/api.py`, `backend/apps/api/`, `backend/apps/accounts/api.py` | `NinjaAPI` em `/api/v1/` (Swagger em `/api/v1/docs`), `ApiSessionAuth` (sessão + CSRF no envelope `ApiError`), `/auth/{csrf,login,logout,me}`, `/dlp/{token,token-status}`, `/portfolio/{filters,refresh,summary,twr-evolution,drawdown,rolling-metrics,risk-return,shadow,yearly-summary,irr-evolution}`, `/benchmarks/catalog`, `/assets/search`. Integração ao vivo validada contra DLP (HTTP 401/403 em token inválido → `422 dlp_token_rejected`) e Yahoo Finance (`AAPL` sob demanda). **238 testes verdes** (`.venv/bin/pytest -q`), `manage.py check` limpo, sem migrations pendentes. [ADR 0013](adr/0013-contrato-da-api-v1.md), [ADR 0014](adr/0014-tickers-sob-demanda.md). |
 | **Containers do App (Fase 5)** | `docker-compose.yml`, `backend/Dockerfile`, `backend/deploy/`, `frontend/Dockerfile`, `frontend/nginx.conf` | 3 serviços na rede externa `lab-net` (`name: appinvest`): `lab-appinvest-web` (`127.0.0.1:8080:80`, SPA + proxy `/api/` e `/admin/` + `/static/`), `lab-appinvest-backend` (Gunicorn `2w×4t`, `--timeout 180`), `lab-appinvest-ingestion` (Chromium Debian ARM64 + `supercronic` seg–sex 06:00/19:00 `America/Sao_Paulo`). `requirements.txt` (runtime) separado de `requirements-dev.txt` (host). Scraper B3 lê os 2 semestres (`b3:IFIX/SMLL/IDIV` atualizados até 26/10/2026) com fallback CSV que preserva o alerta de falha. [ADR 0016](adr/0016-empacotamento-no-lab.md). |
+| **Paridade e remoção do legado (Fase 6)** | `scripts/parity/`, `reports/parity/` (local) | Harness em duas camadas (engine com mercado congelado, tolerância 1e-6; API real × legado ao vivo, 1e-4): 4/4 casos OK na camada 1, camada 2 sem divergência de cálculo. Linha de base da Fase 7 em `reports/parity/20261027-182533/baseline/`, recarregável sem `src`. Triagem corrigiu o cache de séries sem nome (`apps/market/cache.py`) e o buraco de CDI no Postgres. `src/` e libs legadas removidos. [ADR 0017](adr/0017-paridade-legado.md). |
 
 > Driver Postgres: `psycopg[binary]` 3.x ([ADR 0004](adr/0004-psycopg-binary-3.md)). Sem
 > `django-cors-headers` ([ADR 0005](adr/0005-sem-django-cors-headers.md)). Env via
 > `python-dotenv` puro ([ADR 0010](adr/0010-python-dotenv-puro.md)).
 
-### 2.1. O que existe — legado Streamlit (coexiste até a Fase 6)
+### 2.1. ~~O que existe — legado Streamlit~~ (removido na Fase 6, 2026-10-27)
 
-| Camada | Local | Situação |
-|---|---|---|
-| **UI** | `src/ui/app.py` + `src/ui/pages/1..4` + `src/ui/components/{theme,headers,sidebar,charts}.py` | App **Streamlit multipágina** (v3.5.0). Única interface **de usuário** ainda. |
-| **Engine de cálculo** | `src/engine/{twr,irr,metrics}.py` | **NumPy/pandas puros, zero acoplamento a framework, com testes unitários** (`tests/`, ~150 linhas). Reuso direto. |
-| **Orquestrador** | `src/engine/financial_report.py` (417 linhas) | Classe `FinancialReport`. **Importa `matplotlib` no topo**; 7 métodos `plot_*` **misturam cálculo + plotagem** e retornam `(fig, DataFrame)`. |
-| **Camada de dados** | `src/data/sources/market_data.py` (**796 linhas**) | Um único arquivo com: cliente DLP, `yfinance`, BCB (`python-bcb`), Tesouro (CSV), PTAX Olinda, **e scraping B3 via Selenium**. |
-| **Cache** | `src/data/cache.py` (130 linhas) | 2 camadas (dict em memória + **Upstash Redis REST**), envelope de serialização pandas próprio, fallback silencioso para memória. Já lê `UPSTASH_REDIS_REST_URL/TOKEN` via `load_dotenv()`. L3 adicional de CSVs em `data/raw/`. |
-| **Aquecedor de cache** | `scripts/sync_to_redis.py` (295 linhas) | Já empurra séries de mercado para o Redis com retry/backoff. Embrião da ingestão agendada. |
-| **Tokens DLP** | `src/data/user_store.py` (85 linhas) | **Fernet (AES-256)** → **Supabase**, tabela `user_tokens` (PK = e-mail), usando a **service_role key** (RLS ignorada de propósito). |
-| **Auth** | `src/ui/app.py` | **OIDC nativo do Streamlit** (`st.login()` Google) + **bypass "Modo Dev"** que dá acesso total sem credencial (grava token sob o e-mail literal `"Usuário"`). |
-| **Planejador de IR** | `src/ui/pages/3_migracao_ir.py` (**735 linhas**) | `calcular_compras_rebalanceadas`, leitura de carteira via `buscar_resumo_carteira`, `obter_preco_atual` (yfinance), **`gerar_pdf_plano` (fpdf2)**. É praticamente uma sub-app, com input de token próprio. |
-| **CI** | `.github/workflows/update_b3.yml` | Único workflow. Scraper B3 mensal (`cron: '0 0 1 * *'`) que commita CSVs em `data/static/`. |
-| **Config** | `.streamlit/secrets.toml` (git-ignored; só `.example` commitado) | Blocos `[auth]` (Google OIDC), `[supabase]`, `[upstash_redis]`, `[security].fernet_key`. |
+O app Streamlit (`src/ui`, `src/engine/financial_report.py`, `src/data/sources/market_data.py`,
+`src/data/cache.py` com Upstash, `src/data/user_store.py` com Supabase), `scripts/sync_to_redis.py`,
+o workflow `.github/workflows/update_b3.yml`, `redis.py`, o `requirements.txt` da raiz e os
+`tests/` da raiz (portados em `backend/engine/tests/`) foram removidos depois da paridade
+aprovada ([ADR 0017](adr/0017-paridade-legado.md)). O inventário do legado continua no
+histórico do git (commit `3e8f155` e anteriores) e em [`historico/`](historico/README.md).
 
 ### 2.2. O que **não** existe ainda
 
 - ~~**Sem Dockerfiles do app** nem compose final/nginx único — o backend roda no host (Fase 5). Só os containers de **infra** (`lab-postgres`, `lab-redis`) existem.~~ **Concluído na Fase 5 (2026-10-27):** `docker-compose.yml` com `lab-appinvest-{web,backend,ingestion}` rodando no LAB ([ADR 0016](adr/0016-empacotamento-no-lab.md)).
 - ~~**Dados ainda no legado**: os tokens continuam no Supabase (a migração `user_tokens` → `UserToken` ocorre na fase correspondente); o cache já está integrado no `lab-redis`.~~ **Decidido na Fase 5:** Supabase descartado sem migração ([ADR 0016](adr/0016-empacotamento-no-lab.md)); tokens são cadastrados diretamente na SPA.
-- **Validação de paridade numérica e remoção do legado Streamlit (`src/`)**: Fase 6.
+- ~~**Validação de paridade numérica e remoção do legado Streamlit (`src/`)**: Fase 6.~~ **Concluído em 2026-10-27** ([ADR 0017](adr/0017-paridade-legado.md)).
 - **Correções pós-paridade no `engine/`**: Fase 7.
 - ~~`.devcontainer/devcontainer.json` aponta para `app/web_app_v2.py` (**caminho stale**, não existe mais).~~ **Removido em 2026-10-26**: template Codespaces do app Streamlit (Python 3.11), incompatível com o fluxo atual (backend no host, Python 3.12; Docker só para `lab-postgres`/`lab-redis`).
 
@@ -188,14 +182,18 @@ benchmarks de mercado e avaliação de risco financeiro.
   3. **"Personalizado" depois de "Tudo"** mostra `01/01/1900` no campo de data inicial (`PortfolioFilterContext.setPeriod` mantém `ALL_TIME_START`). Preencher com `meta.start` ou limpar o campo.
   4. **`MAX_MONTHS` pode recusar um plano de exatamente 240 meses** no ramo "unidade acima do teto" (`planner._schedule_stocks.close()` abre o mês 241 vazio antes do corte). Checar o limite só ao adicionar um lote a um mês novo.
   5. **`MAX_MONTHS` é checado depois de `resolve_target_prices`** (`apps/migration_ir/api.py`), que pode buscar cotação externa (fetch-on-read): um plano grande demais ainda paga essa busca. Aceito no plano; anotar se a busca ficar cara.
-- `redis.py` na raiz (script solto de 12 linhas) faz *shadow* do pacote `redis`.
-- `ativos.csv` duplicado (raiz + `data/`).
-- Arquivos de scratch do Gemini/Antigravity commitados (`.gemini/antigravity/.../scratch/*.py`).
-- `requirements.txt`: **16 libs sem nenhum pin de versão**; `selenium` e `webdriver-manager`
-  são usados mas **não constam** do arquivo (instalados ad-hoc na Action).
-- Páginas 2 e 3 importam `from src...` sem patch de `sys.path` → causa do `ModuleNotFoundError`
-  registrado em `erros.txt`. (Some com a nova arquitetura, mas vale registrar.)
-- `deployment_guide.md` contém caminhos locais Windows stale.
+- ~~`redis.py` na raiz (script solto de 12 linhas) faz *shadow* do pacote `redis`.~~ Removido na Fase 6.
+- ~~`ativos.csv` duplicado (raiz + `data/`).~~ Removido da raiz na Fase 6 (fica `backend/apps/market/data/ativos.csv`).
+- ~~Arquivos de scratch do Gemini/Antigravity commitados (`.gemini/antigravity/.../scratch/*.py`).~~ Removidos na Fase 6.
+- ~~`requirements.txt`: **16 libs sem nenhum pin de versão**; `selenium` e `webdriver-manager`
+  são usados mas **não constam** do arquivo (instalados ad-hoc na Action).~~ Removido na Fase 6 (o backend tem `requirements.txt`/`requirements-dev.txt` próprios).
+- ~~Páginas 2 e 3 importam `from src...` sem patch de `sys.path`~~ — some com a remoção de `src/` (Fase 6).
+- ~~`deployment_guide.md` contém caminhos locais Windows stale.~~ Removido na Fase 6.
+- **Backlog aberto pela paridade (Fase 6, [ADR 0017](adr/0017-paridade-legado.md)):**
+  1. Cache `market:series:*` não é invalidado quando a ingestão grava: até 24 h de série defasada (apareceu durante o catch-up da carga inicial).
+  2. `ingest_market_data` incremental só olha `last_date` e nunca preenche buraco no meio da série (causa do buraco de 116 dias no CDI, já re-ingerido).
+  3. Buracos vindos da fonte: `bcb:12469` (IMA-S, 2024, 275 dias) e `yf:LFTS11.SA` (2025, 151 dias).
+  4. Container `lab-appinvest-backend` precisa de rebuild para levar a correção do cache de séries sem nome (`fad1dc8`).
 
 ### 2.4. Dependências externas a eliminar
 
@@ -328,9 +326,10 @@ flowchart TD
 
 ## 4. Estrutura de Diretórios Alvo
 
-> Tudo dentro de `/data/projetos/app-investimentos`, branch `migracao-django`. O `src/` atual
-> (Streamlit) permanece durante a transição para **validação de paridade** (§Fase 6) e é
-> removido apenas ao final.
+> Tudo dentro de `/data/projetos/app-investimentos`, branch `migracao-django`. O `src/`
+> (Streamlit) ficou durante a transição para a **validação de paridade** e foi removido na
+> Fase 6 (2026-10-27). Na raiz ficou `scripts/parity/` (linha de base da Fase 7, sem `src`,
+> [ADR 0017](adr/0017-paridade-legado.md)).
 >
 > **Nota:** os blocos `config/`, `apps/accounts/`, `apps/market/`, `apps/api/` e `engine/` abaixo refletem o que foi **efetivamente
 > construído** nas Fases 1, 2, 2.5, 3 e 3b.
@@ -544,13 +543,12 @@ flowchart TD
 3. `docker-compose.yml` (`name: appinvest`, rede externa `lab-net`): `lab-appinvest-web` (`127.0.0.1:8080:80`, serve a SPA, `/static/` e faz proxy de `/api/` e `/admin/`), `lab-appinvest-backend` e `lab-appinvest-ingestion` (`manage.py ingest_market_data` agendado via `supercronic` às 06:00 e 19:00 seg–sex).
 4. Carga inicial de mercado: ~~import dos tokens do Supabase (§7.2)~~ (cancelado — Supabase descartado) + `backfill_market_data` e `ingest_market_data` inicial no container de ingestão (`b3:IFIX/SMLL/IDIV` atualizados até 2026-10-26).
 
-### Fase 6 — Validação de paridade (obrigatória — app financeiro)
-1. Selecionar 1–2 tokens DLP reais e 2–3 janelas de período.
-2. Rodar o Streamlit atual (`src/ui`) e a API nova para os mesmos inputs.
-3. Diferenciar numericamente: TWR base 100, Drawdown, Volatilidade/Sharpe móveis, XIRR,
-   Shadow Portfolio, tabela anual. Tolerância explícita (ex.: 1e-6 relativo).
-4. Só então remover `src/` (Streamlit) e as dependências `streamlit`, `altair`, `supabase`,
-   `upstash-redis` do projeto.
+### Fase 6 — Validação de paridade e remoção do legado — **concluída em 2026-10-27** ([ADR 0017](adr/0017-paridade-legado.md))
+1. Harness `scripts/parity_check.py` (removido junto com o legado) + pacote `scripts/parity/`: camada 1 (engine, mercado congelado do Postgres nos dois lados, 1e-6) e camada 2 (legado ao vivo × API HTTP dos containers, 1e-4 → `INVESTIGAR`).
+2. Matriz: histórico completo, últimos 12 meses, meio da carteira → hoje, e histórico completo com filtro de classe; benchmarks `CDI`, `IPCA + 6%`, `S&P 500 BRL`, `IFIX` (Tesouro e carteiras compostas fora).
+3. Resultado: camada 1 toda OK; camada 2 sem divergência de cálculo — divergências de mercado/infra explicadas e aceitas; teste `integration` da Fase 3c verde com token real.
+4. Linha de base da Fase 7 salva em `reports/parity/20261027-182533/baseline/` (local).
+5. `src/`, scripts e workflow legados, `tests/` da raiz e resíduos removidos; `streamlit`, `altair`, `pydeck`, `supabase*`, `upstash-redis`, `webdriver-manager`, `authlib` desinstalados do `backend/.venv`.
 
 ### Fase 7 — Correções e otimizações do engine pós-paridade (movido da 3c em 2026-10-26)
 > Só depois da Fase 6: estes itens alteram `engine/` (cópia literal do legado) e/ou mudam números, o que invalidaria a comparação de paridade. Entra junto com a revisão profunda do engine já prevista na [ADR 0012](adr/0012-engine-copia-literal-fase-2-5.md).
@@ -665,8 +663,11 @@ pytest backend/engine backend/apps -q
 # Fase 4 — frontend
 cd frontend && npm install && npm run build
 
-# Fase 6 — paridade
-python scripts/parity_check.py --token <TOKEN> --start 2020-01-01 --end 2024-12-31
+# Fase 6 — paridade (executada em 2026-10-27; o CLI saiu junto com src/ — ver ADR 0017)
+# export DLP_TOKEN=... PARITY_USER=... PARITY_PASSWORD=...   # só por env, nunca por argumento
+# backend/.venv/bin/python scripts/parity_check.py --layers 1,2 --with-integration
+# Fase 7 — regressão contra a linha de base (sem src)
+cd scripts/parity && ../../backend/.venv/bin/pytest -q
 ```
 
 ### 8.2. Testes manuais
@@ -678,7 +679,7 @@ python scripts/parity_check.py --token <TOKEN> --start 2020-01-01 --end 2024-12-
       baixar o PDF.
 - [ ] Primeira análise de um usuário novo — estado de loading enquanto a DLP responde.
 - [ ] Confirmar que token e dados não vazam em logs nem em respostas não autenticadas.
-- [ ] Paridade: números do Streamlit antigo == números da API nova (dentro da tolerância).
+- [x] Paridade: números do Streamlit antigo == números da API nova (dentro da tolerância) — 2026-10-27, [ADR 0017](adr/0017-paridade-legado.md).
 
 ---
 
@@ -694,6 +695,6 @@ python scripts/parity_check.py --token <TOKEN> --start 2020-01-01 --end 2024-12-
 8. [x] **Fase 4** — SPA React (auth, filtros, gráficos ECharts, tabela anual, planejador de IR) + correções da revisão de 2026-10-27.
 9. [x] **Fase 5** — Dockerfiles (`backend` multi-target + `frontend` multi-stage), `docker-compose.yml` (`lab-appinvest-{web,backend,ingestion}` em `127.0.0.1:8080`), Chromium ARM64 + `supercronic` ([ADR 0016](adr/0016-empacotamento-no-lab.md)).
 10. [x] **Carga inicial de mercado** — ~~import dos tokens do Supabase~~ (cancelado, ADR 0016); `backfill_market_data` + `ingest_market_data` inicial no container (`b3:*` atualizado até 2026-10-26).
-11. [ ] **Fase 6** — validação de paridade; só então remover `src/` e libs legadas.
+11. [x] **Fase 6** — validação de paridade (2 camadas, aprovada em 2026-10-27); `src/` e libs legadas removidos ([ADR 0017](adr/0017-paridade-legado.md)).
 12. [ ] **Fase 7** — pós-paridade: correções de recorte `start_date`/`end_date` e `fluxo`/`gap` em `engine/dataset.py`, pré-parse de `date` e dedup de `groupby` no TWR, revisão profunda do engine (ADR 0012) (ver §Fase 7).
 13. [ ] Decidir prefixo `lab-` / merge de `migracao-django` (§7.3).

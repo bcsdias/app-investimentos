@@ -3,12 +3,11 @@
 Backend Django da migração Streamlit → Django + React (ver [`../docs/consolidacao_arquitetura_e_migracao.md`](../docs/consolidacao_arquitetura_e_migracao.md)).
 O desenvolvimento roda **no host** (Python 3.12); o app empacotado roda nos containers do `../docker-compose.yml` ([ADR 0016](../docs/adr/0016-empacotamento-no-lab.md)).
 
-**Estado:** Fases 0 + 1 + 2 + 2.5 + 3 + 3b + 3c + 4 + 5 concluídas — infra LAB + esqueleto Django (`User` customizado,
+**Estado:** Fases 0 + 1 + 2 + 2.5 + 3 + 3b + 3c + 4 + 5 + 6 concluídas — infra LAB + esqueleto Django (`User` customizado,
 wrapper Fernet, modelos `UserToken` / `MarketSeries`, Admin), app `apps.market` (fontes de
 mercado, `repository`, `cache`, `catalog`, `assets` + `ativos.csv`, `synthetics`, `transforms`, `series` com fetch-on-read, comandos
 `ingest`/`backfill`), pacote puro `engine/` (`twr`/`irr`/`metrics` + `compute` + `dataset` +
-`report_legacy`), API REST JSON em `/api/v1/` (`apps.api` + `apps.accounts.api`, Swagger em `/api/v1/docs`), planejador de IR (`apps.migration_ir`, `/api/v1/migration/*`), SPA React em `../frontend/` e empacotamento Docker (`lab-appinvest-{web,backend,ingestion}` em `127.0.0.1:8080`, Chromium ARM64 + `supercronic`). Suíte `pytest` verde (354 testes). O `src/` (Streamlit legado) continua funcionando em
-paralelo até a Fase 6.
+`report_legacy`), API REST JSON em `/api/v1/` (`apps.api` + `apps.accounts.api`, Swagger em `/api/v1/docs`), planejador de IR (`apps.migration_ir`, `/api/v1/migration/*`), SPA React em `../frontend/` e empacotamento Docker (`lab-appinvest-{web,backend,ingestion}` em `127.0.0.1:8080`, Chromium ARM64 + `supercronic`). Suíte `pytest` verde (356 testes). Paridade com o Streamlit legado validada e `src/` removido na Fase 6 ([ADR 0017](../docs/adr/0017-paridade-legado.md)); a linha de base da Fase 7 roda com `cd ../scripts/parity && ../../backend/.venv/bin/pytest -q`.
 
 ---
 
@@ -17,8 +16,9 @@ paralelo até a Fase 6.
 - **Python 3.12** + pacote `python3.12-venv` (`sudo apt install python3.12-venv`).
 - **Docker** + Docker Compose v2.
 - Acesso ao daemon Docker do host (a infra LAB roda em containers).
-- `../.streamlit/secrets.toml` com `[security].fernet_key` (a chave é reusada — ver
-  [ADR 0003](../docs/adr/0003-reuso-da-chave-fernet-do-legado.md)).
+- A `FERNET_KEY` em uso (a chave do app legado foi reusada — ver
+  [ADR 0003](../docs/adr/0003-reuso-da-chave-fernet-do-legado.md)); sem ela os tokens DLP já
+  cadastrados não decifram.
 
 ---
 
@@ -62,7 +62,7 @@ e as tabelas do app **não** caem no `banco_lab` compartilhado
 ```bash
 cp .env.example .env
 # preencher DJANGO_SECRET_KEY (get_random_secret_key), APPINVEST_DB_PASSWORD (a mesma do passo 3),
-# FERNET_KEY (copiar de ../.streamlit/secrets.toml -> [security].fernet_key)
+# FERNET_KEY (a mesma do ambiente atual — ver ADR 0003; instalação nova: Fernet.generate_key())
 ```
 
 `.env` é git-ignored. **Nunca** commitar; **nunca** imprimir `FERNET_KEY` em log ou saída de teste.
@@ -81,7 +81,7 @@ cp .env.example .env
 ```bash
 .venv/bin/python manage.py runserver 0.0.0.0:8000   # Admin em /admin/, Swagger em /api/v1/docs
 .venv/bin/python manage.py check
-.venv/bin/pytest -q                                 # 354 testes (+ 5 integration com -m integration)
+.venv/bin/pytest -q                                 # 356 testes (+ 5 integration com -m integration)
 .venv/bin/python manage.py backfill_market_data      # bootstrap: semeia MarketSeries dos CSVs do repo (uma vez)
 .venv/bin/python manage.py ingest_market_data        # ingestão ao vivo (incremental; no host B3 lê CSV estático)
 .venv/bin/python manage.py shell -c "from engine import dataset, report_legacy; ..."  # export CLI dos gráficos

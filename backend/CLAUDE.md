@@ -5,8 +5,12 @@ Instruções para agentes trabalhando neste diretório. Complementa
 
 ## Contexto
 
-- Parte da migração Streamlit → Django + React. O `src/` (Streamlit legado) **coexiste
-  e permanece funcional** até a Fase 6 — não mexer nele a partir daqui.
+- Parte da migração Streamlit → Django + React. O `src/` (Streamlit legado) foi removido na
+  Fase 6 após a paridade aprovada ([ADR 0017](../docs/adr/0017-paridade-legado.md)).
+- `../scripts/parity/` é a **linha de base da Fase 7**: mudanças em `engine/` que alteram números
+  devem ser comparadas com `load_baseline` + `run_engine` + `compare_frames` contra
+  `reports/parity/20261027-182533/baseline/` (local, nunca versionado), e só podem mudar as
+  métricas que a mudança promete afetar.
 - Cada fase segue o ciclo **design (`specs/`) → plano (`plans/`) → implementação TDD**.
 - Branch de trabalho: `migracao-django`. Não commitar em `main` / `dev`.
 

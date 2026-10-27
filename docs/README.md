@@ -6,7 +6,7 @@ Documentação da reformulação arquitetural (migração Streamlit → Django +
 
 | Documento | Conteúdo |
 |---|---|
-| [`consolidacao_arquitetura_e_migracao.md`](consolidacao_arquitetura_e_migracao.md) | **Documento mestre.** Estado atual do repo (§2), decisões de arquitetura, roteiro de fases (0 → 6). |
+| [`consolidacao_arquitetura_e_migracao.md`](consolidacao_arquitetura_e_migracao.md) | **Documento mestre.** Estado atual do repo (§2), decisões de arquitetura, roteiro de fases (0 → 7). |
 | [`adr/`](adr/README.md) | **Architecture Decision Records** — uma decisão por arquivo, imutável. O *porquê* consultável a longo prazo. |
 | [`../backend/README.md`](../backend/README.md) | Setup, rodar e testar o backend Django. |
 | [`../backend/CLAUDE.md`](../backend/CLAUDE.md) | Convenções para agentes trabalhando em `backend/`. |
@@ -57,5 +57,6 @@ concluídas em 2026-08-31, com correções de revisão aplicadas na sequência.
 **Fase 3b** (Planejador de IR `/migration/{wallet,plan,plan.pdf}`, [ADR 0015](adr/0015-planejador-de-ir.md)) concluída em 2026-10-26.
 **Fase 4** (SPA React em `frontend/`) concluída em 2026-10-27, com as correções da revisão pós-Fases 3/4 ([plano](superpowers/plans/2026-10-27-correcoes-revisao-fases-3-4.md)).
 **Fase 5** (Dockerização no LAB — `lab-appinvest-{web,backend,ingestion}` em `127.0.0.1:8080`, Chromium ARM64 + `supercronic`, carga inicial + ingestão B3 ao vivo, [ADR 0016](adr/0016-empacotamento-no-lab.md)) concluída em 2026-10-27.
-Próximo incremento: **Fase 6** (validação de paridade com o Streamlit e remoção do legado).
+**Fase 6** (paridade em duas camadas com o legado, linha de base da Fase 7 em `scripts/parity/` + `reports/parity/`, remoção de `src/` e libs legadas, [ADR 0017](adr/0017-paridade-legado.md)) concluída em 2026-10-27.
+Próximo incremento: **Fase 7** (correções e otimizações do engine pós-paridade, regressão contra a linha de base).
 
