@@ -29,10 +29,39 @@ def test_read_b3_static_uses_repo_fixture():
     assert isinstance(pts[0], RawPoint)
 
 
-def test_fetch_b3_selenium_raises_when_webdriver_unavailable(monkeypatch):
-    def boom(*a, **k):
-        raise RuntimeError("no chrome")
+def test_fetch_b3_selenium_uses_system_chromium_when_configured(monkeypatch, settings):
+    settings.CHROME_BINARY = "/usr/bin/chromium"
+    settings.CHROMEDRIVER_PATH = "/usr/bin/chromedriver"
+    seen = {}
 
-    monkeypatch.setattr(b3.webdriver, "Chrome", boom)
+    def fake_chrome(service=None, options=None):
+        seen["service"], seen["options"] = service, options
+        raise RuntimeError("stop after construction")
+
+    monkeypatch.setattr(b3.webdriver, "Chrome", fake_chrome)
+    import webdriver_manager.chrome as wdm
+    monkeypatch.setattr(wdm.ChromeDriverManager, "install",
+                        lambda self: pytest.fail("não deve baixar driver"))
     with pytest.raises(FetchError):
         b3.fetch_b3_selenium("IFIX", [2024])
+    assert seen["service"].path == "/usr/bin/chromedriver"
+    assert seen["options"].binary_location == "/usr/bin/chromium"
+    args = seen["options"].arguments
+    assert "--headless=new" in args and "--no-sandbox" in args and "--disable-dev-shm-usage" in args
+
+
+def test_fetch_b3_selenium_without_settings_keeps_webdriver_manager(monkeypatch, settings):
+    settings.CHROME_BINARY = None
+    settings.CHROMEDRIVER_PATH = None
+    import webdriver_manager.chrome as wdm
+    monkeypatch.setattr(wdm.ChromeDriverManager, "install", lambda self: "/tmp/fake-driver")
+    seen = {}
+
+    def fake_chrome(service=None, options=None):
+        seen["service"] = service
+        raise RuntimeError("stop")
+
+    monkeypatch.setattr(b3.webdriver, "Chrome", fake_chrome)
+    with pytest.raises(FetchError):
+        b3.fetch_b3_selenium("IFIX", [2024])
+    assert seen["service"].path == "/tmp/fake-driver"

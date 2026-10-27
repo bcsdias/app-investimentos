@@ -119,9 +119,12 @@ LOGGING = {
     "root": {"handlers": ["console"], "level": _env("LOG_LEVEL", "INFO")},
 }
 
-# Fase 2 — a ingestão B3 via Selenium só roda no container com Chrome (Fase 5).
+# Fase 2 — a ingestão B3 via Selenium só roda no container com Chromium (Fase 5).
 # No host, ingest_market_data usa o fallback de CSV estático.
 B3_INGEST_USE_SELENIUM = _env("B3_INGEST_USE_SELENIUM", "0") == "1"
+# Definidos apenas no container de ingestão (ARM64, Chromium Debian).
+CHROME_BINARY = _env("CHROME_BINARY") or None
+CHROMEDRIVER_PATH = _env("CHROMEDRIVER_PATH") or None
 
 # A SPA lê o cookie csrftoken e o reenvia no header X-CSRFToken.
 CSRF_COOKIE_HTTPONLY = False

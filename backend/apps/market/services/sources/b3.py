@@ -4,7 +4,7 @@ read_b3_static: lê os CSVs estáticos data/static/<indice>_all.csv (porta de
 src/data/sources/b3_source.py). É o caminho usado no host (sem Chrome).
 
 fetch_b3_selenium: porta do scraper de src/data/sources/market_data.py. NÃO roda
-no host; só é exercitado com mock. A Fase 5 o liga no container com Chrome.
+no host; só é exercitado com mock. A Fase 5 o liga no container com Chromium do sistema.
 """
 from __future__ import annotations
 
@@ -13,6 +13,7 @@ import logging
 from pathlib import Path
 
 import pandas as pd
+from django.conf import settings
 from selenium import webdriver  # noqa: F401 — usado por fetch_b3_selenium / mockado nos testes
 
 from .base import FetchError, RawPoint
@@ -50,11 +51,20 @@ def fetch_b3_selenium(
         from selenium.webdriver.common.by import By
         from selenium.webdriver.support.ui import Select
         from selenium.webdriver.support.wait import WebDriverWait
-        from webdriver_manager.chrome import ChromeDriverManager
 
         opts = webdriver.ChromeOptions()
         opts.add_argument("--headless=new")
-        driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=opts)
+        opts.add_argument("--no-sandbox")
+        opts.add_argument("--disable-dev-shm-usage")
+        if settings.CHROME_BINARY:
+            opts.binary_location = settings.CHROME_BINARY
+        if settings.CHROMEDRIVER_PATH:
+            service = Service(executable_path=settings.CHROMEDRIVER_PATH)
+        else:
+            from webdriver_manager.chrome import ChromeDriverManager
+
+            service = Service(ChromeDriverManager().install())
+        driver = webdriver.Chrome(service=service, options=opts)
         try:
             frames: list[pd.DataFrame] = []
             meses = {
