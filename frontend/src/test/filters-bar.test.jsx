@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
   PortfolioFilterProvider,
   usePortfolioFilters,
+  toLocalISODate,
 } from '../context/PortfolioFilterContext';
 import { FiltersBar } from '../components/portfolio/FiltersBar';
 import { benchmarksApi } from '../api/benchmarks';
@@ -74,17 +75,17 @@ describe('PortfolioFilterContext, FiltersBar e BenchmarkSelector', () => {
     expect(benchmarksList).not.toContain('IBOV');
   });
 
-  it('calcula start de 365 dias atrás e end atual ao selecionar 1A, e null ao selecionar Tudo', async () => {
+  it('calcula start de 365 dias atrás e end atual ao selecionar 1A, e 1900-01-01 ao selecionar Tudo', async () => {
     renderFiltersBar();
 
     const btn1A = screen.getByRole('button', { name: '1A' });
     fireEvent.click(btn1A);
 
     const today = new Date();
-    const expectedEnd = today.toISOString().slice(0, 10);
+    const expectedEnd = toLocalISODate(today);
     const past = new Date(today);
     past.setDate(past.getDate() - 365);
-    const expectedStart = past.toISOString().slice(0, 10);
+    const expectedStart = toLocalISODate(past);
 
     expect(screen.getByTestId('period-val')).toHaveTextContent('1A');
     expect(screen.getByTestId('start-val')).toHaveTextContent(expectedStart);
@@ -94,7 +95,7 @@ describe('PortfolioFilterContext, FiltersBar e BenchmarkSelector', () => {
     fireEvent.click(btnTudo);
 
     expect(screen.getByTestId('period-val')).toHaveTextContent('Tudo');
-    expect(screen.getByTestId('start-val')).toHaveTextContent('null');
+    expect(screen.getByTestId('start-val')).toHaveTextContent('1900-01-01');
     expect(screen.getByTestId('end-val')).toHaveTextContent('null');
   });
 

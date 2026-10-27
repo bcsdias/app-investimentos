@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { usePortfolioQueries } from '../hooks/usePortfolioQueries';
 import { FiltersBar } from '../components/portfolio/FiltersBar';
+import { PeriodNotice } from '../components/portfolio/PeriodNotice';
 import { SummaryCards } from '../components/portfolio/SummaryCards';
 import { Tabs } from '../components/common/Tabs';
 import { EmptyState } from '../components/common/EmptyState';
@@ -41,6 +42,7 @@ export function PortfolioPage() {
       </div>
 
       <FiltersBar />
+      <PeriodNotice meta={summary.data?.meta} />
 
       {isPortfolioEmpty ? (
         <EmptyState

@@ -8,9 +8,19 @@ const PERIOD_DAYS = {
   '5A': 1825,
 };
 
+// "Tudo": data bem antiga; o backend recorta pelo início real e devolve em meta.start.
+export const ALL_TIME_START = '1900-01-01';
+
+export function toLocalISODate(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
 export function computePresetDates(periodPreset, baseDate = new Date()) {
   if (periodPreset === 'Tudo') {
-    return { start: null, end: null };
+    return { start: ALL_TIME_START, end: null };
   }
   const days = PERIOD_DAYS[periodPreset];
   if (!days) {
@@ -21,8 +31,8 @@ export function computePresetDates(periodPreset, baseDate = new Date()) {
   startObj.setDate(startObj.getDate() - days);
 
   return {
-    start: startObj.toISOString().slice(0, 10),
-    end: endObj.toISOString().slice(0, 10),
+    start: toLocalISODate(startObj),
+    end: toLocalISODate(endObj),
   };
 }
 
@@ -113,9 +123,10 @@ export function PortfolioFilterProvider({
   }, []);
 
   const resetFilters = useCallback(() => {
+    const allDates = computePresetDates('Tudo');
     setPeriodState('Tudo');
-    setStart(null);
-    setEnd(null);
+    setStart(allDates.start);
+    setEnd(allDates.end);
     setBenchmarks(initialBenchmarks);
     setSynthetics([]);
     setAtivo(null);
