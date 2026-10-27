@@ -9,6 +9,7 @@ no host; só é exercitado com mock. A Fase 5 o liga no container com Chromium d
 from __future__ import annotations
 
 import datetime as dt
+import io
 import logging
 from pathlib import Path
 
@@ -81,23 +82,31 @@ def fetch_b3_selenium(
                     lambda d: d.find_element(By.ID, "selectYear")
                 ))
                 sel.select_by_value(str(ano))
-                table_html = driver.find_element(By.TAG_NAME, "table").get_attribute("outerHTML")
-                raw = pd.read_html(table_html)[0]
-                raw = raw[pd.to_numeric(raw["Dia"], errors="coerce").notna()]
-                melted = raw.melt(id_vars=["Dia"], var_name="Mes", value_name="Close").dropna()
-                melted["Close"] = (
-                    melted["Close"].astype(str)
-                    .str.replace(".", "", regex=False)
-                    .str.replace(",", ".", regex=False)
-                    .astype(float)
-                )
-                melted["month"] = melted["Mes"].map(meses)
-                melted["year"] = ano
-                melted = melted.dropna(subset=["month"])
-                melted["Date"] = pd.to_datetime(
-                    melted[["year", "month", "Dia"]].rename(columns={"Dia": "day"})
-                )
-                frames.append(melted[["Date", "Close"]])
+                sem_els = driver.find_elements(By.ID, "semester")
+                sem_steps = (("1", "Jan"), ("2", "Jul")) if sem_els else ((None, None),)
+                for sem_val, marker in sem_steps:
+                    if sem_val is not None:
+                        Select(driver.find_element(By.ID, "semester")).select_by_value(sem_val)
+                        WebDriverWait(driver, 30).until(
+                            lambda d, m=marker: m in d.find_element(By.TAG_NAME, "table").text
+                        )
+                    table_html = driver.find_element(By.TAG_NAME, "table").get_attribute("outerHTML")
+                    raw = pd.read_html(io.StringIO(table_html))[0]
+                    raw = raw[pd.to_numeric(raw["Dia"], errors="coerce").notna()]
+                    melted = raw.melt(id_vars=["Dia"], var_name="Mes", value_name="Close").dropna()
+                    melted["Close"] = (
+                        melted["Close"].astype(str)
+                        .str.replace(".", "", regex=False)
+                        .str.replace(",", ".", regex=False)
+                        .astype(float)
+                    )
+                    melted["month"] = melted["Mes"].map(meses)
+                    melted["year"] = ano
+                    melted = melted.dropna(subset=["month"])
+                    melted["Date"] = pd.to_datetime(
+                        melted[["year", "month", "Dia"]].rename(columns={"Dia": "day"})
+                    )
+                    frames.append(melted[["Date", "Close"]])
         finally:
             driver.quit()
     except Exception as exc:  # noqa: BLE001

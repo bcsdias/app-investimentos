@@ -65,3 +65,79 @@ def test_fetch_b3_selenium_without_settings_keeps_webdriver_manager(monkeypatch,
     with pytest.raises(FetchError):
         b3.fetch_b3_selenium("IFIX", [2024])
     assert seen["service"].path == "/tmp/fake-driver"
+
+
+def test_fetch_b3_selenium_reads_both_semesters(monkeypatch, settings):
+    settings.CHROME_BINARY = "/usr/bin/chromium"
+    settings.CHROMEDRIVER_PATH = "/usr/bin/chromedriver"
+
+    html_sem1 = """
+    <table>
+      <thead><tr><th>Dia</th><th>Jan</th><th>Jun</th></tr></thead>
+      <tbody><tr><td>2</td><td>3.100,00</td><td>3.200,50</td></tr></tbody>
+    </table>
+    """
+    html_sem2 = """
+    <table>
+      <thead><tr><th>Dia</th><th>Jul</th><th>Out</th></tr></thead>
+      <tbody><tr><td>2</td><td>3.300,00</td><td>3.450,25</td></tr></tbody>
+    </table>
+    """
+
+    class FakeElement:
+        def __init__(self, kind, driver):
+            self.kind = kind
+            self.driver = driver
+            self.tag_name = "select" if kind in ("selectYear", "semester") else "table"
+
+        def get_attribute(self, name):
+            if self.kind == "table" and name == "outerHTML":
+                return html_sem1 if self.driver.sem == "1" else html_sem2
+            return None
+
+        @property
+        def text(self):
+            return "Dia Jan Jun" if self.driver.sem == "1" else "Dia Jul Out"
+
+    class FakeDriver:
+        def __init__(self):
+            self.sem = "1"
+            self.selected_semesters = []
+
+        def get(self, url):
+            self.sem = "1"
+
+        def find_element(self, by, value):
+            return FakeElement(value, self)
+
+        def find_elements(self, by, value):
+            if value == "semester":
+                return [FakeElement("semester", self)]
+            return []
+
+        def quit(self):
+            pass
+
+    fake_driver = FakeDriver()
+
+    class FakeSelect:
+        def __init__(self, el):
+            self.el = el
+
+        def select_by_value(self, val):
+            if self.el.kind == "semester":
+                self.el.driver.sem = val
+                self.el.driver.selected_semesters.append(val)
+
+    monkeypatch.setattr(b3.webdriver, "Chrome", lambda service=None, options=None: fake_driver)
+    import selenium.webdriver.support.ui as ui_mod
+    monkeypatch.setattr(ui_mod, "Select", FakeSelect)
+
+    pts = b3.fetch_b3_selenium("IFIX", [2026])
+    assert fake_driver.selected_semesters == ["1", "2"]
+    assert pts == [
+        RawPoint(dt.date(2026, 1, 2), 3100.0),
+        RawPoint(dt.date(2026, 6, 2), 3200.5),
+        RawPoint(dt.date(2026, 7, 2), 3300.0),
+        RawPoint(dt.date(2026, 10, 2), 3450.25),
+    ]
