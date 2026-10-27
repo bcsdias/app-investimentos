@@ -2,10 +2,10 @@ import React, { useMemo } from 'react';
 import { Card } from '../../common/Card';
 import { BaseChart } from './BaseChart';
 
-function toVolPercent(val) {
+export function toVolPercent(val) {
   if (val === null || val === undefined || Number.isNaN(Number(val))) return null;
   const num = Number(val);
-  return Math.abs(num) <= 2 ? num * 100 : num;
+  return num * 100;
 }
 
 export function RollingSharpeChart({ data, isLoading = false }) {

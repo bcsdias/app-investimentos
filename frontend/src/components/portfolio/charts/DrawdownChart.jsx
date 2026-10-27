@@ -2,10 +2,10 @@ import React, { useMemo } from 'react';
 import { Card } from '../../common/Card';
 import { BaseChart } from './BaseChart';
 
-function toPercentPoint(val) {
+export function toPercentPoint(val) {
   if (val === null || val === undefined || Number.isNaN(Number(val))) return null;
   const num = Number(val);
-  return Math.abs(num) <= 1 ? num * 100 : num;
+  return num * 100;
 }
 
 export function DrawdownChart({ data, isLoading = false }) {

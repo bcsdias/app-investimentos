@@ -2,10 +2,10 @@ import React, { useMemo } from 'react';
 import { Card } from '../../common/Card';
 import { BaseChart } from './BaseChart';
 
-function toPct(val) {
+export function toPct(val) {
   if (val === null || val === undefined || Number.isNaN(Number(val))) return 0;
   const num = Number(val);
-  return Math.abs(num) <= 2 ? num * 100 : num;
+  return num * 100;
 }
 
 export function RiskReturnChart({ data, isLoading = false }) {
