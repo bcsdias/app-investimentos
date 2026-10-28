@@ -58,6 +58,6 @@ concluídas em 2026-08-31, com correções de revisão aplicadas na sequência.
 **Fase 4** (SPA React em `frontend/`) concluída em 2026-10-27, com as correções da revisão pós-Fases 3/4 ([plano](superpowers/plans/2026-10-27-correcoes-revisao-fases-3-4.md)).
 **Fase 5** (Dockerização no LAB — `lab-appinvest-{web,backend,ingestion}` em `127.0.0.1:8080`, Chromium ARM64 + `supercronic`, carga inicial + ingestão B3 ao vivo, [ADR 0016](adr/0016-empacotamento-no-lab.md)) concluída em 2026-10-27.
 **Fase 6** (paridade em duas camadas com o legado, linha de base da Fase 7 em `scripts/parity/` + `reports/parity/`, remoção de `src/` e libs legadas, [ADR 0017](adr/0017-paridade-legado.md)) concluída em 2026-10-27.
-**Fase 7a** (correção matemática e de confiabilidade do engine alinhada à planilha DLP, nova linha de base em `reports/parity/20261028-163150-fase7/baseline/`, [ADR 0018](adr/0018-metodologia-de-retorno-dlp.md)) concluída em 2026-10-28.
+**Fase 7a** (correção matemática e de confiabilidade do engine alinhada à planilha DLP, nova linha de base em `reports/parity/20261028-180012-fase7-abertura/baseline/`, revisada após o 1º teste do usuário: abertura do período no fechamento anterior a `start_date`, [ADR 0018](adr/0018-metodologia-de-retorno-dlp.md)) concluída em 2026-10-28.
 Próximo incremento: **Fase 7b** (otimizações do engine: pré-processamento de `date` e dedup de `groupby`, sem alterar números).
 

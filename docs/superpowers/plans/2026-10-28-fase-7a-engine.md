@@ -452,3 +452,15 @@ Expected: serviços `Up (healthy)`; `curl -s -o /dev/null -w '%{http_code}' http
 - [ ] **Step 6: PARAR e pedir ao usuário para testar**
 
 Mensagem ao usuário: os números da carteira mudaram (TWR, TIR, ganho, shadow, Sharpe); comparar com a DLP; cada estranhamento vira teste antes da correção. **Não iniciar o plano 7b sem o retorno do usuário.**
+
+---
+
+### Task 9 (pós-teste do usuário): abertura do período no fechamento anterior a `start_date`
+
+**Achado (2026-10-28):** filtro 01/01/2026–28/10/2026 no app × jan–set/2026 na DLP → TWR 5,66 % × 12,09 % e XTIR 9,18 % × 16,72 % a.a. O recorte usava o 1º fechamento **dentro** do período como abertura e descartava o retorno do 1º mês.
+
+- [x] Testes vermelhos: `test_start_date_mid_month_opens_at_previous_close`, `test_start_date_before_history_starts_at_first_row`, `test_build_dataset_keeps_opening_close_before_start_date`; oráculo `test_dlp_window_twr_includes_first_month` e `test_dlp_window_xirr_matches_dashboard` (falharam com 5,66 % e ≈9,2 %).
+- [x] `fetch_user_portfolio` inclui o último fechamento `<= start_date` como abertura; `build_dataset` não corta essa linha. Commit `🐛 fix(engine): abre o período no fechamento anterior a start_date`.
+- [x] Paridade: janela `w5-inicio-mes` e `regress.add_missing_windows`; regressão contra `20261028-163150-fase7` → 5 casos `=`, `w5` novo; nova linha de base `reports/parity/20261028-180012-fase7-abertura/baseline` (re-verificada `=`). Commit `✅ test(parity): janela w5-inicio-mes com start fora de data de fechamento`.
+- [x] ADR 0018 revisado (abertura, XIRR com `brentq`/scipy, reconciliação da TIR na mesma janela) e docs atualizados.
+- [ ] Rebuild do container e novo teste do usuário. **Não iniciar a 7b sem o retorno do usuário.**

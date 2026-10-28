@@ -7,7 +7,7 @@ O desenvolvimento roda **no host** (Python 3.12); o app empacotado roda nos cont
 wrapper Fernet, modelos `UserToken` / `MarketSeries`, Admin), app `apps.market` (fontes de
 mercado, `repository`, `cache`, `catalog`, `assets` + `ativos.csv`, `synthetics`, `transforms`, `series` com fetch-on-read, comandos
 `ingest`/`backfill`), pacote puro `engine/` com metodologia DLP alinhada (`flows`/`twr`/`irr`/`metrics` + `compute` + `dataset` +
-`report_legacy`, [ADR 0018](../docs/adr/0018-metodologia-de-retorno-dlp.md)), API REST JSON em `/api/v1/` (`apps.api` + `apps.accounts.api`, Swagger em `/api/v1/docs`), planejador de IR (`apps.migration_ir`, `/api/v1/migration/*`), SPA React em `../frontend/` e empacotamento Docker (`lab-appinvest-{web,backend,ingestion}` em `127.0.0.1:8080`, Chromium ARM64 + `supercronic`). Suíte `pytest` verde (385 testes unitários/contrato + 8 integration). Paridade com o Streamlit legado validada na Fase 6 ([ADR 0017](../docs/adr/0017-paridade-legado.md)) e nova linha de base da Fase 7 em `reports/parity/20261028-163150-fase7/baseline` (39 testes em `../scripts/parity/`).
+`report_legacy`, [ADR 0018](../docs/adr/0018-metodologia-de-retorno-dlp.md)), API REST JSON em `/api/v1/` (`apps.api` + `apps.accounts.api`, Swagger em `/api/v1/docs`), planejador de IR (`apps.migration_ir`, `/api/v1/migration/*`), SPA React em `../frontend/` e empacotamento Docker (`lab-appinvest-{web,backend,ingestion}` em `127.0.0.1:8080`, Chromium ARM64 + `supercronic`). Suíte `pytest` verde (388 testes unitários/contrato + 10 integration). Paridade com o Streamlit legado validada na Fase 6 ([ADR 0017](../docs/adr/0017-paridade-legado.md)) e nova linha de base da Fase 7 em `reports/parity/20261028-180012-fase7-abertura/baseline` (41 testes em `../scripts/parity/`).
 
 ---
 
@@ -81,7 +81,7 @@ cp .env.example .env
 ```bash
 .venv/bin/python manage.py runserver 0.0.0.0:8000   # Admin em /admin/, Swagger em /api/v1/docs
 .venv/bin/python manage.py check
-.venv/bin/pytest -q                                 # 385 testes (+ 8 integration com -m integration)
+.venv/bin/pytest -q                                 # 388 testes (+ 10 integration com -m integration)
 .venv/bin/python manage.py backfill_market_data      # bootstrap: semeia MarketSeries dos CSVs do repo (uma vez)
 .venv/bin/python manage.py ingest_market_data        # ingestão ao vivo (incremental; no host B3 lê CSV estático)
 .venv/bin/python manage.py shell -c "from engine import dataset, report_legacy; ..."  # export CLI dos gráficos

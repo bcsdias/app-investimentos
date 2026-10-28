@@ -1,7 +1,7 @@
 # ADR 0018 — Metodologia de cálculo de retorno alinhada à planilha DLP
 
 - **Status:** Aceita (supera a cópia literal temporária do [ADR 0012](0012-engine-copia-literal-fase-2-5.md))
-- **Data:** 2026-10-28
+- **Data:** 2026-10-28 (revisada no mesmo dia após o 1º teste do usuário — ver §5 da Decisão e "Revisão pós-teste")
 - **Fase:** 7a
 - **Spec:** [`../superpowers/specs/2026-10-28-fase-7-confiabilidade-design.md`](../superpowers/specs/2026-10-28-fase-7-confiabilidade-design.md)
 - **Plano:** [`../superpowers/plans/2026-10-28-fase-7a-engine.md`](../superpowers/plans/2026-10-28-fase-7a-engine.md)
@@ -24,7 +24,7 @@ Implementar a metodologia canônica alinhada à planilha oficial DLP nos módulo
 ### 1. Fórmula do Fluxo Financeiro Externo (`engine.flows`)
 Definir o fluxo de caixa externo líquido como a variação líquida de capital de terceiros/novo aporte:
 $$\text{fluxo}_t = \Delta \text{vlr\_investido}_t - \text{lucro}_t - \text{proventos}_t$$
-onde $\text{lucro}_t$ corresponde aos lucros realizados nas vendas e $\text{proventos}_t$ aos dividendos/JCP recebidos no período. O primeiro fluxo é definido como $\text{vlr\_investido}_0 - \text{lucro}_0 - \text{proventos}_0$.
+onde $\text{lucro}_t$ corresponde aos lucros realizados nas vendas e $\text{proventos}_t$ aos dividendos/JCP recebidos no período. Na primeira linha do histórico, $\Delta \text{vlr\_investido}_0 = \text{vlr\_investido}_0$. Em recortes com `start_date`, o primeiro fluxo é sobrescrito pelo patrimônio de abertura (§5).
 
 ### 2. Regra de Alocação Temporal no TWR Mensal (HPR)
 No cálculo do retorno mensal da carteira em `engine.twr.calculate_twr`:
@@ -39,16 +39,20 @@ No cálculo do retorno mensal da carteira em `engine.twr.calculate_twr`:
 - Convenção anualizada: $(1 + r)^{(d_i - d_0)/365.0}$.
 - Ordenação estrita das datas cronológicas e agregação de múltiplos fluxos na mesma data.
 - **Invariância à escala:** normalização prévia dos fluxos por $\max(|F_i|)$ antes do cálculo das raízes, evitando overflow de ponto flutuante.
-- **Método híbrido com garantia de convergência:** tentativa inicial via Newton-Raphson com estimativa inicial baseada no fluxo total e prazo ponderado; caso não convirja em 50 iterações ou resulte em erro matemático, ativa fallback automático para busca por bisseção com expansão adaptativa de limites (bracket), cobrindo taxas reais no intervalo $(-1.0, +\infty)$.
+- **Método híbrido com garantia de convergência:** tentativa inicial via Newton-Raphson com convergência relativa à escala dos fluxos; caso não convirja, fallback por intervalo com troca de sinal usando `scipy.optimize.brentq` (Brent), começando em $[-0{,}999999;\ 10^3]$ e expandindo o teto. Sem troca de sinal → `None` (API `null`).
+- **Dependência nova:** `scipy~=1.18` em `backend/requirements.txt` (a spec §5.3 permitia `brentq` "se scipy entrar"). A linha entrou no commit de docs `b1b5849`, e não no commit do XIRR `9bc902b`, cuja mensagem fala em "bisseção"; o comportamento correto é o descrito aqui.
 
 ### 4. Sharpe Ratio contra a Série Real do CDI (`engine.metrics`)
 - Substituição da taxa fixa ou nula pela série histórica de CDI efetivamente observada no período.
 - Retornos excedentes diários calculados contra a taxa diária do CDI correspondente, tanto para a carteira quanto para os benchmarks de mercado.
 - Alinhamento pleno com a prática regulatória e de mercado brasileira.
 
-### 5. Recorte Estrito de Janela e Recálculo Pós-Gap (`engine.dataset`)
-- Recorte imediato de `portfolio_df` (`grp`) respeitando `date <= end_date`.
-- Ao aplicar corte inicial (`start_date`), o `gap = pat_ini - vlr_investido[0]` é adicionado a `vlr_investido`, e o fluxo inicial (`fluxo[0]`) é recalculado como $\text{vlr\_investido}_0 - \text{proventos}_0 - \text{lucro}_0$, eliminando saltos artificiais no histórico de TIR e no saldo inicial.
+### 5. Recorte de Janela, Abertura e Recálculo Pós-Gap (`engine.dataset`)
+- Recorte de `portfolio_df` (`grp`) respeitando `date <= end_date`.
+- **Abertura no fechamento anterior:** cada linha do `/historico` é um **fechamento mensal**. O período parte do **último fechamento `<= start_date`** (patrimônio de abertura, GIPS), e essa linha entra em `portfolio_df` como base do TWR (1,0) e 1º fluxo do XIRR. Ex.: "01/01/2026 a 28/10/2026" abre em 31/12/2025 e inclui o retorno de janeiro, como o filtro "jan/26–set/26" da DLP. `start_date` igual a um fechamento abre nele mesmo; `start_date` antes do 1º dado abre no 1º dado; nenhum fechamento dentro de `[start_date, end_date]` → `(None, None)`.
+- `build_dataset` não corta essa linha de abertura ao recortar o `df_combined` (o corte começa no menor entre `start_date` e a 1ª data da carteira). O "Período analisado" da SPA passa a mostrar a data de abertura.
+- Com abertura antes do 1º dado, `gap = vlr_mercado_0 - vlr_investido_0` é somado a `vlr_investido` e `fluxo[0] = vlr_mercado_0` (aporte inicial fictício = patrimônio de abertura).
+- O fim do período é o último mês **fechado** que a DLP entrega: com `end_date` = hoje (28/10), a série vai até 30/09.
 
 ### 6. Métricas de Retorno Total e Carteira Shadow (`engine.compute`)
 - Eliminação da dupla contagem do saldo inicial no `/summary` e na simulação da carteira `/shadow`: o saldo em `start_date` é tratado estritamente como posição inicial, e apenas os fluxos externos subsequentes são aportados/descontados na evolução das cotas dos benchmarks.
@@ -64,22 +68,29 @@ Execução do teste de integração contra o export histórico oficial da planil
 - **Fluxo mensal:** 123/123 meses idênticos ao oráculo da planilha (diferença máxima $\le 0{,}01$, decorrente de arredondamento de centavos).
 - **TWR mensal:** 122/122 meses coincidentes com erro máximo absoluto $< 0{,}00005$ ($0{,}005\text{ pp}$), bem abaixo da tolerância estrita de $0{,}01\text{ pp}$.
 - **TWR acumulado:** **195,95% vs 195,95%** (diferença de $0{,}0032\text{ pp}$, perfeitamente dentro da margem de $0{,}05\text{ pp}$). No legado, o acumulado atingia apenas 40,87%.
-- **Conferência da TIR (XIRR):**
-  - TIR anual calculada pelo engine sobre a série mensal fechada até set/2026: **12,01% a.a.** (0,95% a.m.).
-  - TIR da planilha no snapshot em tempo real de 28/10/2026: **11,10% a.a.** (0,90% a.m.) / **11,15% a.a.** com máxima precisão.
-  - A diferença aparente de 0,91 pp decorre de oscilação negativa de mercado de **-2,57%** ocorrida em outubro/2026. Ao projetar os fluxos com a cotação patrimonial de 28/10, a TIR anual do engine recalcula para **11,30% a.a.**, reduzindo a diferença residual a meros **0,15 pp a.a.** (explicada pela consolidação de fluxos mensais vs extrato diário).
+- **Conferência da TIR (XIRR), janela com a mesma data de corte nos dois lados** (substitui a reconciliação inicial, que comparava a série fechada em set/2026 com o dashboard vivo de 28/10):
+  - Filtro **jan/26–set/26** no dashboard da DLP (2026-10-28): XTIR **16,72 % a.a.**, TWR acumulado **12,09 %**.
+  - Engine com a abertura corrigida, mesma janela: XTIR **16,72 % a.a.**, TWR **12,09 %** (`test_dlp_window_twr_includes_first_month`, `test_dlp_window_xirr_matches_dashboard`, tolerância 0,05 pp).
+  - Engine antes da correção da abertura: **9,18 % a.a.** e **5,66 %**, exatamente a DLP sem o mês de janeiro (`1,1209 / 1,0609 − 1 = 5,66 %`).
 
 ### 2. Regressão contra Linha de Base (`scripts/parity/regress.py`)
 A execução da ferramenta de regressão contra a linha de base anterior da Fase 6 comprovou:
 - Em `twr`, `drawdown`, `rolling_vol` e `yearly`, **apenas a série `Carteira` mudou**; nenhuma coluna de benchmark foi afetada.
 - Em `yearly`, os benchmarks `CDI`, `IPCA + 6%`, `S&P 500 BRL` e `IFIX` mantiveram paridade absoluta ($=$).
 - As alterações em `rolling_sharpe` e `risk_return` decorreram exclusivamente da adoção da série real do CDI como $r_f$.
-- Nova linha de base congelada com 5 casos e 10 métricas em `reports/parity/20261028-163150-fase7/baseline` (verificação subsequente com 100% de paridade `$=$`).
+- Linha de base congelada com 5 casos e 10 métricas em `reports/parity/20261028-163150-fase7/baseline` (verificação subsequente com 100% de paridade `=`).
+
+### 3. Revisão pós-teste (abertura do período)
+No 1º teste do usuário no LAB (filtro 01/01/2026–28/10/2026 contra jan–set/2026 na DLP), o TWR e a TIR divergiram (5,66 % × 12,09 %; 9,18 % × 16,72 % a.a.). Causa: o recorte usava o 1º fechamento **dentro** do período como abertura e descartava o retorno do 1º mês. Escapou porque o oráculo só cobria a janela completa e todas as janelas da matriz de paridade começavam numa data de fechamento (o teste de `gap` da Task 2 usava `start_date` = fechamento).
+- Correção em `engine.dataset` (§5 da Decisão), com testes unitários (`test_start_date_mid_month_opens_at_previous_close`, `test_build_dataset_keeps_opening_close_before_start_date`) e o oráculo de janela.
+- Matriz de paridade ganhou `w5-inicio-mes` (`start` no dia seguinte a um fechamento). Regressão contra `20261028-163150-fase7`: os 5 casos existentes `=` em todas as métricas (todos começam num fechamento); `w5-inicio-mes` novo.
+- Linha de base vigente: `reports/parity/20261028-180012-fase7-abertura/baseline` (6 casos, re-verificada com tudo `=`).
 
 ---
 
 ## Consequências
 
 - **Mudança nos números reportados:** Os valores de rentabilidade acumulada, TIR, Sharpe e carteira shadow exibidos pela SPA e pela API para a carteira do usuário são alterados, tornando-se matematicamente corretos e alinhados à planilha DLP.
-- **Linha de base atualizada:** A linha de base de paridade passa a ser formalmente `reports/parity/20261028-163150-fase7/baseline` (local, não versionada).
+- **Linha de base atualizada:** A linha de base de paridade passa a ser `reports/parity/20261028-180012-fase7-abertura/baseline` (local, não versionada), que substitui `20261028-163150-fase7`.
+- **Períodos recortados:** todo período com `start_date` fora de um fechamento (inclusive os atalhos 1A/2A/5A da SPA) passa a incluir o 1º mês; o "1A" cobre 12 meses, não 11.
 - **Encerramento da Fase 7a:** Conclui as correções matemáticas e de confiabilidade do engine de cálculo financeiro.
