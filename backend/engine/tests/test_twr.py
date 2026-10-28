@@ -61,9 +61,7 @@ def test_twr_with_resgate_and_dividends():
     df = pd.DataFrame(data)
     twr = calculate_twr(df)
     
-    # hpr = vlr_mercado / (vlr_inicial + fluxo)
-    # vlr_inicial = 100
-    # fluxo = -50 - 5 = -55
-    # denominador = 100 - 55 = 45
-    # hpr = 48 / 45 = 1.06666... (Rendimento implícito positivo de 6.66%!)
-    np.testing.assert_almost_equal(twr.iloc[1], 48/45)
+    # Com a nova regra de fluxo externo e HPR da DLP:
+    # M_0 = 100, M_1 = 48, F_1 = -55 (resgate no fim do mês)
+    # hpr = (M_1 - min(F_1, 0)) / (M_0 + max(F_1, 0)) = (48 - (-55)) / (100 + 0) = 103 / 100 = 1.03 (+3%)
+    np.testing.assert_almost_equal(twr.iloc[1], 1.03)
