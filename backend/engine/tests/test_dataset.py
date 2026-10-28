@@ -131,6 +131,35 @@ def test_start_date_gap_sets_opening_flow_to_market_value(mock_dlp_history):
     assert twr.tolist() == pytest.approx([1.0, 1650 / 1600, 1650 / 1600 * 1700 / 1650])
 
 
+def test_start_date_mid_month_opens_at_previous_close(mock_dlp_history):
+    # Dado mensal: cada linha é um fechamento. "A partir de 01/03" parte do patrimônio
+    # de 29/02 (último fechamento <= start), então o retorno de março entra no período.
+    twr, pdf = dataset.fetch_user_portfolio("t", start_date="2024-03-01")
+    assert pdf is not None
+    assert pdf["date"].tolist() == list(pd.to_datetime(["2024-02-29", "2024-03-31", "2024-04-30"]))
+    assert pdf["vlr_investido"].tolist() == [1100.0, 1600.0, 1600.0]
+    assert pdf["fluxo"].tolist() == [1100.0, 500.0, 0.0]
+    assert twr is not None
+    assert twr.index[0] == pd.Timestamp("2024-02-29")
+    assert twr.tolist() == pytest.approx([1.0, 1650 / 1600, 1700 / 1600])
+
+
+def test_start_date_before_history_starts_at_first_row(mock_dlp_history):
+    twr, pdf = dataset.fetch_user_portfolio("t", start_date="2023-06-01")
+    assert pdf is not None
+    assert len(pdf) == 4
+    assert pdf["fluxo"].iloc[0] == 1000.0
+
+
+def test_build_dataset_keeps_opening_close_before_start_date(monkeypatch):
+    monkeypatch.setattr(dataset.series, "get_series", lambda *a, **k: None)
+    monkeypatch.setattr(dataset.series, "get_many", lambda *a, **k: {})
+    user = pd.Series([1.0, 1.05, 1.10], index=pd.to_datetime(["2024-02-29", "2024-03-31", "2024-04-30"]))
+    res = dataset.build_dataset(user_series=user, start_date="2024-03-01", end_date="2024-04-30")
+    assert res.df_combined.index[0] == pd.Timestamp("2024-02-29")
+    assert res.df_combined["Carteira"].iloc[-1] == pytest.approx(110.0)
+
+
 def test_portfolio_df_carries_lucro(mock_dlp_history):
     twr, pdf = dataset.fetch_user_portfolio("t")
     assert pdf is not None

@@ -167,3 +167,32 @@ def test_dlp_monthly_twr_matches(frame):
 def test_dlp_accumulated_twr_matches(frame):
     assert (calculate_twr(frame).iloc[-1] - 1) * 100 == pytest.approx(frame["TWR_acc"].iloc[-1], abs=0.05)
 
+
+# Janela jan/26–set/26 filtrada no dashboard da DLP em 2026-10-28: XTIR 16,72 % a.a.
+WINDOW_START, WINDOW_END, WINDOW_DLP_XTIR = "2026-01-01", "2026-09-30", 0.1672
+
+
+@pytest.fixture
+def window(frame, monkeypatch):
+    from engine import dataset
+
+    if frame["date"].max() < pd.Timestamp(WINDOW_END):
+        pytest.skip("Export DLP não cobre a janela de referência")
+    hist = frame[["date", "vlr_investido", "vlr_mercado", "proventos", "lucro"]].reset_index(drop=True)
+    monkeypatch.setattr(dataset.dlp, "buscar_historico", lambda *a, **k: hist.copy())
+    return dataset.fetch_user_portfolio("t", start_date=WINDOW_START, end_date=WINDOW_END)
+
+
+def test_dlp_window_twr_includes_first_month(frame, window):
+    twr, _ = window
+    in_window = frame[(frame["date"] >= WINDOW_START) & (frame["date"] <= WINDOW_END)]
+    expected = (1 + in_window["TWR % a.m"] / 100).prod() - 1
+    assert twr.iloc[-1] - 1 == pytest.approx(expected, abs=0.0005)
+
+
+def test_dlp_window_xirr_matches_dashboard(window):
+    from engine.compute import compute_irr_evolution
+
+    _, pdf = window
+    assert compute_irr_evolution(pdf).iloc[-1] / 100 == pytest.approx(WINDOW_DLP_XTIR, abs=0.0005)
+

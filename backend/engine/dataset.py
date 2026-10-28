@@ -42,18 +42,25 @@ def fetch_user_portfolio(
 
     grp["fluxo"] = flows.external_flows(grp)
 
+    in_window = pd.Series(True, index=grp.index)
+    if start_date:
+        in_window &= grp["date"] >= pd.to_datetime(start_date)
+    if end_date:
+        in_window &= grp["date"] <= pd.to_datetime(end_date)
+    if not in_window.any():
+        return None, None
+
+    # Cada linha é um fechamento mensal: o período parte do último fechamento <= start_date
+    # (patrimônio de abertura), para o retorno do 1º mês do recorte entrar no TWR e no XIRR.
     has_gap = False
     if start_date:
         start_ts = pd.to_datetime(start_date)
-        has_gap = (grp["date"] < start_ts).any()
-        grp = grp[grp["date"] >= start_ts]
+        at_or_before = grp.index[grp["date"] <= start_ts]
+        if len(at_or_before):
+            in_window.loc[at_or_before[-1]] = True
+        has_gap = (grp["date"] < grp.loc[in_window, "date"].iloc[0]).any()
 
-    if end_date:
-        end_ts = pd.to_datetime(end_date)
-        grp = grp[grp["date"] <= end_ts]
-
-    if grp.empty:
-        return None, None
+    grp = grp[in_window]
 
     grp = grp.reset_index(drop=True)
 
@@ -118,7 +125,11 @@ def build_dataset(
 
     raw = pd.concat(frames, axis=1).sort_index()
     if start_date and end_date:
-        raw = raw.loc[str(start_date):str(end_date)]
+        # A carteira pode abrir no fechamento anterior a start_date (fetch_user_portfolio).
+        crop_start = pd.to_datetime(start_date)
+        if user_series is not None and not user_series.empty:
+            crop_start = min(crop_start, pd.to_datetime(user_series.index.min()))
+        raw = raw.loc[crop_start:str(end_date)]
     raw = raw.ffill()
     raw = raw.dropna(subset=["Carteira"]) if "Carteira" in raw.columns else raw.dropna(how="all")
 
