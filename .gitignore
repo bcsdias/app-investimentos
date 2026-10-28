@@ -69,3 +69,8 @@ backend/staticfiles/
 
 # Export local da planilha DLP (dados da carteira) — nunca versionar
 dlp_sheet/
+
+# Screenshots soltos em docs/ (podem mostrar valores da carteira) — nunca versionar
+/docs/*.png
+/docs/*.jpg
+/docs/*.jpeg
