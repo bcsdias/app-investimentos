@@ -78,3 +78,45 @@ def test_fetch_user_portfolio_uses_dlp_and_twr(monkeypatch):
 def test_fetch_user_portfolio_none_history_returns_none(monkeypatch):
     monkeypatch.setattr(dataset.dlp, "buscar_historico", lambda *a, **k: None)
     assert dataset.fetch_user_portfolio("DLP-tok") == (None, None)
+
+
+@pytest.fixture
+def mock_dlp_history(monkeypatch):
+    hist = pd.DataFrame(
+        {
+            "date": pd.to_datetime(["2024-01-31", "2024-02-29", "2024-03-31", "2024-04-30"]),
+            "vlr_investido": [1000.0, 1000.0, 1500.0, 1500.0],
+            "vlr_mercado": [1000.0, 1100.0, 1650.0, 1700.0],
+            "lucro": [0.0, 0.0, 0.0, 0.0],
+            "proventos": [0.0, 0.0, 0.0, 0.0],
+        }
+    )
+    monkeypatch.setattr(dataset.dlp, "buscar_historico", lambda *a, **k: hist.copy())
+    return hist
+
+
+def test_end_date_cuts_portfolio_df(mock_dlp_history):
+    twr, pdf = dataset.fetch_user_portfolio("t", end_date="2024-02-29")
+    assert pdf is not None
+    assert pdf["date"].max() == pd.Timestamp("2024-02-29") and len(pdf) == 2
+
+
+def test_start_date_gap_sets_opening_flow_to_market_value(mock_dlp_history):
+    twr, pdf = dataset.fetch_user_portfolio("t", start_date="2024-02-29")
+    assert pdf is not None
+    assert pdf["vlr_investido"].tolist() == [1100.0, 1600.0, 1600.0]
+    assert pdf["fluxo"].tolist() == [1100.0, 500.0, 0.0]
+    assert twr is not None
+    assert twr.tolist() == pytest.approx([1.0, 1650 / 1600, 1650 / 1600 * 1700 / 1650])
+
+
+def test_portfolio_df_carries_lucro(mock_dlp_history):
+    twr, pdf = dataset.fetch_user_portfolio("t")
+    assert pdf is not None
+    assert "lucro" in pdf.columns
+
+
+def test_window_outside_history_returns_none(mock_dlp_history):
+    assert dataset.fetch_user_portfolio("t", start_date="2025-01-01") == (None, None)
+    assert dataset.fetch_user_portfolio("t", end_date="2023-12-31") == (None, None)
+

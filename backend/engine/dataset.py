@@ -14,6 +14,7 @@ import pandas as pd
 from apps.market import series, synthetics, transforms
 from apps.market.services.sources import dlp
 from apps.market.synthetics import SyntheticSpec
+from engine import flows
 from engine.twr import calculate_twr
 
 logger = logging.getLogger(__name__)
@@ -34,35 +35,35 @@ def fetch_user_portfolio(
         logger.warning("DLP não retornou histórico para a carteira.")
         return None, None
 
-    if "date" not in df.columns:
-        for col in df.columns:
-            if col.lower() in ("date", "data"):
-                df = df.rename(columns={col: "date"})
-                break
-    if "date" not in df.columns:
-        logger.error("Histórico DLP sem coluna 'date'.")
+    grp = flows.group_portfolio(df)
+    if grp.empty or "date" not in grp.columns:
+        logger.error("Histórico DLP sem coluna 'date' ou sem dados válidos.")
         return None, None
 
-    df["date"] = pd.to_datetime(df["date"])
-    grp = (
-        df.groupby("date")[["vlr_mercado", "vlr_investido", "proventos"]]
-        .sum()
-        .reset_index()
-    )
-    grp["fluxo"] = (
-        grp["vlr_investido"].diff().fillna(grp["vlr_investido"].iloc[0])
-        - grp["proventos"]
-    )
+    grp["fluxo"] = flows.external_flows(grp)
 
+    has_gap = False
     if start_date:
-        filt = grp[grp["date"] >= pd.to_datetime(start_date)].copy()
-        if not filt.empty:
-            gap = filt["vlr_mercado"].iloc[0] - filt["vlr_investido"].iloc[0]
-            filt["vlr_investido"] = filt["vlr_investido"] + gap
-        grp = filt
+        start_ts = pd.to_datetime(start_date)
+        has_gap = (grp["date"] < start_ts).any()
+        grp = grp[grp["date"] >= start_ts]
 
-    twr = calculate_twr(grp, start_date, end_date)
-    if twr.empty:
+    if end_date:
+        end_ts = pd.to_datetime(end_date)
+        grp = grp[grp["date"] <= end_ts]
+
+    if grp.empty:
+        return None, None
+
+    grp = grp.reset_index(drop=True)
+
+    if has_gap:
+        gap = grp["vlr_mercado"].iloc[0] - grp["vlr_investido"].iloc[0]
+        grp["vlr_investido"] = grp["vlr_investido"] + gap
+        grp.loc[0, "fluxo"] = float(grp["vlr_mercado"].iloc[0])
+
+    twr = calculate_twr(grp)
+    if twr is None or twr.empty:
         return None, None
     return twr, grp
 
