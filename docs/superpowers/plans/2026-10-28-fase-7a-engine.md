@@ -463,4 +463,4 @@ Mensagem ao usuário: os números da carteira mudaram (TWR, TIR, ganho, shadow, 
 - [x] `fetch_user_portfolio` inclui o último fechamento `<= start_date` como abertura; `build_dataset` não corta essa linha. Commit `🐛 fix(engine): abre o período no fechamento anterior a start_date`.
 - [x] Paridade: janela `w5-inicio-mes` e `regress.add_missing_windows`; regressão contra `20261028-163150-fase7` → 5 casos `=`, `w5` novo; nova linha de base `reports/parity/20261028-180012-fase7-abertura/baseline` (re-verificada `=`). Commit `✅ test(parity): janela w5-inicio-mes com start fora de data de fechamento`.
 - [x] ADR 0018 revisado (abertura, XIRR com `brentq`/scipy, reconciliação da TIR na mesma janela) e docs atualizados.
-- [ ] Rebuild do container e novo teste do usuário. **Não iniciar a 7b sem o retorno do usuário.**
+- [x] Rebuild do container e novo teste do usuário. **Não iniciar a 7b sem o retorno do usuário.**
