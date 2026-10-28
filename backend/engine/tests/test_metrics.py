@@ -35,16 +35,24 @@ def test_volatility_annualisation():
     assert vol['Fake'].dropna().max() < 1e-10
 
 def test_sharpe_sign():
-    # Ativo 1 cresce 1% ao dia e a RF é 10% a.a. (muito menor que 1% a.d.) -> Sharpe Positivo
+    # Ativo 1 cresce 1% ao dia e a RF é ~10% a.a. (muito menor que 1% a.d.) -> Sharpe Positivo
     # Ativo 2 não cresce (0%) -> Sharpe Negativo
     dates = pd.date_range(start='2020-01-01', periods=300, freq='B')
     prices1 = 100 * (1 + np.full(300, 0.01)).cumprod()
     prices2 = np.full(300, 100.0)
-    
+    rf = pd.Series(100 * (1.10 ** (np.arange(300) / 252)), index=dates)
+
     df = pd.DataFrame({'A1': prices1, 'A2': prices2}, index=dates)
-    
-    sharpe = calculate_rolling_sharpe(df, rf_constant=0.10, window=252)
-    
+
+    sharpe = calculate_rolling_sharpe(df, rf_series=rf, window=252)
+
     # Verifica o último valor na janela de 252 (tem dados suficientes)
     assert sharpe['A1'].iloc[-1] > 0
     assert sharpe['A2'].iloc[-1] < 0
+
+
+def test_rolling_sharpe_without_rf_is_empty():
+    dates = pd.date_range(start="2020-01-01", periods=300, freq="B")
+    df = pd.DataFrame({"A1": np.linspace(100, 130, 300)}, index=dates)
+    assert calculate_rolling_sharpe(df, rf_series=None).empty
+

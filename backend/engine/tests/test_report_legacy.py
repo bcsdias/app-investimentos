@@ -35,7 +35,7 @@ def test_plot_risk_return_returns_figure():
 def test_export_all_writes_pngs(tmp_path):
     from engine.dataset import DatasetResult
 
-    res = DatasetResult(df_combined=_combined(), selic_series=None, portfolio_df=None)
+    res = DatasetResult(df_combined=_combined(), rf_series=None, portfolio_df=None)
     paths = report_legacy.export_all(res, str(tmp_path))
     assert paths
     for p in paths:

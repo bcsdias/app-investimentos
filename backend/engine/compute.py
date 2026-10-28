@@ -30,7 +30,9 @@ def compute_drawdown(df_combined: pd.DataFrame) -> pd.DataFrame:
     return calculate_drawdown(df_combined)
 
 
-def compute_risk_return(df_combined: pd.DataFrame) -> pd.DataFrame:
+def compute_risk_return(
+    df_combined: pd.DataFrame, rf_series: pd.Series | None = None
+) -> pd.DataFrame:
     if df_combined.empty:
         return pd.DataFrame(columns=["Volatilidade", "Retorno (CAGR)", "Sharpe"])
     daily_ret = df_combined.pct_change(fill_method=None)
@@ -38,15 +40,31 @@ def compute_risk_return(df_combined: pd.DataFrame) -> pd.DataFrame:
     days = (df_combined.index[-1] - df_combined.index[0]).days
     total_ret = df_combined.iloc[-1] / df_combined.iloc[0]
     cagr = (total_ret ** (365.25 / days)) - 1 if days > 0 else total_ret * 0
-    # volatilidade zero (série constante/achatada) -> Sharpe indefinido, não inf
-    sharpe = (cagr - 0.10) / volatility.where(volatility != 0)
-    return pd.DataFrame(
+
+    cagr_rf = np.nan
+    if rf_series is not None and not rf_series.empty and days > 0:
+        rf = rf_series.copy()
+        rf.index = pd.to_datetime(rf.index)
+        rf = rf.sort_index()
+        rf = rf.loc[(rf.index >= df_combined.index[0]) & (rf.index <= df_combined.index[-1])].dropna()
+        if len(rf) >= 2 and rf.iloc[0] != 0:
+            cagr_rf = (rf.iloc[-1] / rf.iloc[0]) ** (365.25 / days) - 1
+
+    if np.isnan(cagr_rf):
+        sharpe = pd.Series(np.nan, index=df_combined.columns)
+    else:
+        # volatilidade zero (série constante/achatada) -> Sharpe indefinido, não inf
+        sharpe = (cagr - cagr_rf) / volatility.where(volatility != 0)
+
+    res = pd.DataFrame(
         {
             "Volatilidade": volatility,
             "Retorno (CAGR)": cagr,
             "Sharpe": sharpe,
         }
-    ).replace([np.inf, -np.inf], np.nan).dropna()
+    ).replace([np.inf, -np.inf], np.nan)
+    valid = (res["Volatilidade"].notna()) & (res["Volatilidade"] != 0) & (res["Retorno (CAGR)"].notna())
+    return res[valid]
 
 
 def compute_rolling_metrics(
@@ -55,7 +73,7 @@ def compute_rolling_metrics(
     return {
         "volatility": calculate_rolling_volatility(df_combined, window),
         "sharpe": calculate_rolling_sharpe(
-            df_combined, rf_series, rf_constant=0.10, window=window
+            df_combined, rf_series, window=window
         ),
     }
 

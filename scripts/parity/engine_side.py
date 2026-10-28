@@ -59,8 +59,8 @@ def engine_outputs(res: DatasetResult) -> dict[str, pd.DataFrame]:
     pdf = res.portfolio_df
     twr = compute_twr_evolution(df)["series"]
     drawdown = compute_drawdown(df)
-    rolling = compute_rolling_metrics(df, res.selic_series, window=ROLLING_WINDOW)
-    risk_return = compute_risk_return(df)
+    rolling = compute_rolling_metrics(df, res.rf_series, window=ROLLING_WINDOW)
+    risk_return = compute_risk_return(df, res.rf_series)
     irr = compute_irr_evolution(pdf)
     return {
         "twr": twr,

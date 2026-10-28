@@ -29,12 +29,31 @@ def test_drawdown_is_nonpositive_and_starts_at_zero():
 
 def test_risk_return_columns_and_sharpe_formula():
     df = _combined()
-    rr = compute.compute_risk_return(df)
+    cdi = df["CDI"]
+    rr = compute.compute_risk_return(df, rf_series=cdi)
     assert list(rr.columns) == ["Volatilidade", "Retorno (CAGR)", "Sharpe"]
     row = rr.loc["Carteira"]
+    days = (df.index[-1] - df.index[0]).days
+    cdi_cagr = (cdi.iloc[-1] / cdi.iloc[0]) ** (365.25 / days) - 1
     np.testing.assert_allclose(
-        row["Sharpe"], (row["Retorno (CAGR)"] - 0.10) / row["Volatilidade"], rtol=1e-9
+        row["Sharpe"], (row["Retorno (CAGR)"] - cdi_cagr) / row["Volatilidade"], rtol=1e-9
     )
+
+
+def test_risk_return_uses_rf_cagr():
+    df = _combined()
+    cdi = df["CDI"]
+    rr = compute.compute_risk_return(df, rf_series=cdi)
+    days = (df.index[-1] - df.index[0]).days
+    cdi_cagr = (cdi.iloc[-1] / cdi.iloc[0]) ** (365.25 / days) - 1
+    expected_sharpe = (rr.loc["Carteira", "Retorno (CAGR)"] - cdi_cagr) / rr.loc["Carteira", "Volatilidade"]
+    np.testing.assert_allclose(rr.loc["Carteira", "Sharpe"], expected_sharpe, rtol=1e-9)
+
+
+def test_risk_return_without_rf_keeps_row_with_nan_sharpe():
+    df = _combined()
+    rr = compute.compute_risk_return(df, rf_series=None)
+    assert "Carteira" in rr.index and np.isnan(rr.loc["Carteira", "Sharpe"])
 
 
 def test_risk_return_drops_constant_series_instead_of_infinite_sharpe():
@@ -46,7 +65,8 @@ def test_risk_return_drops_constant_series_instead_of_infinite_sharpe():
         ],
         axis=1,
     )
-    rr = compute.compute_risk_return(df)
+    cdi = pd.Series(np.linspace(100, 120, len(idx)), index=idx, name="CDI")
+    rr = compute.compute_risk_return(df, rf_series=cdi)
     assert "Flat" not in rr.index  # linha com vol=0 sai, não vira Sharpe = inf
     assert np.isfinite(rr["Sharpe"]).all()
 

@@ -32,7 +32,7 @@ class ValidRequest:
 class AnalysisContext:
     df_combined: pd.DataFrame
     portfolio_df: pd.DataFrame
-    selic: pd.Series | None
+    rf: pd.Series | None
     start: dt.date
     end: dt.date
     missing: list[str]
@@ -187,7 +187,7 @@ def run_analysis(user, req: AnalysisRequest) -> AnalysisContext:
     return AnalysisContext(
         df_combined=df,
         portfolio_df=res.portfolio_df,
-        selic=res.selic_series,
+        rf=res.rf_series,
         start=effective_start,
         end=effective_end,
         missing=missing,

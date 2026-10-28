@@ -109,7 +109,7 @@ def summary(request: HttpRequest, payload: AnalysisRequest):
     twr_out = compute_twr_evolution(ctx.df_combined)
     twr_total = clean(twr_out["final_returns"].get("Carteira"))
 
-    rr_df = compute_risk_return(ctx.df_combined)
+    rr_df = compute_risk_return(ctx.df_combined, ctx.rf)
     if "Carteira" in rr_df.index:
         cagr = clean(rr_df.loc["Carteira", "Retorno (CAGR)"])
         vol = clean(rr_df.loc["Carteira", "Volatilidade"])
@@ -167,7 +167,7 @@ def rolling_metrics(request: HttpRequest, payload: RollingRequest):
             "A janela móvel deve estar entre 21 e 756 dias úteis.",
         )
     ctx = run_analysis(request.user, payload)
-    out = compute_rolling_metrics(ctx.df_combined, ctx.selic, window=payload.window)
+    out = compute_rolling_metrics(ctx.df_combined, ctx.rf, window=payload.window)
     data = {
         "volatility": frame_to_series_list(out["volatility"]),
         "sharpe": frame_to_series_list(out["sharpe"]),
@@ -178,7 +178,7 @@ def rolling_metrics(request: HttpRequest, payload: RollingRequest):
 @router.post("/risk-return", response=RiskReturnOut)
 def risk_return(request: HttpRequest, payload: AnalysisRequest):
     ctx = run_analysis(request.user, payload)
-    df_rr = compute_risk_return(ctx.df_combined)
+    df_rr = compute_risk_return(ctx.df_combined, ctx.rf)
     return _envelope(ctx, {"rows": frame_to_rows(df_rr, _RISK_RETURN_COLUMNS)})
 
 

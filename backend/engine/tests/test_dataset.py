@@ -36,7 +36,28 @@ def test_build_dataset_combines_user_and_benchmarks(monkeypatch):
     # tudo rebased a 100 no início
     assert abs(res.df_combined["Carteira"].iloc[0] - 100) < 1e-6
     assert abs(res.df_combined["CDI"].iloc[0] - 100) < 1e-6
-    assert res.selic_series is not None
+    assert res.rf_series is not None
+
+
+def test_build_dataset_fetches_cdi_as_rf(monkeypatch):
+    called = []
+    cdi = _bench_series(slope=0.10)
+
+    def fake_get_series(name, s, e):
+        called.append(name)
+        return cdi if name == "CDI" else None
+
+    def fake_get_many(names, s, e):
+        return {}
+
+    monkeypatch.setattr(dataset.series, "get_series", fake_get_series)
+    monkeypatch.setattr(dataset.series, "get_many", fake_get_many)
+
+    user = _bench_series(slope=0.20)
+    res = dataset.build_dataset(user_series=user, benchmarks=[])
+    assert "CDI" in called
+    assert "SELIC" not in called
+    assert res.rf_series is not None
 
 
 def test_build_dataset_empty_does_not_raise_self_logger(monkeypatch, caplog):

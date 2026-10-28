@@ -40,8 +40,8 @@ def plot_drawdown(df_combined, title_suffix: str = ""):
     return fig
 
 
-def plot_risk_return(df_combined, title_suffix: str = ""):
-    rr = compute.compute_risk_return(df_combined)
+def plot_risk_return(df_combined, rf_series=None, title_suffix: str = ""):
+    rr = compute.compute_risk_return(df_combined, rf_series=rf_series)
     fig, ax = plt.subplots(figsize=(10, 8))
     for name, row in rr.iterrows():
         ax.scatter(row["Volatilidade"], row["Retorno (CAGR)"], s=120 if name == "Carteira" else 70)
@@ -80,8 +80,8 @@ def export_all(result: DatasetResult, out_dir: str) -> list[str]:
     jobs = [
         ("twr_evolucao.png", plot_twr_evolution(result.df_combined)),
         ("drawdown.png", plot_drawdown(result.df_combined)),
-        ("risco_retorno.png", plot_risk_return(result.df_combined)),
-        ("sharpe_movel.png", plot_rolling_sharpe(result.df_combined, result.selic_series)),
+        ("risco_retorno.png", plot_risk_return(result.df_combined, rf_series=result.rf_series)),
+        ("sharpe_movel.png", plot_rolling_sharpe(result.df_combined, result.rf_series)),
     ]
     if result.portfolio_df is not None and not result.portfolio_df.empty:
         jobs.append(("simulacao_aportes.png", plot_shadow(result.portfolio_df, result.df_combined)))

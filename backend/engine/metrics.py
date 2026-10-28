@@ -39,38 +39,31 @@ def calculate_rolling_volatility(df: pd.DataFrame, window: int = 252) -> pd.Data
     rolling_vol = daily_ret.rolling(window=window).std() * np.sqrt(252)
     return rolling_vol.dropna(how='all')
 
-def calculate_rolling_sharpe(df: pd.DataFrame, rf_series: pd.Series = None, rf_constant: float = 0.10, window: int = 252) -> pd.DataFrame:
+def calculate_rolling_sharpe(df: pd.DataFrame, rf_series: pd.Series = None, window: int = 252) -> pd.DataFrame:
     """
     Calcula o Sharpe Ratio contínuo baseado em janela móvel.
 
     Args:
         df: DataFrame base com os ativos.
-        rf_series: Série temporal (índice base) da taxa livre de risco, ex: histórico da SELIC (opcional).
-        rf_constant: Taxa anual fixa caso rf_series não exista (ex: 0.10).
+        rf_series: Série temporal (índice base) da taxa livre de risco, ex: histórico do CDI (opcional).
         window: Janela temporal a calcular o valor.
         
     Returns:
-        pd.DataFrame de Sharp ratio.
+        pd.DataFrame de Sharpe ratio.
     """
-    if df.empty:
+    if df.empty or rf_series is None or rf_series.empty:
         return pd.DataFrame()
-        
+
     daily_ret = df.pct_change(fill_method=None)
-    rf_daily_series = pd.Series(0.0, index=daily_ret.index)
-    
-    if rf_series is not None and not rf_series.empty:
-         # Trabalha diferença do benchmark
-         selic_daily = rf_series.pct_change(fill_method=None).fillna(0)
-         rf_daily_series = selic_daily.reindex(daily_ret.index).ffill().fillna(0)
-    else:
-         rf_daily_series[:] = ( (1.0 + rf_constant) ** (1/252) ) - 1.0
+    rf_daily = rf_series.pct_change(fill_method=None).fillna(0)
+    rf_daily_series = rf_daily.reindex(daily_ret.index).ffill().fillna(0)
 
     excess_ret = daily_ret.sub(rf_daily_series, axis=0)
-    
+
     rolling_mean = excess_ret.rolling(window=window).mean()
     rolling_std = excess_ret.rolling(window=window).std()
-    
+
     # Média Diária / Vol Diária * sqrt(252)
     rolling_sharpe = (rolling_mean / rolling_std) * np.sqrt(252)
-    
+
     return rolling_sharpe.dropna(how='all')

@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class DatasetResult:
     df_combined: pd.DataFrame
-    selic_series: pd.Series | None = None
+    rf_series: pd.Series | None = None
     portfolio_df: pd.DataFrame | None = None
 
 
@@ -85,7 +85,7 @@ def build_dataset(
 
     names = list(benchmarks or [])
     bench = series.get_many(names, start, end)
-    selic = series.get_series("SELIC", start, end)
+    rf = series.get_series("CDI", start, end)
 
     frames: list[pd.Series] = []
     if user_series is not None and not user_series.empty:
@@ -114,7 +114,7 @@ def build_dataset(
 
     if not frames:
         logger.warning("Nenhum dado disponível para análise.")
-        return DatasetResult(df_combined=pd.DataFrame(), selic_series=selic, portfolio_df=portfolio_df)
+        return DatasetResult(df_combined=pd.DataFrame(), rf_series=rf, portfolio_df=portfolio_df)
 
     raw = pd.concat(frames, axis=1).sort_index()
     if start_date and end_date:
@@ -125,4 +125,4 @@ def build_dataset(
     for col in raw.columns:
         raw[col] = transforms.rebase_100(raw[col])
 
-    return DatasetResult(df_combined=raw, selic_series=selic, portfolio_df=portfolio_df)
+    return DatasetResult(df_combined=raw, rf_series=rf, portfolio_df=portfolio_df)

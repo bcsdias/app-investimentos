@@ -142,7 +142,7 @@ def test_filters_and_specs_forwarded(user_with_token, monkeypatch):
     def fake_build(**kw):
         captured_build.update(kw)
         df = pd.DataFrame({"Carteira": [100.0, 101.0], "CDI + 2%": [100.0, 100.5]}, index=idx)
-        return DatasetResult(df_combined=df, selic_series=None, portfolio_df=pdf)
+        return DatasetResult(df_combined=df, rf_series=None, portfolio_df=pdf)
 
     monkeypatch.setattr(analysis, "fetch_user_portfolio", fake_fetch)
     monkeypatch.setattr(analysis, "build_dataset", fake_build)
@@ -186,7 +186,7 @@ def test_missing_lists_absent_names(user_with_token, monkeypatch):
 
     def fake_build(**kw):
         df = pd.DataFrame({"Carteira": [100.0, 101.0], "CDI": [100.0, 100.2]}, index=idx)
-        return DatasetResult(df_combined=df, selic_series=None, portfolio_df=pdf)
+        return DatasetResult(df_combined=df, rf_series=None, portfolio_df=pdf)
 
     monkeypatch.setattr(analysis, "build_dataset", fake_build)
 
