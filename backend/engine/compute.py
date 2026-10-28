@@ -96,30 +96,78 @@ def compute_irr_evolution(portfolio_df: pd.DataFrame) -> pd.Series:
     return pd.Series(irr_history, index=valid_dates) * 100
 
 
+def compute_summary_kpis(portfolio_df: pd.DataFrame) -> dict[str, float]:
+    """Calcula os KPIs de resumo do portfólio (retorno total).
+
+    Retorna chaves:
+        patrimonio_inicial: float
+        aportes_periodo: float (aportes líquidos de resgates, proventos e lucro realizado)
+        patrimonio: float
+        ganho_periodo: float (retorno total = patrimonio - patrimonio_inicial - aportes_periodo)
+    """
+    if portfolio_df is None or portfolio_df.empty:
+        return {
+            "patrimonio_inicial": 0.0,
+            "aportes_periodo": 0.0,
+            "patrimonio": 0.0,
+            "ganho_periodo": 0.0,
+        }
+
+    pdf = portfolio_df.sort_values("date") if "date" in portfolio_df.columns else portfolio_df
+    pat_ini = float(pdf["vlr_mercado"].iloc[0])
+    pat_fim = float(pdf["vlr_mercado"].iloc[-1])
+
+    if len(pdf) > 1 and "fluxo" in pdf.columns:
+        aportes = float(pdf["fluxo"].iloc[1:].sum())
+    else:
+        aportes = 0.0
+
+    ganho = pat_fim - pat_ini - aportes
+    return {
+        "patrimonio_inicial": pat_ini,
+        "aportes_periodo": aportes,
+        "patrimonio": pat_fim,
+        "ganho_periodo": ganho,
+    }
+
+
 def compute_shadow(portfolio_df: pd.DataFrame, df_combined: pd.DataFrame) -> pd.DataFrame:
     if df_combined.empty or portfolio_df is None or portfolio_df.empty:
         return pd.DataFrame()
 
-    flows = portfolio_df.set_index("date")[["fluxo", "vlr_mercado", "vlr_investido"]]
-    flows.index = pd.to_datetime(flows.index)
-    prices = df_combined.copy()
-    idx = prices.index
+    pdf = portfolio_df.sort_values("date") if "date" in portfolio_df.columns else portfolio_df
+    idx = df_combined.index
 
-    flows_aligned = flows["fluxo"].groupby(flows.index).sum().reindex(idx, fill_value=0.0)
+    # Saldo inicial no primeiro ponto da carteira
+    initial_balance = float(pdf["vlr_mercado"].iloc[0])
+
+    # Fluxos subsequentes (a partir da linha 1)
+    if len(pdf) > 1 and "fluxo" in pdf.columns:
+        sub_flows = pdf.iloc[1:].set_index("date")["fluxo"]
+        sub_flows.index = pd.to_datetime(sub_flows.index)
+        sub_flows_aligned = sub_flows.groupby(sub_flows.index).sum().reindex(idx, fill_value=0.0)
+    else:
+        sub_flows_aligned = pd.Series(0.0, index=idx)
+
     sw = pd.DataFrame(index=idx)
-    sw["Carteira Real"] = flows["vlr_mercado"].reindex(idx).ffill()
-    sw["Total Investido"] = flows_aligned.cumsum() + (
-        flows["vlr_investido"].iloc[0] if not flows.empty else 0
-    )
 
-    initial_balance = flows["vlr_mercado"].iloc[0] if not flows.empty else 0
-    for col in prices.columns:
+    # Carteira Real
+    vlr_mkt = pdf.set_index("date")["vlr_mercado"]
+    vlr_mkt.index = pd.to_datetime(vlr_mkt.index)
+    sw["Carteira Real"] = vlr_mkt.groupby(vlr_mkt.index).last().reindex(idx).ffill()
+
+    # Total Investido: vlr_mercado[0] + cumsum(fluxo[1:])
+    sw["Total Investido"] = initial_balance + sub_flows_aligned.cumsum()
+
+    # Benchmarks compram cotas com saldo inicial no t0 e depois só com fluxos subsequentes
+    for col in df_combined.columns:
         if col == "Carteira":
             continue
-        price = prices[col]
-        shares_flow = flows_aligned.div(price).fillna(0)
-        initial_shares = initial_balance / price.iloc[0] if price.iloc[0] != 0 else 0
-        sw[col] = (shares_flow.cumsum() + initial_shares) * price
+        price = df_combined[col]
+        initial_shares = initial_balance / price.iloc[0] if price.iloc[0] != 0 else 0.0
+        shares_flow = sub_flows_aligned.div(price).fillna(0.0)
+        sw[col] = (initial_shares + shares_flow.cumsum()) * price
+
     return sw
 
 

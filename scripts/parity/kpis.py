@@ -9,6 +9,8 @@ import math
 
 import pandas as pd
 
+from engine.compute import compute_summary_kpis
+
 KPI_NAMES: tuple[str, ...] = (
     "patrimonio_inicial",
     "aportes_periodo",
@@ -31,18 +33,43 @@ def derive_kpis(
     irr: pd.Series,
 ) -> pd.DataFrame:
     nan = math.nan
-    pat_ini = float(portfolio_df["vlr_mercado"].iloc[0])
-    pat_fim = float(portfolio_df["vlr_mercado"].iloc[-1])
-    aportes = float(portfolio_df["vlr_investido"].iloc[-1] - portfolio_df["vlr_investido"].iloc[0])
+    sk = (
+        compute_summary_kpis(portfolio_df)
+        if portfolio_df is not None and not portfolio_df.empty
+        else {}
+    )
+    pat_ini = sk.get("patrimonio_inicial", nan)
+    aportes = sk.get("aportes_periodo", nan)
+    pat_fim = sk.get("patrimonio", nan)
+    ganho = sk.get("ganho_periodo", nan)
 
-    twr_total = float(twr["Carteira"].iloc[-1] - 100) if "Carteira" in twr.columns and len(twr) else nan
+    twr_total = (
+        float(twr["Carteira"].iloc[-1] - 100)
+        if "Carteira" in twr.columns and len(twr)
+        else nan
+    )
     if "Carteira" in risk_return.index:
         row = risk_return.loc["Carteira"]
-        cagr, vol, sharpe = (float(row["Retorno (CAGR)"]), float(row["Volatilidade"]), float(row["Sharpe"]))
+        cagr, vol, sharpe = (
+            float(row["Retorno (CAGR)"]),
+            float(row["Volatilidade"]),
+            float(row["Sharpe"]),
+        )
     else:
         cagr = vol = sharpe = nan
     max_dd = float(drawdown["Carteira"].min()) if "Carteira" in drawdown.columns else nan
     xirr = float(irr.iloc[-1]) if irr is not None and not irr.empty else nan
 
-    values = [pat_ini, aportes, pat_fim, pat_fim - pat_ini - aportes, twr_total, cagr, vol, sharpe, max_dd, xirr]
+    values = [
+        pat_ini,
+        aportes,
+        pat_fim,
+        ganho,
+        twr_total,
+        cagr,
+        vol,
+        sharpe,
+        max_dd,
+        xirr,
+    ]
     return pd.DataFrame({"valor": values}, index=list(KPI_NAMES))

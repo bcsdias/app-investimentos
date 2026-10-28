@@ -18,9 +18,7 @@ def test_summary_period_values(portfolio_env):
     d = r.json()["data"]
     df = PORTFOLIO_DF
     assert d["patrimonio_inicial"] == pytest.approx(df["vlr_mercado"].iloc[0])
-    assert d["aportes_periodo"] == pytest.approx(
-        df["vlr_investido"].iloc[-1] - df["vlr_investido"].iloc[0]
-    )
+    assert d["aportes_periodo"] == pytest.approx(df["fluxo"].iloc[1:].sum())
     assert d["patrimonio"] == pytest.approx(df["vlr_mercado"].iloc[-1])
     assert (
         d["patrimonio_inicial"] + d["aportes_periodo"] + d["ganho_periodo"]

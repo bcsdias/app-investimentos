@@ -33,6 +33,7 @@ from engine.compute import (
     compute_risk_return,
     compute_rolling_metrics,
     compute_shadow,
+    compute_summary_kpis,
     compute_twr_evolution,
     compute_yearly_summary,
 )
@@ -103,10 +104,7 @@ def summary(request: HttpRequest, payload: AnalysisRequest):
     ctx = run_analysis(request.user, payload)
     pdf = ctx.portfolio_df
 
-    pat_ini = float(pdf["vlr_mercado"].iloc[0])
-    pat_fim = float(pdf["vlr_mercado"].iloc[-1])
-    aportes = float(pdf["vlr_investido"].iloc[-1] - pdf["vlr_investido"].iloc[0])
-    ganho = pat_fim - pat_ini - aportes
+    summary_kpis = compute_summary_kpis(pdf)
 
     twr_out = compute_twr_evolution(ctx.df_combined)
     twr_total = clean(twr_out["final_returns"].get("Carteira"))
@@ -126,10 +124,10 @@ def summary(request: HttpRequest, payload: AnalysisRequest):
     xirr = clean(irr.iloc[-1]) if not irr.empty else None
 
     data = {
-        "patrimonio_inicial": clean(pat_ini),
-        "aportes_periodo": clean(aportes),
-        "patrimonio": clean(pat_fim),
-        "ganho_periodo": clean(ganho),
+        "patrimonio_inicial": clean(summary_kpis["patrimonio_inicial"]),
+        "aportes_periodo": clean(summary_kpis["aportes_periodo"]),
+        "patrimonio": clean(summary_kpis["patrimonio"]),
+        "ganho_periodo": clean(summary_kpis["ganho_periodo"]),
         "twr_total": twr_total,
         "cagr": cagr,
         "volatilidade": vol,

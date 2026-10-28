@@ -100,3 +100,55 @@ def test_yearly_summary_has_years_and_total():
     assert "Total Acum." in ys.columns
     assert any(isinstance(c, int) or str(c).isdigit() for c in ys.columns)
     assert pd.api.types.is_numeric_dtype(ys["Total Acum."])
+
+
+PDF = pd.DataFrame(
+    {
+        "date": pd.to_datetime(["2024-01-31", "2024-02-29", "2024-03-31"]),
+        "vlr_mercado": [1000.0, 700.0, 720.0],
+        "vlr_investido": [1000.0, 600.0, 600.0],
+        "lucro": [0.0, 200.0, 0.0],
+        "proventos": [0.0, 0.0, 10.0],
+        "fluxo": [1000.0, -600.0, -10.0],
+    }
+)
+
+
+def test_summary_kpis_total_return():
+    k = compute.compute_summary_kpis(PDF)
+    # ganho = lucro 200 + valorização aberta 100 + 20 + provento 10
+    assert k == pytest.approx(
+        {
+            "patrimonio_inicial": 1000.0,
+            "aportes_periodo": -610.0,
+            "patrimonio": 720.0,
+            "ganho_periodo": 330.0,
+        }
+    )
+
+
+def test_summary_kpis_empty_or_single_row():
+    assert compute.compute_summary_kpis(pd.DataFrame()) == {
+        "patrimonio_inicial": 0.0,
+        "aportes_periodo": 0.0,
+        "patrimonio": 0.0,
+        "ganho_periodo": 0.0,
+    }
+    assert compute.compute_summary_kpis(PDF.iloc[:1]) == pytest.approx(
+        {
+            "patrimonio_inicial": 1000.0,
+            "aportes_periodo": 0.0,
+            "patrimonio": 1000.0,
+            "ganho_periodo": 0.0,
+        }
+    )
+
+
+def test_shadow_does_not_double_count_opening_balance():
+    combined = pd.DataFrame(
+        {"Carteira": [100.0, 130.0, 135.0], "CDI": [100.0] * 3}, index=PDF["date"]
+    )
+    sw = compute.compute_shadow(PDF, combined)
+    assert sw["Total Investido"].tolist() == [1000.0, 400.0, 390.0]
+    assert sw["CDI"].tolist() == pytest.approx([1000.0, 400.0, 390.0])
+
