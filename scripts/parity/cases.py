@@ -52,6 +52,7 @@ def build_windows(dates: Iterable, today: dt.date) -> list[Window]:
         Window("w1-completo", first, last),
         Window("w2-12m", (pd.Timestamp(last) - pd.DateOffset(years=1)).date(), last),
         Window("w3-meio", pd.Timestamp(uniq[len(uniq) // 2]).date(), today),
+        Window("w4-fim-passado", first, pd.Timestamp(uniq[len(uniq) * 3 // 4]).date()),
     ]
 
 

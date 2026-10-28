@@ -15,12 +15,28 @@ def _dates():
 
 def test_windows_from_unsorted_duplicated_dates():
     shuffled, days = _dates()
-    w1, w2, w3 = build_windows(shuffled, TODAY)
+    w1, w2, w3, w4 = build_windows(shuffled, TODAY)
     assert (w1.id, w1.start, w1.end) == ("w1-completo", dt.date(2023, 3, 1), dt.date(2025, 6, 27))
     assert (w2.id, w2.start, w2.end) == ("w2-12m", dt.date(2024, 6, 27), dt.date(2025, 6, 27))
     assert w3.id == "w3-meio"
     assert w3.start == days[len(days) // 2].date()
     assert w3.end == TODAY
+    assert (w4.id, w4.start, w4.end) == (
+        "w4-fim-passado",
+        dt.date(2023, 3, 1),
+        days[len(days) * 3 // 4].date(),
+    )
+
+
+def test_build_windows_has_past_end_window():
+    dates = pd.date_range("2024-01-31", periods=8, freq="ME")
+    windows = build_windows(dates, TODAY)
+    w4 = next(w for w in windows if w.id == "w4-fim-passado")
+    assert w4.start == pd.Timestamp(dates[0]).date()
+    assert w4.end == pd.Timestamp(dates[len(dates) * 3 // 4]).date()
+    assert w4.end == pd.Timestamp(dates[6]).date()
+    last = pd.Timestamp(dates[-1]).date()
+    assert w4.end < last
 
 
 def _hist(rows):
@@ -52,7 +68,7 @@ def test_pick_classe_without_column_returns_none():
     assert pick_classe(pd.DataFrame({"date": ["2024-01-01"], "classe": [None]})) is None
 
 
-def test_build_cases_has_four_cases_with_classe_only_on_w1():
+def test_build_cases_has_cases_with_classe_only_on_w1():
     shuffled, _ = _dates()
     hist = pd.DataFrame(
         {
@@ -61,10 +77,16 @@ def test_build_cases_has_four_cases_with_classe_only_on_w1():
         }
     )
     cases = build_cases(hist, TODAY)
-    assert [c.id for c in cases] == ["w1-completo", "w2-12m", "w3-meio", "w1-completo-classe"]
-    assert [c.classe for c in cases[:3]] == [None, None, None]
-    assert cases[3].classe in {"Ações", "Renda Fixa"}
-    assert cases[3].window == cases[0].window
+    assert [c.id for c in cases] == [
+        "w1-completo",
+        "w2-12m",
+        "w3-meio",
+        "w4-fim-passado",
+        "w1-completo-classe",
+    ]
+    assert [c.classe for c in cases[:4]] == [None, None, None, None]
+    assert cases[4].classe in {"Ações", "Renda Fixa"}
+    assert cases[4].window == cases[0].window
     assert all(c.benchmarks == BENCHMARKS for c in cases)
 
 
