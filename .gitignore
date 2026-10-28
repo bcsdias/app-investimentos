@@ -66,3 +66,6 @@ log.txt
 .pytest_cache/
 backend/staticfiles/
 .coverage
+
+# Export local da planilha DLP (dados da carteira) — nunca versionar
+dlp_sheet/
