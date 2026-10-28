@@ -110,3 +110,15 @@ def test_last_date_and_available_keys():
     assert repo.last_date("bcb:12") == dt.date(2024, 1, 9)
     assert repo.last_date("bcb:absent") is None
     assert repo.available_keys() == ["bcb:12", "yf:^GSPC"]
+
+
+def test_load_dates_returns_ordered_list():
+    repo.upsert_points(
+        "bcb:12",
+        "BCB",
+        "rate",
+        [P(dt.date(2024, 1, 9), 2.0), P(dt.date(2024, 1, 2), 1.0)],
+    )
+    assert repo.load_dates("bcb:12") == [dt.date(2024, 1, 2), dt.date(2024, 1, 9)]
+    assert repo.load_dates("bcb:absent") == []
+

@@ -219,3 +219,65 @@ def test_ingest_b3_selenium_success_does_not_read_static(monkeypatch, db, settin
     monkeypatch.setattr(cmd, "_warm_cache", lambda *a, **k: None)
     call_command("ingest_market_data", "--only", "b3:IFIX")  # sem SystemExit
     assert repository.last_date("b3:IFIX") == dt.date(2026, 10, 26)
+
+
+# --- market_gaps ---
+
+
+def test_market_gaps_lists_gap(db, capsys):
+    from apps.market import repository
+    from apps.market.services.sources.base import RawPoint
+
+    repository.upsert_points(
+        "bcb:12",
+        "BCB",
+        "rate",
+        [
+            RawPoint(dt.date(2024, 1, 2), 0.04),
+            RawPoint(dt.date(2024, 1, 3), 0.04),
+            RawPoint(dt.date(2024, 2, 1), 0.05),
+        ],
+    )
+    call_command("market_gaps", "--only", "bcb:12")
+    out = capsys.readouterr().out
+    assert "bcb:12" in out
+    assert "2024-01-03 → 2024-02-01" in out
+    assert "29 dias" in out
+
+
+def test_market_gaps_no_gap_prints_zero_gaps(db, capsys):
+    from apps.market import repository
+    from apps.market.services.sources.base import RawPoint
+
+    repository.upsert_points(
+        "bcb:12",
+        "BCB",
+        "rate",
+        [
+            RawPoint(dt.date(2024, 1, 2), 0.04),
+            RawPoint(dt.date(2024, 1, 3), 0.04),
+        ],
+    )
+    call_command("market_gaps", "--only", "bcb:12")
+    out = capsys.readouterr().out
+    assert "bcb:12 (daily) última=2024-01-03 lacunas=0" in out
+
+
+def test_market_gaps_includes_on_demand_yf(db, capsys):
+    from apps.market import repository
+    from apps.market.services.sources.base import RawPoint
+
+    repository.upsert_points(
+        "yf:CUSTOM.SA",
+        "YF",
+        "level",
+        [
+            RawPoint(dt.date(2024, 1, 2), 10.0),
+            RawPoint(dt.date(2024, 1, 25), 11.0),
+        ],
+    )
+    call_command("market_gaps", "--only", "yf:CUSTOM.SA")
+    out = capsys.readouterr().out
+    assert "yf:CUSTOM.SA (daily) última=2024-01-25 lacunas=1" in out
+    assert "2024-01-02 → 2024-01-25 (23 dias)" in out
+

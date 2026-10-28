@@ -85,6 +85,14 @@ def last_date(series_key: str) -> dt.date | None:
     )
 
 
+def load_dates(series_key: str) -> list[dt.date]:
+    return list(
+        MarketSeries.objects.filter(series_key=series_key)
+        .order_by("reference_date")
+        .values_list("reference_date", flat=True)
+    )
+
+
 def available_keys() -> list[str]:
     return sorted(
         MarketSeries.objects.order_by().values_list("series_key", flat=True).distinct()
