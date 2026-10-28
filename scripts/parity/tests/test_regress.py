@@ -89,3 +89,22 @@ def test_build_regression_grid_formats_cells():
     assert "| caso |" in rendered
     assert "| c1   |" in rendered
     assert "| c2   |" in rendered
+
+
+def test_add_missing_windows_appends_new_windows_before_classe_case():
+    import datetime as dt
+
+    from parity.cases import Case, build_windows
+    from parity.regress import add_missing_windows
+
+    hist = pd.DataFrame({"date": pd.date_range("2024-01-31", periods=8, freq="ME")})
+    w1 = build_windows(hist["date"], dt.date(2025, 6, 30))[0]
+    cases = [Case("w1-completo", w1), Case("w1-completo-classe", w1, classe="Ações")]
+    hists = {"w1-completo": hist, "w1-completo-classe": hist}
+
+    cases, hists = add_missing_windows(cases, hists, dt.date(2025, 6, 30))
+
+    assert [c.id for c in cases] == [
+        "w1-completo", "w2-12m", "w3-meio", "w4-fim-passado", "w5-inicio-mes", "w1-completo-classe",
+    ]
+    assert all(hists[c.id] is hist for c in cases)

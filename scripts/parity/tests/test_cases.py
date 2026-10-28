@@ -15,7 +15,7 @@ def _dates():
 
 def test_windows_from_unsorted_duplicated_dates():
     shuffled, days = _dates()
-    w1, w2, w3, w4 = build_windows(shuffled, TODAY)
+    w1, w2, w3, w4, w5 = build_windows(shuffled, TODAY)
     assert (w1.id, w1.start, w1.end) == ("w1-completo", dt.date(2023, 3, 1), dt.date(2025, 6, 27))
     assert (w2.id, w2.start, w2.end) == ("w2-12m", dt.date(2024, 6, 27), dt.date(2025, 6, 27))
     assert w3.id == "w3-meio"
@@ -25,6 +25,11 @@ def test_windows_from_unsorted_duplicated_dates():
         "w4-fim-passado",
         dt.date(2023, 3, 1),
         days[len(days) * 3 // 4].date(),
+    )
+    assert (w5.id, w5.start, w5.end) == (
+        "w5-inicio-mes",
+        (days[len(days) // 4] + pd.Timedelta(days=1)).date(),
+        dt.date(2025, 6, 27),
     )
 
 
@@ -37,6 +42,16 @@ def test_build_windows_has_past_end_window():
     assert w4.end == pd.Timestamp(dates[6]).date()
     last = pd.Timestamp(dates[-1]).date()
     assert w4.end < last
+
+
+def test_build_windows_has_window_starting_after_a_close():
+    # Simula "Personalizado 01/MM" da SPA: start no dia seguinte a um fechamento mensal,
+    # obrigando o engine a abrir no fechamento anterior.
+    dates = pd.date_range("2024-01-31", periods=8, freq="ME")
+    w5 = next(w for w in build_windows(dates, TODAY) if w.id == "w5-inicio-mes")
+    assert w5.start == dt.date(2024, 4, 1)
+    assert pd.Timestamp(w5.start) not in set(dates)
+    assert w5.end == pd.Timestamp(dates[-1]).date()
 
 
 def _hist(rows):
@@ -82,11 +97,12 @@ def test_build_cases_has_cases_with_classe_only_on_w1():
         "w2-12m",
         "w3-meio",
         "w4-fim-passado",
+        "w5-inicio-mes",
         "w1-completo-classe",
     ]
-    assert [c.classe for c in cases[:4]] == [None, None, None, None]
-    assert cases[4].classe in {"Ações", "Renda Fixa"}
-    assert cases[4].window == cases[0].window
+    assert [c.classe for c in cases[:5]] == [None] * 5
+    assert cases[5].classe in {"Ações", "Renda Fixa"}
+    assert cases[5].window == cases[0].window
     assert all(c.benchmarks == BENCHMARKS for c in cases)
 
 

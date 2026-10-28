@@ -117,6 +117,25 @@ def format_markdown_table(grid: pd.DataFrame) -> str:
     return "\n".join([header_line, sep_line, *data_lines])
 
 
+def add_missing_windows(
+    cases: list[Case], hists: dict[str, pd.DataFrame], today: dt.date
+) -> tuple[list[Case], dict[str, pd.DataFrame]]:
+    """Inclui as janelas de build_windows ausentes na linha de base, com o hist de w1-completo."""
+    w1_hist = hists.get("w1-completo")
+    if w1_hist is None:
+        raise ValueError("Baseline não possui hist para w1-completo")
+    cases, hists = list(cases), dict(hists)
+    known = {c.id for c in cases}
+    for win in build_windows(w1_hist["date"], today=today):
+        if win.id in known:
+            continue
+        # Insere antes do caso com classe, mantendo ordem padrão
+        idx = next((i for i, c in enumerate(cases) if c.classe is not None), len(cases))
+        cases.insert(idx, Case(win.id, win, classe=None, benchmarks=BENCHMARKS))
+        hists[win.id] = w1_hist
+    return cases, hists
+
+
 def run_regression(
     baseline_path: Path,
     save_root: Path | None = None,
@@ -125,18 +144,7 @@ def run_regression(
     cases = list(baseline.cases)
     hists = dict(baseline.hists)
 
-    # Garante w4-fim-passado na lista de casos
-    if not any(c.id == "w4-fim-passado" for c in cases):
-        w1_hist = hists.get("w1-completo")
-        if w1_hist is None:
-            raise ValueError("Baseline não possui hist para w1-completo")
-        windows = build_windows(w1_hist["date"], today=dt.date.today())
-        w4_win = next(w for w in windows if w.id == "w4-fim-passado")
-        w4_case = Case("w4-fim-passado", w4_win, classe=None, benchmarks=BENCHMARKS)
-        # Insere antes do caso com classe, mantendo ordem padrão
-        idx = next((i for i, c in enumerate(cases) if c.classe is not None), len(cases))
-        cases.insert(idx, w4_case)
-        hists["w4-fim-passado"] = w1_hist
+    cases, hists = add_missing_windows(cases, hists, dt.date.today())
 
     # Executa o engine para cada caso
     new_outputs: dict[str, dict[str, pd.DataFrame]] = {}
