@@ -99,11 +99,11 @@ benchmarks de mercado e avaliação de risco financeiro.
 > o **estado real do repositório hoje**, na branch `migracao-django` (publicada em
 > `origin/migracao-django`; `main` e `dev` intactas).
 >
-> **Fases 0 + 1 concluídas em 2026-08-28; Fases 2 + 2.5 em 2026-08-31; Fases 3, 3b e 3c em 2026-10-26; Fases 4, 5 e 6 em 2026-10-27** — ver §2.0. As
+> **Fases 0 + 1 concluídas em 2026-08-28; Fases 2 + 2.5 em 2026-08-31; Fases 3, 3b e 3c em 2026-10-26; Fases 4, 5 e 6 em 2026-10-27; Fase 7a em 2026-10-28** — ver §2.0. As
 > decisões travadas estão em [`adr/`](adr/README.md); a orientação de trabalho no backend em
 > [`../backend/CLAUDE.md`](../backend/CLAUDE.md).
 
-### 2.0. Já implementado — Fases 0 + 1 (2026-08-28), Fases 2 + 2.5 (2026-08-31), Fases 3, 3b e 3c (2026-10-26), Fases 4, 5 e 6 (2026-10-27)
+### 2.0. Já implementado — Fases 0 + 1 (2026-08-28), Fases 2 + 2.5 (2026-08-31), Fases 3, 3b e 3c (2026-10-26), Fases 4, 5 e 6 (2026-10-27), Fase 7a (2026-10-28)
 
 | Camada | Local | Situação |
 |---|---|---|
@@ -114,13 +114,13 @@ benchmarks de mercado e avaliação de risco financeiro.
 | **Cripto** | `backend/apps/core/security.py` | `encrypt()` / `decrypt()` Fernet sobre `settings.FERNET_KEY` — **mesma chave do app legado**, compat. testada nos dois sentidos. [ADR 0003](adr/0003-reuso-da-chave-fernet-do-legado.md). |
 | **Modelos** | `backend/apps/core/models.py` | `UserToken` (OneToOne, token cifrado em repouso, `set_token`/`get_token`) e `MarketSeries` (`UniqueConstraint(series_key, reference_date)`). Migration `core.0001`. [ADR 0007](adr/0007-modelagem-usertoken-marketseries.md). |
 | **Admin** | `backend/apps/core/admin.py` | `UserToken` sem "add", `encrypted_token` read-only; `MarketSeries` com filtro por `source` e navegação por data. |
-| **Testes** | `backend/{apps,engine}/*/tests/` + `backend/pytest.ini` | `pytest-django`, `--reuse-db`, marker `integration` desmarcado por padrão. **Total atual: 356 testes unitários/contrato (+ 5 `integration`, rodados com token real em 2026-10-27)** verdes; harness de paridade `scripts/parity/` com 33 testes. Frontend: **68 testes Vitest** (`frontend/src/test/`). |
+| **Testes** | `backend/{apps,engine}/*/tests/` + `backend/pytest.ini` | `pytest-django`, `--reuse-db`, marker `integration` desmarcado por padrão. **Total atual: 385 testes unitários/contrato (+ 8 `integration`, sendo 5 passando e 3 pulados sem token real)** verdes; harness de paridade `scripts/parity/` com **39 testes** e nova linha de base da Fase 7 em `reports/parity/20261028-163150-fase7/baseline`. Frontend: **68 testes Vitest** (`frontend/src/test/`). |
 | **Scripts** | `backend/scripts/` | `bootstrap_db.sh` (cria role/database) e `rotate_db_password.sh` (rotaciona a senha). |
-| **Docs** | `backend/README.md`, `backend/CLAUDE.md`, `docs/adr/` | Setup/rodar, convenções do agente, e ADRs 0001–0017. |
+| **Docs** | `backend/README.md`, `backend/CLAUDE.md`, `docs/adr/` | Setup/rodar, convenções do agente, e ADRs 0001–0018. |
 | **Serviços de Mercado (Fase 2 + Fase 3)** | `backend/apps/market/` | App `apps.market`: `services/sources/{base,bcb,ptax,yahoo,tesouro,b3,dlp}.py` (erros DLP tipados `DLPAuthError`/`DLPUnavailableError`, invalidação por geração e single-flight via `cache.add`), `repository.py`, `cache.py` (`single_flight`), `catalog.py` (`SeriesDef`), `assets.py` + `data/ativos.csv` (universo de ~7.500 tickers + variante BRL), `synthetics.py` (`SyntheticSpec` + `display_name`), `transforms.py`, `series.py` (catálogo + fetch-on-read de tickers sob demanda). Migration `core.0002` (`kind`), comandos `ingest_market_data` (inclui tickers sob demanda) / `backfill_market_data`. [ADR 0011](adr/0011-marketseries-valor-cru-kind.md), [ADR 0014](adr/0014-tickers-sob-demanda.md). |
-| **Engine de Cálculo (Fase 2.5)** | `backend/engine/` | Pacote puro `engine` (irmão de `apps/`, sem `models.py`): `twr.py` / `irr.py` cópia literal de `src/engine/`; `metrics.py` idem + `pct_change(fill_method=None)`; `compute.py` (7 funções puras extraídas dos `plot_*`); `dataset.py` (`fetch_user_portfolio` + `build_dataset`, consome `apps.market.series`); `report_legacy.py` (export CLI Matplotlib, nunca importado pela API). Bug `self.logger` corrigido. `pytest.ini` → `testpaths = apps engine`. [ADR 0012](adr/0012-engine-copia-literal-fase-2-5.md). |
+| **Engine de Cálculo (Fase 2.5 + Fase 7a)** | `backend/engine/` | Pacote puro `engine` (irmão de `apps/`, sem `models.py`): metodologia canônica da planilha DLP implementada na Fase 7a — `flows.py` (fluxo líquido com lucro de trades e proventos), `twr.py` (HPR aporte-início/resgate-fim), `irr.py` (XIRR Actual/365 invariante à escala com Newton + fallback por bisseção), `metrics.py` (Sharpe contra série real de CDI do período), `dataset.py` (corte por `end_date`, recálculo pós-gap), `compute.py` (sem dupla contagem de saldo inicial no shadow e `/summary`), `report_legacy.py` (export CLI). Validado contra oráculo DLP de 123 meses (`test_oracle_dlp.py`). [ADR 0012](adr/0012-engine-copia-literal-fase-2-5.md), [ADR 0018](adr/0018-metodologia-de-retorno-dlp.md). |
 | **Planejador de IR (Fase 3b)** | `backend/apps/migration_ir/` | `GET /migration/wallet`, `POST /migration/plan`, `POST /migration/plan.pdf` (fpdf2). Núcleo puro (`wallet`, `tax`, `planner`) + `prices` (carteira → `apps.market`, `assets.lookup`) + router fino. Alvos livres, associação manual `sell`/`count_as`/`ignore`, isenção de R$ 20 mil só para `ACAO`, IR estimado por classe, `price_unavailable` em vez de preço inventado. Stateless. [ADR 0015](adr/0015-planejador-de-ir.md). |
-| **Otimizações DLP (Fase 3c)** | `backend/apps/market/services/sources/dlp.py`, `backend/apps/api/routers/portfolio.py`, `backend/config/settings.py` | `/historico` cacheado **uma vez por `(usuário, geração)`** (`dlp:hist:<token_hash>:<gen>`) com filtros `ativo`/`classe`/`corretora` aplicados em memória (`_filter_historico`); `_extract_distinct` deduplica com `pd.unique` antes de normalizar; URL base em `settings.DLP_BASE_URL` (default `https://users.dlpinvest.com.br`). `engine/` intocado. Teste `integration` de equivalência com o filtro da DLP escrito — **pendente de rodar com token real** (§2.3). |
+| **Otimizações DLP (Fase 3c)** | `backend/apps/market/services/sources/dlp.py`, `backend/apps/api/routers/portfolio.py`, `backend/config/settings.py` | `/historico` cacheado **uma vez por `(usuário, geração)`** (`dlp:hist:<token_hash>:<gen>`) com filtros `ativo`/`classe`/`corretora` aplicados em memória (`_filter_historico`); `_extract_distinct` deduplica com `pd.unique` antes de normalizar; URL base em `settings.DLP_BASE_URL` (default `https://users.dlpinvest.com.br`). `engine/` intocado. Teste `integration` de equivalência com o filtro da DLP escrito e verificado ao vivo. |
 | **Correções de revisão (Fases 2 / 2.5)** | `backend/apps/market/`, `backend/engine/` | Revisão pós-implementação (`code-review` + manual, 2026-08-31): 6 defeitos corrigidos com TDD — ver §2.3. |
 | **Frontend SPA (Fase 4)** | `frontend/` | React 18 + Vite + Tailwind + TanStack Query v5 + ECharts (`echarts-for-react`) + Vitest. `api/` (Axios com CSRF, `errors.js` com `getApiError`/`shouldRetry`/parse de erro em `Blob`), `context/` (sessão, filtros), `hooks/` (`usePortfolioQueries`, `useMigrationPlan`, `useDlpTokenStatus`), `pages/` (Login, Portfolio com abas Performance/Risco, Migração de IR), 7 gráficos + tabela anual + planejador com export PDF. Queries só disparam com token DLP configurado; preset "Tudo" envia `start=1900-01-01` e exibe o período efetivo de `meta`. Dev: proxy `/api` do Vite → backend. |
 | **Correções de revisão (Fases 3/4)** | `backend/apps/{market,migration_ir}/`, `frontend/` | Revisão pós-implementação (2026-10-27): plano [`2026-10-27-correcoes-revisao-fases-3-4.md`](superpowers/plans/2026-10-27-correcoes-revisao-fases-3-4.md) — ver §2.3. |
@@ -146,13 +146,13 @@ histórico do git (commit `3e8f155` e anteriores) e em [`historico/`](historico/
 - ~~**Sem Dockerfiles do app** nem compose final/nginx único — o backend roda no host (Fase 5). Só os containers de **infra** (`lab-postgres`, `lab-redis`) existem.~~ **Concluído na Fase 5 (2026-10-27):** `docker-compose.yml` com `lab-appinvest-{web,backend,ingestion}` rodando no LAB ([ADR 0016](adr/0016-empacotamento-no-lab.md)).
 - ~~**Dados ainda no legado**: os tokens continuam no Supabase (a migração `user_tokens` → `UserToken` ocorre na fase correspondente); o cache já está integrado no `lab-redis`.~~ **Decidido na Fase 5:** Supabase descartado sem migração ([ADR 0016](adr/0016-empacotamento-no-lab.md)); tokens são cadastrados diretamente na SPA.
 - ~~**Validação de paridade numérica e remoção do legado Streamlit (`src/`)**: Fase 6.~~ **Concluído em 2026-10-27** ([ADR 0017](adr/0017-paridade-legado.md)).
-- **Correções pós-paridade no `engine/`**: Fase 7.
+- ~~**Correções pós-paridade no `engine/`**: Fase 7.~~ **Fase 7a concluída em 2026-10-28** ([ADR 0018](adr/0018-metodologia-de-retorno-dlp.md)): correções matemáticas e de confiabilidade do engine concluídas com oráculo DLP e regressão de linha de base. Fase 7b (otimizações sem alteração de números: pré-processamento de `date` e dedup de `groupby`) agendada na sequência.
 - ~~`.devcontainer/devcontainer.json` aponta para `app/web_app_v2.py` (**caminho stale**, não existe mais).~~ **Removido em 2026-10-26**: template Codespaces do app Streamlit (Python 3.11), incompatível com o fluxo atual (backend no host, Python 3.12; Docker só para `lab-postgres`/`lab-redis`).
 
 ### 2.3. Dívida técnica / lixo a resolver **durante** a migração (não carregar adiante)
 
 - `financial_report.py` referenciava `self.logger` (inexistente) no branch de dados vazios — **corrigido** em `engine/dataset.py` na Fase 2.5 (mantido o registro histórico).
-- Algoritmos numéricos do engine (`irr.py`, `twr.py`, `metrics.py`) copiados literalmente na Fase 2.5 para manter validade de paridade da Fase 6; revisão profunda agendada para **pós-Fase 6** ([ADR 0012](adr/0012-engine-copia-literal-fase-2-5.md)).
+- ~~Algoritmos numéricos do engine (`irr.py`, `twr.py`, `metrics.py`) copiados literalmente na Fase 2.5 para manter validade de paridade da Fase 6; revisão profunda agendada para **pós-Fase 6** ([ADR 0012](adr/0012-engine-copia-literal-fase-2-5.md)).~~ **Resolvido na Fase 7a (2026-10-28, [ADR 0018](adr/0018-metodologia-de-retorno-dlp.md)):** fluxo externo com lucro realizado (`flows.py`), regra HPR aporte-início/resgate-fim (`twr.py`), XIRR Actual/365 invariante à escala com Newton + fallback de bisseção (`irr.py`), Sharpe contra a série real do CDI do período (`metrics.py`), corte estrito por `end_date`, recálculo pós-gap e remoção de dupla contagem de saldo inicial no shadow e `/summary` (`dataset.py`, `compute.py`). Validado contra o oráculo da planilha DLP de 123 meses (`test_oracle_dlp.py`).
 - **Revisão pós-Fases 2/2.5 (2026-08-31, `code-review` + manual) — 6 defeitos corrigidos com TDD** (commits `a15fcf1` market, `e1214a4` engine):
   1. `transforms.synthetic_from_spec` anualizava o spread do operador `+` por `1/252` fixo; numa série mensal (`IPCA + 6%`, benchmark default) isso rendia ~0.28% a.a. em vez de 6%. Passou a detectar a cadência da base (12 passos/ano p/ mensal, 252 p/ diária) — casa com o `processar_benchmarks` legado (`1.06 ** (1/12)`).
   2. `services/sources/yahoo.fetch_yahoo`: `yf.download` engole erro de rede e devolve DataFrame vazio; retorno vazio virou `FetchError` (o `ingest` marca `failed_keys` e sai 1) em vez de `[]` silencioso.
@@ -551,13 +551,32 @@ flowchart TD
 5. `src/`, scripts e workflow legados, `tests/` da raiz e resíduos removidos; `streamlit`, `altair`, `pydeck`, `supabase*`, `upstash-redis`, `webdriver-manager`, `authlib` desinstalados do `backend/.venv`.
 
 ### Fase 7 — Correções e otimizações do engine pós-paridade (movido da 3c em 2026-10-26)
-> Só depois da Fase 6: estes itens alteram `engine/` (cópia literal do legado) e/ou mudam números, o que invalidaria a comparação de paridade. Entra junto com a revisão profunda do engine já prevista na [ADR 0012](adr/0012-engine-copia-literal-fase-2-5.md).
+> Dividida em Fase 7a (correções matemáticas e de confiabilidade, que alteram números) e Fase 7b (otimizações de cache e processamento, sem mudar números).
 
-1. **Otimizações (sem mudar números):**
-   - **Pré-processamento de `date` e remoção de `groupby` duplicado (`dlp.py`, `dataset.py`, `twr.py`):** converter `df["date"] = pd.to_datetime(df["date"])` uma única vez antes de `mc.set_df` em `dlp.buscar_historico` e evitar que `calculate_twr` refaça `pd.to_datetime`, `groupby("date").sum()` e cálculo de `fluxo` quando `fetch_user_portfolio` já entrega o DataFrame agrupado por data.
-2. **Correções de recorte de período (`start_date` / `end_date`) em `engine/dataset.py` (mudam números de `/summary`, `/shadow`, `/irr-evolution`):**
-   - **Corte por `end_date` em `portfolio_df` (`grp`):** hoje `fetch_user_portfolio` filtra `grp` apenas por `start_date`, deixando `portfolio_df` ir até a data atual mesmo quando o usuário informa `end_date` no passado (apenas `twr` era cortado por `end_date` dentro de `calculate_twr`). Filtrar `grp[grp["date"] <= pd.to_datetime(end_date)]` para que `/summary` (`pat_fim`, `aportes`, `ganho`, `xirr`), `/shadow` e `/irr-evolution` respeitem `end_date`.
-   - **Recálculo de `fluxo` após ajuste de `gap` no `start_date`:** quando `start_date` recorta o histórico no meio da carteira, `filt["vlr_investido"] += gap` ajusta o valor investido para igualar `vlr_mercado.iloc[0]`, mas `filt["fluxo"].iloc[0]` permanecia com o diff anterior ao ajuste, distorcendo o fluxo inicial usado por `compute_irr_evolution` (`all_flows = -1 * df["fluxo"].values`). Recalcular `filt["fluxo"]` (ou ajustar `filt["fluxo"].iloc[0] = filt["vlr_investido"].iloc[0] - filt["proventos"].iloc[0]`) após somar o `gap`.
+#### Fase 7a — Correções matemáticas e confiabilidade — **concluída em 2026-10-28** ([ADR 0018](adr/0018-metodologia-de-retorno-dlp.md))
+1. **Fórmula do fluxo externo líquido (`engine.flows`):**
+   - $\text{fluxo}_t = \Delta \text{vlr\_investido}_t - \text{lucro}_t - \text{proventos}_t$, descontando o lucro realizado das vendas e proventos recebidos. Primeiro fluxo igual a $\text{vlr\_investido}_0 - \text{lucro}_0 - \text{proventos}_0$.
+2. **Regra de HPR aporte-início / resgate-fim (`engine.twr`):**
+   - Aporte líquido ($\text{fluxo} > 0$): na base do retorno mensal ($\text{pat\_fim} / (\text{pat\_ini} + \text{fluxo})$).
+   - Resgate líquido ($\text{fluxo} < 0$): no fim do mês ($(\text{pat\_fim} - \text{fluxo}) / \text{pat\_ini}$).
+   - Corrigiu distorção histórica: TWR acumulado em 10 anos passou de 40,87% (legado) para 195,95% (DLP real).
+3. **XIRR Actual/365 invariante à escala com Newton + fallback bisseção (`engine.irr`):**
+   - Convenção $(1 + r)^{(d_i - d_0)/365.0}$, ordenação cronológica e agregação de datas.
+   - Normalização por $\max(|F_i|)$ contra overflow numérico; tentativa Newton-Raphson com fallback garantido para busca por bisseção com colcheteio adaptativo.
+4. **Sharpe ratio contra série real de CDI (`engine.metrics`):**
+   - Substituição de taxa fixa ou nula pela série diária de CDI do período analisado para carteira e benchmarks.
+5. **Recorte de período e recálculo pós-gap (`engine.dataset`):**
+   - Corte estrito de `portfolio_df` em `date <= end_date`.
+   - Recálculo de `fluxo[0]` após ajuste de `gap` em janelas com `start_date` intermediário.
+6. **Métricas de retorno total e shadow (`engine.compute`):**
+   - Eliminação da dupla contagem do saldo inicial nos aportes de `/summary` e na simulação da carteira `/shadow`.
+7. **Validação e linha de base:**
+   - Oráculo DLP (`engine/tests/test_oracle_dlp.py`): 123/123 meses no fluxo, 122/122 no TWR mensal ($< 0{,}005\text{ pp}$) e TWR acumulado idêntico (195,95%).
+   - Regressão contra a linha de base da Fase 6 comprovou mudanças restritas à `Carteira` nas métricas de retorno e benchmarks intocados em `twr`/`drawdown`/`rolling_vol`/`yearly`.
+   - Nova linha de base congelada em `reports/parity/20261028-163150-fase7/baseline`.
+
+#### Fase 7b — Otimizações (sem mudar números) — **próximo incremento**
+1. **Pré-processamento de `date` e remoção de `groupby` duplicado (`dlp.py`, `dataset.py`, `twr.py`):** converter `df["date"] = pd.to_datetime(df["date"])` uma única vez antes de `mc.set_df` em `dlp.buscar_historico` e evitar que `calculate_twr` refaça `pd.to_datetime`, `groupby("date").sum()` e cálculo de `fluxo` quando `fetch_user_portfolio` já entrega o DataFrame agrupado por data.
 
 ---
 
@@ -696,5 +715,6 @@ cd scripts/parity && ../../backend/.venv/bin/pytest -q
 9. [x] **Fase 5** — Dockerfiles (`backend` multi-target + `frontend` multi-stage), `docker-compose.yml` (`lab-appinvest-{web,backend,ingestion}` em `127.0.0.1:8080`), Chromium ARM64 + `supercronic` ([ADR 0016](adr/0016-empacotamento-no-lab.md)).
 10. [x] **Carga inicial de mercado** — ~~import dos tokens do Supabase~~ (cancelado, ADR 0016); `backfill_market_data` + `ingest_market_data` inicial no container (`b3:*` atualizado até 2026-10-26).
 11. [x] **Fase 6** — validação de paridade (2 camadas, aprovada em 2026-10-27); `src/` e libs legadas removidos ([ADR 0017](adr/0017-paridade-legado.md)).
-12. [ ] **Fase 7** — pós-paridade: correções de recorte `start_date`/`end_date` e `fluxo`/`gap` em `engine/dataset.py`, pré-parse de `date` e dedup de `groupby` no TWR, revisão profunda do engine (ADR 0012) (ver §Fase 7).
-13. [ ] Decidir prefixo `lab-` / merge de `migracao-django` (§7.3).
+12. [x] **Fase 7a** — pós-paridade: correção matemática do engine alinhada à planilha DLP (fluxo com lucro, HPR aporte-início/resgate-fim, XIRR com fallback, rf = CDI, recortes e gap) concluída em 2026-10-28 ([ADR 0018](adr/0018-metodologia-de-retorno-dlp.md)).
+13. [ ] **Fase 7b** — otimizações sem mudar números: pré-parse de `date` e dedup de `groupby` no TWR (aguarda validação do usuário).
+14. [ ] Decidir prefixo `lab-` / merge de `migracao-django` (§7.3).

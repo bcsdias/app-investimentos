@@ -35,4 +35,5 @@ Complementam (não substituem) as tabelas "decisões travadas" dos specs em
 | [0015](0015-planejador-de-ir.md) | Planejador de IR: alvos livres, associação manual, regra de isenção por classe, IR estimado, nunca inventar preço | 3b |
 | [0016](0016-empacotamento-no-lab.md) | Empacotamento no LAB: dev no host × containers `lab-appinvest-*` em `:8080`, Chromium ARM64, `supercronic`, timeouts 180 s, Supabase descartado | 5 |
 | [0017](0017-paridade-legado.md) | Paridade com o legado em duas camadas (mercado congelado 1e-6 × ponta a ponta 1e-4) e linha de base da Fase 7 sem `src` | 6 |
+| [0018](0018-metodologia-de-retorno-dlp.md) | Metodologia de cálculo de retorno alinhada à planilha DLP (fluxo com lucro, HPR aporte-início/resgate-fim, XIRR com fallback, rf = CDI) | 7a |
 

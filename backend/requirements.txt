@@ -11,6 +11,7 @@ gunicorn~=23.0
 # --- Fase 2: serviços de mercado ---
 pandas~=2.2
 numpy~=2.1
+scipy~=1.18
 yfinance~=0.2
 python-bcb~=0.3
 requests~=2.32
