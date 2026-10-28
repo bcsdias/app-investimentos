@@ -62,6 +62,20 @@ def test_upsert_drops_nan_and_inf_with_log(caplog):
     assert "descart" in caplog.text.lower()
 
 
+def test_upsert_without_rows_does_not_bump(monkeypatch):
+    bumps = []
+    monkeypatch.setattr(repo.cache, "bump_series_generation", lambda: bumps.append(1))
+    repo.upsert_points("bcb:12", "BCB", "rate", [P(dt.date(2024, 1, 2), float("nan"))])
+    assert bumps == []
+
+
+def test_upsert_with_rows_bumps_generation(monkeypatch):
+    bumps = []
+    monkeypatch.setattr(repo.cache, "bump_series_generation", lambda: bumps.append(1))
+    repo.upsert_points("bcb:12", "BCB", "rate", [P(dt.date(2024, 1, 2), 0.0437)])
+    assert bumps == [1]
+
+
 def test_load_series_returns_sorted_float_series():
     repo.upsert_points(
         "bcb:12", "BCB", "rate",

@@ -4,6 +4,7 @@ import pandas as pd
 import pytest
 
 from apps.market import series as sr
+from apps.market.services.sources.base import RawPoint
 
 pytestmark = pytest.mark.django_db
 
@@ -59,8 +60,50 @@ def test_cache_key_includes_window(monkeypatch):
     from apps.market import cache as mc
 
     sr.get_series("S&P 500", S, E)
-    assert mc.get_df(mc.make_key("series", "S&P 500", S, E)) is not None
-    assert mc.get_df(mc.make_key("series", "S&P 500", dt.date(2023, 1, 1), E)) is None
+    gen = mc.series_generation()
+    assert mc.get_df(mc.make_key("series", f"g{gen}", "S&P 500", S, E)) is not None
+    assert mc.get_df(mc.make_key("series", f"g{gen}", "S&P 500", dt.date(2023, 1, 1), E)) is None
+
+
+def test_write_invalidates_cached_series(monkeypatch):
+    # 1ª leitura cacheia [100, 110]; upsert de um ponto (repository real, db) e load passa a
+    # devolver [100, 110, 120] -> 2ª leitura devolve 3 pontos
+    sr.repository.upsert_points(
+        "yf:^GSPC", "YF", "level",
+        [RawPoint(dt.date(2024, 1, 2), 100.0), RawPoint(dt.date(2024, 1, 3), 110.0)],
+    )
+    s1 = sr.get_series("S&P 500", S, E)
+    assert len(s1) == 2
+    assert list(s1.values) == [100.0, 110.0]
+
+    sr.repository.upsert_points(
+        "yf:^GSPC", "YF", "level",
+        [RawPoint(dt.date(2024, 1, 4), 120.0)],
+    )
+    s2 = sr.get_series("S&P 500", S, E)
+    assert len(s2) == 3
+    assert list(s2.values) == [100.0, 110.0, 120.0]
+
+
+def test_write_to_base_invalidates_derived_series(monkeypatch):
+    # "S&P 500 BRL" cacheada; upsert em "ptax:USDBRL" -> próxima leitura recalcula (load chamado de novo)
+    sr.repository.upsert_points(
+        "yf:^GSPC", "YF", "level",
+        [RawPoint(dt.date(2024, 1, 2), 100.0)],
+    )
+    sr.repository.upsert_points(
+        "ptax:USDBRL", "PTAX", "level",
+        [RawPoint(dt.date(2024, 1, 2), 5.0)],
+    )
+    s1 = sr.get_series("S&P 500 BRL", S, E)
+    assert round(s1.iloc[0], 2) == 500.0
+
+    sr.repository.upsert_points(
+        "ptax:USDBRL", "PTAX", "level",
+        [RawPoint(dt.date(2024, 1, 2), 5.5)],
+    )
+    s2 = sr.get_series("S&P 500 BRL", S, E)
+    assert round(s2.iloc[0], 2) == 550.0
 
 
 def test_get_series_proxy_splice(monkeypatch):

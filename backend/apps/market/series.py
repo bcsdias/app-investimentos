@@ -25,7 +25,8 @@ def _today() -> dt.date:
 
 
 def get_series(name: str, start: dt.date, end: dt.date) -> pd.Series | None:
-    key = cache.make_key("series", name, start, end)
+    gen = cache.series_generation()
+    key = cache.make_key("series", f"g{gen}", name, start, end)
     hit = cache.get_df(key)
     if hit is not None:
         return hit
@@ -36,6 +37,8 @@ def get_series(name: str, start: dt.date, end: dt.date) -> pd.Series | None:
     if series is None or series.empty:
         logger.info("série '%s' vazia no período %s..%s", name, start, end)
         return None
+    gen = cache.series_generation()
+    key = cache.make_key("series", f"g{gen}", name, start, end)
     cache.set_df(key, series, ttl=cache.TTL_SERIES)
     return series
 

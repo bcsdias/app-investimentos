@@ -10,13 +10,53 @@ from apps.market import cache as mc
 
 
 @pytest.fixture(autouse=True)
-def _locmem_cache(settings):
-    settings.CACHES = {
-        "default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}
-    }
+def _locmem_cache(locmem_cache):
+    return locmem_cache
+
+
+def test_generation_starts_from_time_ns_when_missing(locmem_cache, monkeypatch):
+    monkeypatch.setattr(mc.time, "time_ns", lambda: 1_000)
+    assert mc.series_generation() == 1_000
+
+
+def test_bump_changes_generation(locmem_cache):
+    g0 = mc.series_generation()
+    mc.bump_series_generation()
+    assert mc.series_generation() == g0 + 1
+
+
+def test_generation_after_eviction_does_not_reuse_old_value(locmem_cache, monkeypatch):
+    monkeypatch.setattr(mc.time, "time_ns", lambda: 1_000)
+    g0 = mc.series_generation()
+    locmem_cache.delete(mc.GEN_KEY)
+    monkeypatch.setattr(mc.time, "time_ns", lambda: 2_000)
+    assert mc.series_generation() == 2_000 != g0
+
+
+def test_generation_failure_returns_zero(monkeypatch):
+    def boom(*a, **k):
+        raise RuntimeError("redis down")
+
     from django.core.cache import cache
 
-    cache.clear()
+    monkeypatch.setattr(cache, "get", boom)
+    assert mc.series_generation() == 0
+
+
+def test_bump_failure_is_swallowed(monkeypatch):
+    def boom(*a, **k):
+        raise RuntimeError("redis down")
+
+    from django.core.cache import cache
+
+    monkeypatch.setattr(cache, "incr", boom)
+    mc.bump_series_generation()  # não levanta
+
+
+def test_bump_when_missing_initializes_with_time_ns(locmem_cache, monkeypatch):
+    monkeypatch.setattr(mc.time, "time_ns", lambda: 5_000)
+    mc.bump_series_generation()
+    assert mc.series_generation() == 5_000
 
 
 def test_make_key_namespaced_and_windowed():

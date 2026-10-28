@@ -11,6 +11,7 @@ import pandas as pd
 from django.db.models import Max
 
 from apps.core.models import MarketSeries
+from apps.market import cache
 
 logger = logging.getLogger(__name__)
 
@@ -56,6 +57,7 @@ def upsert_points(series_key: str, source: str, kind: str, points: Iterable) -> 
         unique_fields=["series_key", "reference_date"],
         update_fields=["value", "kind", "source", "updated_at"],
     )
+    cache.bump_series_generation()
     return len(rows)
 
 

@@ -19,6 +19,31 @@ logger = logging.getLogger(__name__)
 
 TTL_SERIES = 86400  # 24h — séries derivadas
 TTL_DLP = 600       # 10min — dados por-usuário da DLP
+GEN_KEY = "market:series:gen"
+
+
+def series_generation() -> int:
+    try:
+        val = cache.get(GEN_KEY)
+        if val is None:
+            cache.add(GEN_KEY, time.time_ns(), timeout=None)
+            val = cache.get(GEN_KEY)
+        return int(val) if val is not None else 0
+    except Exception as exc:
+        logger.warning("series_generation falhou: %s", exc)
+        return 0
+
+
+def bump_series_generation() -> None:
+    try:
+        cache.incr(GEN_KEY)
+    except ValueError:
+        try:
+            cache.add(GEN_KEY, time.time_ns(), timeout=None)
+        except Exception as exc:
+            logger.warning("bump_series_generation add falhou: %s", exc)
+    except Exception as exc:
+        logger.warning("bump_series_generation incr falhou: %s", exc)
 
 _SERIES = "pd.Series"
 _FRAME = "pd.DataFrame"
