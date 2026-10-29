@@ -8,11 +8,12 @@ from __future__ import annotations
 
 import datetime as dt
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import pandas as pd
 
-from apps.market import series, synthetics, transforms
+from apps.market import gaps, series, synthetics, transforms
+from apps.market.gaps import SeriesGap
 from apps.market.services.sources import dlp
 from apps.market.synthetics import SyntheticSpec
 from engine import flows
@@ -23,11 +24,21 @@ logger = logging.getLogger(__name__)
 BENCH_LOOKBACK_DAYS = 40
 
 
+def _as_date(d: dt.date | dt.datetime | pd.Timestamp | str) -> dt.date:
+    if isinstance(d, dt.datetime):
+        return d.date()
+    if isinstance(d, dt.date):
+        return d
+    return pd.to_datetime(d).date()
+
+
 @dataclass
 class DatasetResult:
     df_combined: pd.DataFrame
     rf_series: pd.Series | None = None
     portfolio_df: pd.DataFrame | None = None
+    gaps: list[SeriesGap] = field(default_factory=list)
+
 
 
 def fetch_user_portfolio(
@@ -127,13 +138,26 @@ def build_dataset(
         logger.warning("Nenhum dado disponível para análise.")
         return DatasetResult(df_combined=pd.DataFrame(), rf_series=rf, portfolio_df=portfolio_df)
 
-    raw = pd.concat(frames, axis=1).sort_index()
-    raw = raw.ffill()
-
     crop_start = pd.to_datetime(start_date) if start_date else pd.to_datetime(start)
     if user_series is not None and not user_series.empty:
         crop_start = min(crop_start, pd.to_datetime(user_series.index.min()))
     crop_end = str(end_date) if end_date else str(end)
+
+    crop_start_d = _as_date(crop_start)
+    crop_end_d = _as_date(crop_end)
+
+    gaps_list: list[SeriesGap] = []
+    for f in frames:
+        if f.name == "Carteira":
+            continue
+        periodicity = gaps.infer_periodicity(f.index)
+        for g in gaps.find_gaps(f.index, periodicity):
+            if g.end > crop_start_d and g.start < crop_end_d:
+                gaps_list.append(SeriesGap(series=str(f.name), start=g.start, end=g.end))
+
+    raw = pd.concat(frames, axis=1).sort_index()
+    raw = raw.ffill()
+
     raw = raw.loc[crop_start:crop_end]
 
     raw = raw.dropna(subset=["Carteira"]) if "Carteira" in raw.columns else raw.dropna(how="all")
@@ -141,4 +165,4 @@ def build_dataset(
     for col in raw.columns:
         raw[col] = transforms.rebase_100(raw[col])
 
-    return DatasetResult(df_combined=raw, rf_series=rf, portfolio_df=portfolio_df)
+    return DatasetResult(df_combined=raw, rf_series=rf, portfolio_df=portfolio_df, gaps=gaps_list)

@@ -58,6 +58,10 @@ def _envelope(ctx: AnalysisContext, data: dict) -> dict:
             "start": ctx.start.isoformat(),
             "end": ctx.end.isoformat(),
             "missing": ctx.missing,
+            "gaps": [
+                {"series": g.series, "start": str(g.start), "end": str(g.end)}
+                for g in getattr(ctx, "gaps", [])
+            ],
         },
     }
 

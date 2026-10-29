@@ -198,3 +198,33 @@ def test_missing_lists_absent_names(user_with_token, monkeypatch):
     )
     ctx = run_analysis(user_with_token, req)
     assert ctx.missing == ["IMA-B", "CDI + 2%"]
+
+
+def test_run_analysis_propagates_gaps(user_with_token, monkeypatch):
+    from apps.market.gaps import SeriesGap
+
+    idx = pd.to_datetime(["2024-01-02", "2024-01-03"])
+    us = pd.Series([100.0, 101.0], index=idx)
+    pdf = pd.DataFrame(
+        {
+            "date": idx,
+            "vlr_mercado": [100.0, 101.0],
+            "vlr_investido": [100.0, 100.0],
+            "proventos": [0.0, 0.0],
+            "fluxo": [100.0, 0.0],
+        }
+    )
+
+    expected_gap = SeriesGap("CDI", dt.date(2024, 1, 2), dt.date(2024, 1, 3))
+    monkeypatch.setattr(analysis, "fetch_user_portfolio", lambda *a, **k: (us, pdf))
+
+    def fake_build(**kw):
+        df = pd.DataFrame({"Carteira": [100.0, 101.0], "CDI": [100.0, 100.2]}, index=idx)
+        return DatasetResult(df_combined=df, rf_series=None, portfolio_df=pdf, gaps=[expected_gap])
+
+    monkeypatch.setattr(analysis, "build_dataset", fake_build)
+
+    req = _req(start=dt.date(2024, 1, 2), end=dt.date(2024, 1, 3), benchmarks=["CDI"])
+    ctx = run_analysis(user_with_token, req)
+    assert ctx.gaps == [expected_gap]
+

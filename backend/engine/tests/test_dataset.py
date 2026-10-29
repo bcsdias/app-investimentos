@@ -197,3 +197,54 @@ def test_benchmark_opens_at_last_value_before_portfolio_opening(monkeypatch):
     assert df["CDI"].iloc[-1] == pytest.approx(102.0)
 
 
+def test_dataset_reports_benchmark_gap_inside_window(monkeypatch):
+    from apps.market.gaps import SeriesGap
+
+    idx1 = pd.date_range("2024-01-01", "2024-03-01", freq="D")
+    idx2 = pd.date_range("2024-04-15", "2024-06-30", freq="D")
+    cdi = pd.Series(range(len(idx1) + len(idx2)), index=idx1.union(idx2), dtype=float)
+
+    monkeypatch.setattr(dataset.series, "get_many", lambda names, s, e: {"CDI": cdi})
+    monkeypatch.setattr(dataset.series, "get_series", lambda *a, **k: None)
+
+    res = dataset.build_dataset(benchmarks=["CDI"], start_date="2024-01-01", end_date="2024-06-30")
+    assert res.gaps == [SeriesGap("CDI", dt.date(2024, 3, 1), dt.date(2024, 4, 15))]
+
+
+def test_dataset_ignores_gap_outside_window(monkeypatch):
+    idx1 = pd.date_range("2024-01-01", "2024-03-01", freq="D")
+    idx2 = pd.date_range("2024-04-15", "2024-06-30", freq="D")
+    cdi = pd.Series(range(len(idx1) + len(idx2)), index=idx1.union(idx2), dtype=float)
+
+    monkeypatch.setattr(dataset.series, "get_many", lambda names, s, e: {"CDI": cdi})
+    monkeypatch.setattr(dataset.series, "get_series", lambda *a, **k: None)
+
+    res = dataset.build_dataset(benchmarks=["CDI"], start_date="2024-05-01", end_date="2024-06-30")
+    assert res.gaps == []
+
+
+def test_dataset_reports_gap_crossing_opening(monkeypatch):
+    from apps.market.gaps import SeriesGap
+
+    idx1 = pd.date_range("2024-01-01", "2024-03-01", freq="D")
+    idx2 = pd.date_range("2024-04-15", "2024-06-30", freq="D")
+    cdi = pd.Series(range(len(idx1) + len(idx2)), index=idx1.union(idx2), dtype=float)
+
+    monkeypatch.setattr(dataset.series, "get_many", lambda names, s, e: {"CDI": cdi})
+    monkeypatch.setattr(dataset.series, "get_series", lambda *a, **k: None)
+
+    res = dataset.build_dataset(benchmarks=["CDI"], start_date="2024-04-01", end_date="2024-06-30")
+    assert res.gaps == [SeriesGap("CDI", dt.date(2024, 3, 1), dt.date(2024, 4, 15))]
+
+
+def test_dataset_does_not_include_portfolio_in_gaps(monkeypatch):
+    user_idx = pd.to_datetime(["2024-01-01", "2024-06-30"])
+    user = pd.Series([100.0, 110.0], index=user_idx)
+    monkeypatch.setattr(dataset.series, "get_many", lambda names, s, e: {})
+    monkeypatch.setattr(dataset.series, "get_series", lambda *a, **k: None)
+
+    res = dataset.build_dataset(user_series=user, benchmarks=[], start_date="2024-01-01", end_date="2024-06-30")
+    assert res.gaps == []
+
+
+

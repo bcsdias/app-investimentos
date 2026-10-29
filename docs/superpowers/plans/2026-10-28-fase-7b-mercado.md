@@ -304,7 +304,7 @@ git commit -m "🐛 fix(engine): benchmarks abrem no último valor conhecido at�
   - Schema `GapOut(series: str, start: str, end: str)`; `AnalysisMetaOut.gaps: list[GapOut] = []`.
   - JSON: `"meta": {"start", "end", "missing", "gaps": [{"series": "IMA-S", "start": "2024-01-02", "end": "2024-10-15"}]}`, com datas ISO.
 
-- [ ] **Step 1: Escrever os testes**
+- [x] **Step 1: Escrever os testes**
 
 ```python
 # test_dataset.py
@@ -321,19 +321,19 @@ def test_summary_meta_has_gaps_list(...):
     assert body["meta"]["gaps"] == [] and {"start", "end", "missing"} <= body["meta"].keys()
 ```
 
-- [ ] **Step 2: Rodar e ver falhar**
+- [x] **Step 2: Rodar e ver falhar**
 
 Run: `cd backend && .venv/bin/pytest engine/tests/test_dataset.py apps/api -q`
 Expected: FAIL (`AttributeError: gaps`; `KeyError: 'gaps'`)
 
-- [ ] **Step 3: Implementar**
+- [x] **Step 3: Implementar**
 
-- [ ] **Step 4: Rodar e ver passar**
+- [x] **Step 4: Rodar e ver passar**
 
 Run: `cd backend && .venv/bin/pytest -q && cd ../scripts/parity && ../../backend/.venv/bin/pytest -q`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/engine backend/apps/api

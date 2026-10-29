@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import contextlib
 import datetime as dt
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import pandas as pd
 from cryptography.fernet import InvalidToken
@@ -12,6 +12,7 @@ from apps.api.errors import ApiError
 from apps.api.schemas import AnalysisRequest
 from apps.core.models import UserToken
 from apps.market import assets, catalog, synthetics
+from apps.market.gaps import SeriesGap
 from apps.market.services.sources.base import DLPAuthError, DLPError, DLPUnavailableError
 from apps.market.synthetics import SyntheticSpec
 from engine.dataset import build_dataset, fetch_user_portfolio
@@ -36,6 +37,8 @@ class AnalysisContext:
     start: dt.date
     end: dt.date
     missing: list[str]
+    gaps: list[SeriesGap] = field(default_factory=list)
+
 
 
 def _one_year_ago(d: dt.date) -> dt.date:
@@ -191,4 +194,5 @@ def run_analysis(user, req: AnalysisRequest) -> AnalysisContext:
         start=effective_start,
         end=effective_end,
         missing=missing,
+        gaps=res.gaps,
     )

@@ -34,10 +34,18 @@ class RollingRequest(AnalysisRequest):
     window: int = 252
 
 
+class GapOut(Schema):
+    series: str
+    start: str
+    end: str
+
+
 class AnalysisMetaOut(Schema):
     start: str
     end: str
     missing: list[str]
+    gaps: list[GapOut] = Field(default_factory=list)
+
 
 
 class SerieOut(Schema):

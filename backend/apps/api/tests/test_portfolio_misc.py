@@ -1,5 +1,8 @@
+import datetime as dt
+
 import pandas as pd
 import pytest
+
 
 from apps.api.tests.conftest import PORTFOLIO_DF
 from apps.market.services.sources.base import DLPAuthError
@@ -83,3 +86,31 @@ def test_extract_distinct_dedups_strips_and_drops_blanks():
 
     df = pd.DataFrame({"Classe": ["ACAO", " ACAO", "FII ", None, float("nan"), "", "  ", "ETF", "ACAO"]})
     assert _extract_distinct(df, ("classe",), "classe") == ["ACAO", "ETF", "FII"]
+
+
+def test_summary_meta_has_gaps_list(portfolio_env):
+    r = post(portfolio_env, "summary")
+    assert r.status_code == 200
+    meta = r.json()["meta"]
+    assert meta["gaps"] == []
+    assert {"start", "end", "missing", "gaps"} <= meta.keys()
+
+
+def test_summary_meta_serializes_gaps_when_present(portfolio_env, monkeypatch):
+    from apps.market.gaps import SeriesGap
+    from apps.api.routers import portfolio as portfolio_router
+
+    orig_run = portfolio_router.run_analysis
+
+    def fake_run(user, req):
+        ctx = orig_run(user, req)
+        ctx.gaps = [SeriesGap("CDI", dt.date(2024, 3, 1), dt.date(2024, 4, 15))]
+        return ctx
+
+    monkeypatch.setattr(portfolio_router, "run_analysis", fake_run)
+    r = post(portfolio_env, "summary")
+    assert r.status_code == 200
+    meta = r.json()["meta"]
+    assert meta["gaps"] == [{"series": "CDI", "start": "2024-03-01", "end": "2024-04-15"}]
+
+
