@@ -122,6 +122,26 @@ def test_yearly_summary_has_years_and_total():
     assert pd.api.types.is_numeric_dtype(ys["Total Acum."])
 
 
+def test_yearly_drops_opening_only_year():
+    df = pd.DataFrame(
+        {"Carteira": [100.0, 105.0, 110.0]},
+        index=pd.to_datetime(["2023-12-31", "2024-06-30", "2024-12-31"]),
+    )
+    out = compute.compute_yearly_summary(df)
+    assert "2023" not in [str(c) for c in out.columns]
+    assert out.loc["Carteira"].iloc[0] == pytest.approx(0.10)
+
+
+def test_yearly_keeps_single_row_when_no_following_year():
+    df = pd.DataFrame(
+        {"Carteira": [100.0]},
+        index=pd.to_datetime(["2023-12-31"]),
+    )
+    out = compute.compute_yearly_summary(df)
+    assert "2023" in [str(c) for c in out.columns]
+    assert out.loc["Carteira"].iloc[0] == pytest.approx(0.0)
+
+
 PDF = pd.DataFrame(
     {
         "date": pd.to_datetime(["2024-01-31", "2024-02-29", "2024-03-31"]),

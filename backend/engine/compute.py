@@ -197,6 +197,12 @@ def compute_yearly_summary(df_combined: pd.DataFrame) -> pd.DataFrame:
     yearly = df.resample("YE").last()
     yearly_ret = yearly.pct_change(fill_method=None)
     yearly_ret.iloc[0] = (yearly.iloc[0] / df.iloc[0]) - 1
+
+    idx = pd.to_datetime(df.index)
+    first_year = idx[0].year
+    if (idx.year == first_year).sum() == 1 and (idx.year > first_year).any():
+        yearly_ret = yearly_ret.iloc[1:]
+
     summary = yearly_ret.T
     summary.columns = [c.year for c in summary.columns]
     summary["Total Acum."] = total_ret
