@@ -393,17 +393,17 @@ git commit -m "✨ feat(spa): PeriodNotice mostra lacunas dos dados de mercado"
 - Create: `docs/adr/0019-integridade-dos-dados-de-mercado.md`
 - Modify: `docs/adr/README.md`, `docs/consolidacao_arquitetura_e_migracao.md` (§2.0, §2.2, §2.3, §5 Fase 7b, §9 item 13), `docs/README.md`, `backend/README.md` (contagem de testes, comando `market_gaps`), `backend/CLAUDE.md` (linha de base nova), `docs/superpowers/plans/2026-10-28-fase-7a-engine.md` (Task 9: marcar o último checkbox, validado pelo usuário em 2026-10-28)
 
-- [ ] **Step 1: Rebuild e diagnóstico antes da re-busca**
+- [x] **Step 1: Rebuild e diagnóstico antes da re-busca**
 
 Run: `docker compose up -d --build && docker compose exec -T backend python manage.py market_gaps`
 Expected: a lista inclui `bcb:12469` (2024) e `yf:LFTS11.SA` (2025), os buracos de fonte da spec §3.3. Guardar a saída em `reports/fase7b/gaps-antes.txt`.
 
-- [ ] **Step 2: Ingestão com re-busca e diagnóstico depois**
+- [x] **Step 2: Ingestão com re-busca e diagnóstico depois**
 
 Run: `docker compose exec -T backend python manage.py ingest_market_data; docker compose exec -T backend python manage.py market_gaps > reports/fase7b/gaps-depois.txt`
 Expected: lacunas preenchidas onde a fonte tem o dado; as que continuam aparecem como "sem dado na fonte" no log da ingestão. Se uma lacuna que a fonte **tem** continuar aberta, **parar e investigar** antes de seguir.
 
-- [ ] **Step 3: Escrever o ADR 0019**
+- [x] **Step 3: Escrever o ADR 0019**
 
 O ADR registra:
 - **Contexto:** cache sem invalidação; ingestão incremental cega a lacunas; buracos de fonte.
@@ -420,19 +420,19 @@ O ADR registra:
   - caminho da nova linha de base.
 - **Consequência:** qualquer escrita descarta o cache de todas as séries (aceitável: a ingestão roda uma vez por dia e aquece o cache em seguida).
 
-- [ ] **Step 4: Checklist de `docs/README.md` e verificação completa**
+- [x] **Step 4: Checklist de `docs/README.md` e verificação completa**
 
 Run: `cd backend && .venv/bin/pytest -q && .venv/bin/python manage.py check && .venv/bin/pytest -m integration engine/tests/test_oracle_dlp.py -q && cd ../scripts/parity && ../../backend/.venv/bin/pytest -q && cd ../../frontend && npm test -- --run`
 Expected: tudo verde.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add docs backend/README.md backend/CLAUDE.md
 git commit -m "📝 docs: ADR 0019 (integridade dos dados de mercado) e fechamento da Fase 7b"
 ```
 
-- [ ] **Step 6: Rebuild final e PARAR para o usuário testar**
+- [x] **Step 6: Rebuild final e PARAR para o usuário testar**
 
 Run: `docker compose up -d --build && docker compose ps`
 Expected: `backend` e `web` healthy.

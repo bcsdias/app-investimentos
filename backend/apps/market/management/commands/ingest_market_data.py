@@ -174,6 +174,11 @@ class Command(BaseCommand):
                     n = repository.upsert_points(
                         sdef.series_key, sdef.source, sdef.kind, points
                     )
+                    ok += 1
+                    if n:
+                        self.stdout.write(f"  ok {sdef.series_key}: +{n} pontos")
+                    else:
+                        self.stdout.write(f"  {sdef.series_key}: sem novos pontos")
                 except _PartialFetch as exc:
                     if exc.points:
                         repository.upsert_points(
@@ -182,17 +187,10 @@ class Command(BaseCommand):
                     failed += 1
                     failed_keys.append(sdef.series_key)
                     logger.error("ingest %s falhou: %s", sdef.series_key, exc)
-                    continue
                 except (FetchError, DatabaseError) as exc:
                     failed += 1
                     failed_keys.append(sdef.series_key)
                     logger.error("ingest %s falhou: %s", sdef.series_key, exc)
-                    continue
-                ok += 1
-                if n:
-                    self.stdout.write(f"  ok {sdef.series_key}: +{n} pontos")
-                else:
-                    self.stdout.write(f"  {sdef.series_key}: sem novos pontos")
 
             res = _refill_gaps(sdef)
             total_gaps = getattr(res, "total_gaps", 0)

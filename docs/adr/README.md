@@ -36,4 +36,6 @@ Complementam (não substituem) as tabelas "decisões travadas" dos specs em
 | [0016](0016-empacotamento-no-lab.md) | Empacotamento no LAB: dev no host × containers `lab-appinvest-*` em `:8080`, Chromium ARM64, `supercronic`, timeouts 180 s, Supabase descartado | 5 |
 | [0017](0017-paridade-legado.md) | Paridade com o legado em duas camadas (mercado congelado 1e-6 × ponta a ponta 1e-4) e linha de base da Fase 7 sem `src` | 6 |
 | [0018](0018-metodologia-de-retorno-dlp.md) | Metodologia de cálculo de retorno alinhada à planilha DLP (fluxo com lucro, HPR aporte-início/resgate-fim, XIRR com fallback, rf = CDI) | 7a |
+| [0019](0019-integridade-dos-dados-de-mercado.md) | Integridade dos dados de mercado, invalidação de cache por geração global e tratamento de lacunas com ffill e meta.gaps | 7b |
+
 

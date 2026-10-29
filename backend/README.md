@@ -3,11 +3,11 @@
 Backend Django da migração Streamlit → Django + React (ver [`../docs/consolidacao_arquitetura_e_migracao.md`](../docs/consolidacao_arquitetura_e_migracao.md)).
 O desenvolvimento roda **no host** (Python 3.12); o app empacotado roda nos containers do `../docker-compose.yml` ([ADR 0016](../docs/adr/0016-empacotamento-no-lab.md)).
 
-**Estado:** Fases 0 + 1 + 2 + 2.5 + 3 + 3b + 3c + 4 + 5 + 6 + 7a concluídas — infra LAB + esqueleto Django (`User` customizado,
+**Estado:** Fases 0 + 1 + 2 + 2.5 + 3 + 3b + 3c + 4 + 5 + 6 + 7a + 7b concluídas — infra LAB + esqueleto Django (`User` customizado,
 wrapper Fernet, modelos `UserToken` / `MarketSeries`, Admin), app `apps.market` (fontes de
-mercado, `repository`, `cache`, `catalog`, `assets` + `ativos.csv`, `synthetics`, `transforms`, `series` com fetch-on-read, comandos
-`ingest`/`backfill`), pacote puro `engine/` com metodologia DLP alinhada (`flows`/`twr`/`irr`/`metrics` + `compute` + `dataset` +
-`report_legacy`, [ADR 0018](../docs/adr/0018-metodologia-de-retorno-dlp.md)), API REST JSON em `/api/v1/` (`apps.api` + `apps.accounts.api`, Swagger em `/api/v1/docs`), planejador de IR (`apps.migration_ir`, `/api/v1/migration/*`), SPA React em `../frontend/` e empacotamento Docker (`lab-appinvest-{web,backend,ingestion}` em `127.0.0.1:8080`, Chromium ARM64 + `supercronic`). Suíte `pytest` verde (388 testes unitários/contrato + 10 integration). Paridade com o Streamlit legado validada na Fase 6 ([ADR 0017](../docs/adr/0017-paridade-legado.md)) e nova linha de base da Fase 7 em `reports/parity/20261028-180012-fase7-abertura/baseline` (41 testes em `../scripts/parity/`).
+mercado, `repository`, `cache` com invalidação por geração global, `catalog`, `assets` + `ativos.csv`, `synthetics`, `transforms`, `series` com fetch-on-read, `gaps`, comandos
+`ingest`/`backfill`/`market_gaps`), pacote puro `engine/` com metodologia DLP alinhada (`flows`/`twr`/`irr`/`metrics` + `compute` + `dataset` com abertura de benchmarks no último valor conhecido +
+`report_legacy`, [ADR 0018](../docs/adr/0018-metodologia-de-retorno-dlp.md) e [ADR 0019](../docs/adr/0019-integridade-dos-dados-de-mercado.md)), API REST JSON em `/api/v1/` (`apps.api` + `apps.accounts.api`, Swagger em `/api/v1/docs`, `meta.gaps`), planejador de IR (`apps.migration_ir`, `/api/v1/migration/*`), SPA React em `../frontend/` (com aviso de lacunas no `PeriodNotice`) e empacotamento Docker (`lab-appinvest-{web,backend,ingestion}` em `127.0.0.1:8080`, Chromium ARM64 + `supercronic`). Suíte `pytest` verde (421 testes unitários/contrato + 10 integration). Paridade com o Streamlit legado validada na Fase 6 ([ADR 0017](../docs/adr/0017-paridade-legado.md)) e nova linha de base da Fase 7 em `reports/parity/20261029-122417-fase7b/baseline` (41 testes em `../scripts/parity/`).
 
 ---
 
@@ -81,9 +81,10 @@ cp .env.example .env
 ```bash
 .venv/bin/python manage.py runserver 0.0.0.0:8000   # Admin em /admin/, Swagger em /api/v1/docs
 .venv/bin/python manage.py check
-.venv/bin/pytest -q                                 # 388 testes (+ 10 integration com -m integration)
+.venv/bin/pytest -q                                 # 421 testes (+ 10 integration com -m integration)
 .venv/bin/python manage.py backfill_market_data      # bootstrap: semeia MarketSeries dos CSVs do repo (uma vez)
-.venv/bin/python manage.py ingest_market_data        # ingestão ao vivo (incremental; no host B3 lê CSV estático)
+.venv/bin/python manage.py ingest_market_data        # ingestão ao vivo (incremental; re-busca lacunas internas)
+.venv/bin/python manage.py market_gaps               # diagnóstico de lacunas em todas as séries de mercado
 .venv/bin/python manage.py shell -c "from engine import dataset, report_legacy; ..."  # export CLI dos gráficos
 ```
 
