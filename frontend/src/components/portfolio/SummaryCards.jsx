@@ -59,11 +59,18 @@ export function SummaryCards({ data, isLoading = false, isError = false, error =
       ? Number(raw.twr) * 100
       : null;
 
+  const isAnnual = raw.xirr_is_annual !== false;
+  const tirLabel = isAnnual ? 'TIR (XIRR a.a.)' : 'TIR no período';
+  const targetTir =
+    !isAnnual && raw.xirr_period !== undefined && raw.xirr_period !== null
+      ? raw.xirr_period
+      : raw.xirr;
+
   const xirrPercent =
-    raw.xirr !== undefined && raw.xirr !== null
+    targetTir !== undefined && targetTir !== null
       ? isShorthand
-        ? Number(raw.xirr) * 100
-        : Number(raw.xirr)
+        ? Number(targetTir) * 100
+        : Number(targetTir)
       : null;
 
   const cards = [
@@ -102,7 +109,7 @@ export function SummaryCards({ data, isLoading = false, isError = false, error =
           : 'text-red-400',
     },
     {
-      label: 'TIR (XIRR a.a.)',
+      label: tirLabel,
       value: formatSignedPercent(xirrPercent),
       icon: Activity,
       colorClass:

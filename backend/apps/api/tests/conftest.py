@@ -51,9 +51,22 @@ def _api_locmem_cache(locmem_cache):
 
 @pytest.fixture
 def portfolio_env(user_with_token_client, monkeypatch):
+    def fake_fetch(*a, **k):
+        twr = PORTFOLIO_TWR.copy()
+        pdf = PORTFOLIO_DF.copy()
+        start = k.get("start_date")
+        end = k.get("end_date")
+        if start:
+            twr = twr.loc[start:]
+            pdf = pdf[pdf["date"] >= pd.to_datetime(start)].reset_index(drop=True)
+        if end:
+            twr = twr.loc[:end]
+            pdf = pdf[pdf["date"] <= pd.to_datetime(end)].reset_index(drop=True)
+        return twr, pdf
+
     monkeypatch.setattr(
         "apps.api.analysis.fetch_user_portfolio",
-        lambda *a, **k: (PORTFOLIO_TWR.copy(), PORTFOLIO_DF.copy()),
+        fake_fetch,
     )
 
     def fake_get_series(name, s, e):

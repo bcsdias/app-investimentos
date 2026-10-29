@@ -10,6 +10,7 @@ from apps.api.analysis import AnalysisContext, dlp_errors, get_token, run_analys
 from apps.api.errors import ApiError
 from apps.api.schemas import (
     AnalysisRequest,
+    IrrEvolutionOut,
     PortfolioFiltersOut,
     RiskReturnOut,
     RollingMetricsOut,
@@ -28,14 +29,17 @@ from apps.api.serializers import (
 )
 from apps.market.services.sources import dlp
 from engine.compute import (
+    compute_annual_from,
     compute_drawdown,
     compute_irr_evolution,
     compute_risk_return,
     compute_rolling_metrics,
     compute_shadow,
+    compute_summary_irr,
     compute_summary_kpis,
     compute_twr_evolution,
     compute_yearly_summary,
+    irr_period_series,
 )
 
 router = Router(tags=["portfolio"])
@@ -124,8 +128,10 @@ def summary(request: HttpRequest, payload: AnalysisRequest):
     dd_df = compute_drawdown(ctx.df_combined)
     max_dd = clean(dd_df["Carteira"].min()) if "Carteira" in dd_df.columns else None
 
-    irr = compute_irr_evolution(pdf)
-    xirr = clean(irr.iloc[-1]) if not irr.empty else None
+    irr_summary = compute_summary_irr(pdf)
+    xirr = clean(irr_summary["xirr"])
+    xirr_period = clean(irr_summary["xirr_period"])
+    xirr_is_annual = bool(irr_summary["xirr_is_annual"])
 
     data = {
         "patrimonio_inicial": clean(summary_kpis["patrimonio_inicial"]),
@@ -138,6 +144,8 @@ def summary(request: HttpRequest, payload: AnalysisRequest):
         "sharpe": sharpe,
         "max_drawdown": max_dd,
         "xirr": xirr,
+        "xirr_period": xirr_period,
+        "xirr_is_annual": xirr_is_annual,
         "data_inicio": ctx.start.isoformat(),
         "data_fim": ctx.end.isoformat(),
     }
@@ -200,8 +208,29 @@ def yearly_summary(request: HttpRequest, payload: AnalysisRequest):
     return _envelope(ctx, yearly_to_json(df_yr))
 
 
-@router.post("/irr-evolution", response=SeriesListOut)
+@router.post("/irr-evolution", response=IrrEvolutionOut)
 def irr_evolution(request: HttpRequest, payload: AnalysisRequest):
     ctx = run_analysis(request.user, payload)
-    irr = compute_irr_evolution(ctx.portfolio_df)
-    return _envelope(ctx, {"series": [series_to_json(irr, name="TIR")]})
+    pdf = ctx.portfolio_df
+    opening = (
+        pdf["date"].iloc[0]
+        if pdf is not None and not pdf.empty and "date" in pdf.columns
+        else None
+    )
+    irr = compute_irr_evolution(pdf)
+    irr_period = (
+        irr_period_series(irr, opening)
+        if opening is not None
+        else pd.Series(dtype=float)
+    )
+    annual_from = (
+        compute_annual_from(irr, opening) if opening is not None else None
+    )
+    return _envelope(
+        ctx,
+        {
+            "series": [series_to_json(irr, name="TIR")],
+            "period": [series_to_json(irr_period, name="TIR no período")],
+            "annual_from": annual_from,
+        },
+    )

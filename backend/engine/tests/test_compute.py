@@ -192,3 +192,63 @@ def test_shadow_does_not_double_count_opening_balance():
     assert sw["Total Investido"].tolist() == [1000.0, 400.0, 390.0]
     assert sw["CDI"].tolist() == pytest.approx([1000.0, 400.0, 390.0])
 
+
+def test_irr_annual_after_constant():
+    assert compute.IRR_ANNUAL_AFTER == pd.DateOffset(months=12)
+
+
+def test_irr_period_series_converts_points():
+    idx = pd.to_datetime(["2024-01-31", "2024-02-29", "2025-01-31"])
+    opening = pd.to_datetime("2024-01-31")
+    # 10% a.a. constante em porcentagem
+    irr_series = pd.Series([0.0, 10.0, 10.0], index=idx)
+    res = compute.irr_period_series(irr_series, opening)
+    assert len(res) == 3
+    # 2024-01-31: 0 dias -> 0%
+    assert res.iloc[0] == 0.0
+    # 2024-02-29: 29 dias de 10% a.a. -> (1.10)**(29/365) - 1 ≈ 0.76%
+    assert res.iloc[1] == pytest.approx(0.76, abs=1e-2)
+    # 2025-01-31: 366 dias (bissexto) -> próximo a 10.03%
+    assert res.iloc[2] == pytest.approx(10.03, rel=1e-2)
+
+
+def test_compute_annual_from():
+    dates = pd.to_datetime(["2024-01-31", "2024-02-29", "2024-12-31", "2025-01-31", "2025-02-28"])
+    s = pd.Series([1.0] * 5, index=dates)
+    opening = pd.to_datetime("2024-01-31")
+    # 12 meses após 2024-01-31 é 2025-01-31
+    assert compute.compute_annual_from(s, opening) == "2025-01-31"
+
+    # Janela curta (< 12 meses) -> None
+    short_s = pd.Series([1.0] * 3, index=dates[:3])
+    assert compute.compute_annual_from(short_s, opening) is None
+
+
+def test_compute_summary_irr_short_vs_long():
+    short_pdf = pd.DataFrame(
+        {
+            "date": pd.to_datetime(["2024-01-31", "2024-02-29"]),
+            "fluxo": [1000.0, 0.0],
+            "vlr_mercado": [1000.0, 970.0],
+        }
+    )
+    short_out = compute.compute_summary_irr(short_pdf)
+    assert short_out["xirr_is_annual"] is False
+    assert short_out["xirr"] is not None
+    assert short_out["xirr_period"] == pytest.approx(-3.0, abs=1e-2)
+
+    # 13 meses
+    dates = pd.date_range("2024-01-31", periods=14, freq="ME")
+    long_pdf = pd.DataFrame(
+        {
+            "date": dates,
+            "fluxo": [1000.0] + [0.0] * 13,
+            "vlr_mercado": [1000.0 * (1.01 ** i) for i in range(14)],
+        }
+    )
+    long_out = compute.compute_summary_irr(long_pdf)
+    assert long_out["xirr_is_annual"] is True
+    assert long_out["xirr"] is not None
+    assert long_out["xirr_period"] is not None
+
+

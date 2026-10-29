@@ -72,6 +72,18 @@ class SeriesListOut(Schema):
     meta: AnalysisMetaOut
 
 
+class IrrEvolutionDataOut(Schema):
+    series: list[SerieOut]
+    period: list[SerieOut] = Field(default_factory=list)
+    annual_from: str | None = None
+
+
+class IrrEvolutionOut(Schema):
+    data: IrrEvolutionDataOut
+    meta: AnalysisMetaOut
+
+
+
 class RollingMetricsDataOut(Schema):
     volatility: list[SerieOut]
     sharpe: list[SerieOut]
@@ -125,6 +137,8 @@ class SummaryDataOut(Schema):
     sharpe: float | None = None
     max_drawdown: float | None = None
     xirr: float | None = None
+    xirr_period: float | None = None
+    xirr_is_annual: bool = True
     data_inicio: str
     data_fim: str
 

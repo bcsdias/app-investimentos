@@ -6,10 +6,12 @@ ECharts é da Fase 3 (apps/api/serializers.py).
 """
 from __future__ import annotations
 
+from typing import Any
+
 import numpy as np
 import pandas as pd
 
-from engine.irr import calculate_xirr
+from engine.irr import calculate_xirr, period_return
 from engine.metrics import (
     calculate_drawdown,
     calculate_rolling_sharpe,
@@ -112,6 +114,64 @@ def compute_irr_evolution(portfolio_df: pd.DataFrame) -> pd.Series:
     if not irr_history:
         return pd.Series(dtype=float)
     return pd.Series(irr_history, index=valid_dates) * 100
+
+
+IRR_ANNUAL_AFTER = pd.DateOffset(months=12)
+
+
+def irr_period_series(irr: pd.Series, opening: pd.Timestamp | str) -> pd.Series:
+    """Converte cada ponto da série de TIR anualizada para TIR acumulada no período."""
+    if irr is None or irr.empty:
+        return pd.Series(dtype=float)
+    opening_dt = pd.to_datetime(opening)
+    res = {}
+    for d, val in irr.items():
+        if pd.isna(val) or val is None:
+            res[d] = np.nan
+        else:
+            p = period_return(float(val) / 100.0, opening_dt, pd.to_datetime(d))
+            res[d] = float(p * 100.0) if p is not None else np.nan
+    return pd.Series(res, index=irr.index, dtype=float)
+
+
+def compute_annual_from(irr: pd.Series, opening: pd.Timestamp | str) -> str | None:
+    """Retorna a 1ª data (AAAA-MM-DD) da série de TIR >= abertura + 12 meses, ou None."""
+    if irr is None or irr.empty or opening is None:
+        return None
+    cutoff = pd.to_datetime(opening) + IRR_ANNUAL_AFTER
+    for d in irr.index:
+        d_dt = pd.to_datetime(d)
+        if d_dt >= cutoff:
+            return d_dt.strftime("%Y-%m-%d")
+    return None
+
+
+def compute_summary_irr(
+    portfolio_df: pd.DataFrame, irr: pd.Series | None = None
+) -> dict[str, Any]:
+    """Calcula campos de TIR para o resumo do portfólio."""
+    if portfolio_df is None or portfolio_df.empty:
+        return {"xirr": None, "xirr_period": None, "xirr_is_annual": False}
+
+    pdf = portfolio_df.sort_values("date") if "date" in portfolio_df.columns else portfolio_df
+    if irr is None:
+        irr = compute_irr_evolution(pdf)
+
+    if irr.empty:
+        return {"xirr": None, "xirr_period": None, "xirr_is_annual": False}
+
+    opening = pd.to_datetime(pdf["date"].iloc[0])
+    fim = pd.to_datetime(pdf["date"].iloc[-1])
+    is_annual = fim >= (opening + IRR_ANNUAL_AFTER)
+    xirr = float(irr.iloc[-1])
+    p = period_return(xirr / 100.0, opening, fim)
+    xirr_period = float(p * 100.0) if p is not None else None
+    return {
+        "xirr": xirr,
+        "xirr_period": xirr_period,
+        "xirr_is_annual": bool(is_annual),
+    }
+
 
 
 def compute_summary_kpis(portfolio_df: pd.DataFrame) -> dict[str, float]:

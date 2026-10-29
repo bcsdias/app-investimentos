@@ -1,7 +1,7 @@
 import pytest
 import pandas as pd
 import numpy as np
-from engine.irr import calculate_xirr
+from engine.irr import calculate_xirr, period_return
 
 D1 = ["2023-01-01", "2024-01-01"]  # 365 dias
 
@@ -60,4 +60,24 @@ def test_xirr_no_sign_change_is_none():
 
 def test_xirr_single_date_is_none():
     assert calculate_xirr([-1000, 1100], ["2023-01-01"] * 2) is None
+
+
+def test_period_return_one_month_loss():
+    # -1000 em 2024-01-31, +970 em 2024-02-29: XIRR a.a. ≈ -32 %; TIR do período = -3 %
+    r = calculate_xirr([-1000, 970], ["2024-01-31", "2024-02-29"])
+    assert period_return(r, "2024-01-31", "2024-02-29") == pytest.approx(-0.03, abs=1e-9)
+
+
+def test_period_return_one_year_equals_annual():
+    assert period_return(0.10, "2023-01-01", "2024-01-01") == pytest.approx(0.10)
+
+
+def test_period_return_zero_days():
+    assert period_return(0.10, "2024-01-01", "2024-01-01") == 0.0
+
+
+def test_period_return_none_or_nan():
+    assert period_return(None, "2024-01-01", "2024-02-01") is None
+    assert period_return(float("nan"), "2024-01-01", "2024-02-01") is None
+
 

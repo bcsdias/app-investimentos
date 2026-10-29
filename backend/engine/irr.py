@@ -159,3 +159,32 @@ def calculate_xirr(
         pass
 
     return None
+
+
+def period_return(
+    annual_rate: float,
+    start: str | pd.Timestamp,
+    end: str | pd.Timestamp,
+) -> Optional[float]:
+    """Calcula a rentabilidade acumulada no período a partir da taxa anualizada.
+
+    Fórmula: (1 + annual_rate) ** (dias / 365) - 1
+    onde dias = (end - start).days.
+    """
+    if annual_rate is None or pd.isna(annual_rate):
+        return None
+    try:
+        r = float(annual_rate)
+    except (TypeError, ValueError):
+        return None
+    if r < -1.0:
+        return None
+    if r == -1.0:
+        return -1.0
+    start_dt = pd.to_datetime(start)
+    end_dt = pd.to_datetime(end)
+    dias = (end_dt - start_dt).days
+    if dias == 0:
+        return 0.0
+    return float((1.0 + r) ** (dias / 365.0) - 1.0)
+
