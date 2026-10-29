@@ -228,11 +228,11 @@ def test_filter_column_lookup_is_case_insensitive():
     assert dlp._filter_historico(df, ativo="VALE3")["Ativo"].tolist() == ["VALE3"]
 
 
-def test_filter_missing_column_is_ignored_and_logged(caplog):
-    df = pd.DataFrame([{"ativo": "PETR4"}])
-    out = dlp._filter_historico(df, corretora="XP")
-    assert len(out) == 1
-    assert "corretora" in caplog.text
+def test_filter_on_missing_column_matches_nothing(caplog):
+    df = pd.DataFrame({"date": ["2024-01-31"], "ativo": ["X"]})
+    assert dlp._filter_historico(df, classe="Ações") is None
+    assert "classe" in caplog.text
+
 
 
 def _timeout_get(calls):
@@ -264,13 +264,48 @@ def test_refresh_clears_cached_failure(monkeypatch):
     assert len(calls) == 2 and isinstance(df, pd.DataFrame)
 
 
-def test_auth_error_is_not_cached_as_failure(monkeypatch):
+def test_auth_error_is_memoized_per_generation(monkeypatch):
     calls = []
-    monkeypatch.setattr(dlp.requests, "get", lambda *a, **k: calls.append(1) or _Resp({}, status=401))
-    for _ in range(2):
+
+    def fake_get(*a, **k):
+        calls.append(1)
+        raise DLPAuthError("DLP 401")
+
+    monkeypatch.setattr(dlp, "_get", fake_get)
+    for _ in range(3):
         with pytest.raises(DLPAuthError):
-            dlp.buscar_historico("DLP-tok")
+            dlp.buscar_historico("tok")
+    assert len(calls) == 1
+    dlp.invalidate_user_cache("tok")
+    with pytest.raises(DLPAuthError):
+        dlp.buscar_historico("tok")
     assert len(calls) == 2
+
+
+def test_dlp_generation_after_eviction_does_not_reuse_old(monkeypatch):
+    from django.core.cache import cache
+
+    monkeypatch.setattr(dlp.time, "time_ns", lambda: 1_000)
+    g0 = dlp._generation("tok")
+    assert g0 == 1_000
+    cache.delete(dlp._gen_key("tok"))
+    monkeypatch.setattr(dlp.time, "time_ns", lambda: 2_000)
+    assert dlp._generation("tok") == 2_000 != g0
+
+
+def test_dlp_invalidate_when_missing_initializes_with_time_ns(monkeypatch):
+    monkeypatch.setattr(dlp.time, "time_ns", lambda: 5_000)
+    dlp.invalidate_user_cache("tok")
+    assert dlp._generation("tok") == 5_000
+
+
+def test_failed_recently_returns_status():
+    assert dlp._failed_recently("k") is None
+    dlp._mark_failed("k", kind="unavailable")
+    assert dlp._failed_recently("k") == "unavailable"
+    dlp._mark_failed("k", kind="auth")
+    assert dlp._failed_recently("k") == "auth"
+
 
 
 def test_resumo_failure_is_cached(monkeypatch):

@@ -145,3 +145,10 @@ def test_single_flight_times_out_and_proceeds():
     with mc.single_flight("k", timeout=0.2, poll=0.01):
         pass
     assert time.monotonic() - t0 < 1
+
+
+def test_single_flight_does_not_release_foreign_lock(locmem_cache):
+    with mc.single_flight("k", timeout=0.05):
+        locmem_cache.set("k:lock", "outro-dono", 60)  # lock expirou e outro pegou
+    assert locmem_cache.get("k:lock") == "outro-dono"
+

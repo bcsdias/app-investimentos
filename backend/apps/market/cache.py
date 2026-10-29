@@ -10,6 +10,7 @@ import io
 import json
 import logging
 import time
+import uuid
 from contextlib import contextmanager
 
 import pandas as pd
@@ -111,11 +112,12 @@ def single_flight(key: str, timeout: float = 90, poll: float = 0.1):
     segue sem o lock (com warning) e não libera um lock que não é seu.
     """
     lock_key = key + ":lock"
+    my_token = uuid.uuid4().hex
     acquired = False
     deadline = time.monotonic() + timeout
     while True:
         try:
-            acquired = bool(cache.add(lock_key, 1, timeout))
+            acquired = bool(cache.add(lock_key, my_token, timeout))
         except Exception as exc:  # cache é otimização — segue sem lock
             logger.warning("single_flight add falhou para %s: %s", lock_key, exc)
             break
@@ -130,6 +132,7 @@ def single_flight(key: str, timeout: float = 90, poll: float = 0.1):
     finally:
         if acquired:
             try:
-                cache.delete(lock_key)
+                if cache.get(lock_key) == my_token:
+                    cache.delete(lock_key)
             except Exception as exc:
                 logger.warning("single_flight delete falhou para %s: %s", lock_key, exc)

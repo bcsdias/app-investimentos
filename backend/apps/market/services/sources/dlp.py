@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import logging
+import time
 
 import pandas as pd
 import requests
@@ -34,8 +35,13 @@ def _gen_key(token: str) -> str:
 
 
 def _generation(token: str) -> int:
+    key = _gen_key(token)
     try:
-        return int(cache.get(_gen_key(token), 0))
+        val = cache.get(key)
+        if val is None:
+            cache.add(key, time.time_ns(), timeout=None)
+            val = cache.get(key)
+        return int(val) if val is not None else 0
     except Exception as exc:  # noqa: BLE001
         logger.warning("dlp gen get falhou: %s", exc)
         return 0
@@ -45,8 +51,12 @@ def invalidate_user_cache(token: str) -> None:
     """Invalida hist/resumo do usuário incrementando a geração (vale em redis e locmem)."""
     key = _gen_key(token)
     try:
-        cache.add(key, 0, None)
         cache.incr(key)
+    except ValueError:
+        try:
+            cache.add(key, time.time_ns(), timeout=None)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("dlp invalidate add falhou para %s: %s", _token_hash(token), exc)
     except Exception as exc:  # noqa: BLE001
         logger.warning("dlp invalidate falhou para %s: %s", _token_hash(token), exc)
 
@@ -80,29 +90,42 @@ def _get(path: str, token: str, params: dict) -> dict:
 ERR_TTL = 30  # s — falha recente da DLP; o refresh (nova geração) libera nova tentativa
 
 
-def _failed_recently(key: str) -> bool:
+def _failed_recently(key: str) -> str | None:
     try:
-        return bool(cache.get(key + ":err"))
+        if cache.get(key + ":auth"):
+            return "auth"
+        if cache.get(key + ":err"):
+            return "unavailable"
     except Exception as exc:  # noqa: BLE001
         logger.warning("dlp err get falhou: %s", exc)
-        return False
+    return None
 
 
-def _mark_failed(key: str) -> None:
+def _mark_failed(key: str, kind: str = "unavailable") -> None:
+    suffix = ":auth" if kind == "auth" else ":err"
     try:
-        cache.set(key + ":err", 1, ERR_TTL)
+        cache.set(key + suffix, 1, ERR_TTL)
     except Exception as exc:  # noqa: BLE001
         logger.warning("dlp err set falhou: %s", exc)
 
 
-def _get_or_mark(key: str, path: str, token: str, params: dict) -> dict:
-    """`_get` que lembra DLPUnavailableError por ERR_TTL (não serializa timeouts no single-flight)."""
-    if _failed_recently(key):
+def _raise_if_failed(failed: str | None) -> None:
+    if failed == "auth":
+        raise DLPAuthError("DLP autenticação rejeitada (falha recente)")
+    if failed == "unavailable":
         raise DLPUnavailableError("DLP indisponível (falha recente)")
+
+
+def _get_or_mark(key: str, path: str, token: str, params: dict) -> dict:
+    """`_get` que lembra DLPUnavailableError e DLPAuthError por ERR_TTL (não serializa timeouts no single-flight)."""
+    _raise_if_failed(_failed_recently(key))
     try:
         return _get(path, token, params)
     except DLPUnavailableError:
-        _mark_failed(key)
+        _mark_failed(key, kind="unavailable")
+        raise
+    except DLPAuthError:
+        _mark_failed(key, kind="auth")
         raise
 
 
@@ -119,8 +142,8 @@ def _filter_historico(df: pd.DataFrame, **filters) -> pd.DataFrame | None:
             continue
         col = lower_map.get(name)
         if col is None:
-            logger.warning("coluna %s ausente no /historico; filtro ignorado", name)
-            continue
+            logger.warning("coluna %s ausente no /historico; nenhuma linha casa", name)
+            return None
         mask &= df[col].notna() & (df[col].astype(str).str.strip() == str(val).strip())
     out = df[mask]
     if out.empty:
@@ -135,13 +158,13 @@ def buscar_historico(token, ativo=None, classe=None, corretora=None):
     cached = mc.get_df(key)
     if cached is not None:
         return _filter_historico(_norm_date_col(cached), **filters)
-    if _failed_recently(key):
-        raise DLPUnavailableError("DLP indisponível (falha recente)")
+    _raise_if_failed(_failed_recently(key))
 
     with mc.single_flight(key):
         cached = mc.get_df(key)
         if cached is not None:
             return _filter_historico(_norm_date_col(cached), **filters)
+        _raise_if_failed(_failed_recently(key))
         payload = _get_or_mark(key, "/historico", token, {})
         df = pd.DataFrame(payload.get("historico", []))
         if df.empty:
@@ -156,13 +179,13 @@ def buscar_resumo_carteira(token):
     cached = mc.get_df(key)
     if cached is not None:
         return cached
-    if _failed_recently(key):
-        raise DLPUnavailableError("DLP indisponível (falha recente)")
+    _raise_if_failed(_failed_recently(key))
 
     with mc.single_flight(key):
         cached = mc.get_df(key)
         if cached is not None:
             return cached
+        _raise_if_failed(_failed_recently(key))
         payload = _get_or_mark(
             key, "/resumo", token,
             {"summary": "true", "wallet": "true", "multiwallet": "false", "notifications": "false"},
