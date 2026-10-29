@@ -352,7 +352,7 @@ git commit -m "✨ feat(api): aviso aditivo meta.gaps com lacunas dos benchmarks
 - Consumes: `meta.gaps` (Task 5). Campo ausente ou que não seja array → tratado como `[]`, para compatibilidade com respostas antigas em cache no navegador.
 - Produces: um item âmbar por lacuna, no mesmo estilo de "Sem dados no período", com o texto exato `Lacuna nos dados de <series> de <dd/mm/aaaa> a <dd/mm/aaaa> (último valor repetido)`.
 
-- [ ] **Step 1: Escrever os testes**
+- [x] **Step 1: Escrever os testes**
 
 ```jsx
 it('PeriodNotice lista lacunas de benchmark', () => {
@@ -366,19 +366,19 @@ it('PeriodNotice sem gaps não quebra', () => {
 });
 ```
 
-- [ ] **Step 2: Rodar e ver falhar**
+- [x] **Step 2: Rodar e ver falhar**
 
 Run: `cd frontend && npm test -- --run src/test/period-notice.test.jsx`
 Expected: FAIL (texto não encontrado)
 
-- [ ] **Step 3: Implementar**
+- [x] **Step 3: Implementar**
 
-- [ ] **Step 4: Rodar e ver passar**
+- [x] **Step 4: Rodar e ver passar**
 
 Run: `cd frontend && npm test -- --run && npm run build`
 Expected: PASS e build OK
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add frontend/src/components/portfolio/PeriodNotice.jsx frontend/src/test/period-notice.test.jsx

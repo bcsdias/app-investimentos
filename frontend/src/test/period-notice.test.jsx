@@ -35,4 +35,39 @@ describe('Preset Tudo, datas locais e PeriodNotice', () => {
     const { container } = render(<PeriodNotice meta={undefined} />);
     expect(container).toBeEmptyDOMElement();
   });
+
+  it('PeriodNotice lista lacunas de benchmark', () => {
+    render(
+      <PeriodNotice
+        meta={{
+          start: '2024-01-01',
+          end: '2024-06-30',
+          missing: [],
+          gaps: [{ series: 'IMA-S', start: '2024-03-01', end: '2024-04-15' }],
+        }}
+      />
+    );
+    expect(
+      screen.getByText('Lacuna nos dados de IMA-S de 01/03/2024 a 15/04/2024 (último valor repetido)')
+    ).toBeInTheDocument();
+  });
+
+  it('PeriodNotice sem gaps não quebra', () => {
+    render(<PeriodNotice meta={{ start: '2024-01-01', end: '2024-06-30', missing: [] }} />);
+    expect(screen.queryByText(/Lacuna nos dados/)).toBeNull();
+  });
+
+  it('PeriodNotice com gaps não-array trata como array vazio', () => {
+    render(
+      <PeriodNotice
+        meta={{
+          start: '2024-01-01',
+          end: '2024-06-30',
+          missing: [],
+          gaps: 'invalid',
+        }}
+      />
+    );
+    expect(screen.queryByText(/Lacuna nos dados/)).toBeNull();
+  });
 });
