@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 
 import pandas as pd
 
-from apps.market import gaps, series, synthetics, transforms
+from apps.market import catalog, gaps, series, synthetics, transforms
 from apps.market.gaps import SeriesGap
 from apps.market.services.sources import dlp
 from apps.market.synthetics import SyntheticSpec
@@ -22,6 +22,10 @@ from engine.twr import calculate_twr
 logger = logging.getLogger(__name__)
 
 BENCH_LOOKBACK_DAYS = 40
+
+
+def _today() -> dt.date:
+    return dt.date.today()
 
 
 def _as_date(d: dt.date | dt.datetime | pd.Timestamp | str) -> dt.date:
@@ -104,9 +108,22 @@ def build_dataset(
         start = pd.to_datetime(start_date).date() if start_date else (pd.Timestamp.today() - pd.DateOffset(years=1)).date()
         end = pd.to_datetime(end_date).date() if end_date else pd.Timestamp.today().date()
 
+    crop_start = pd.to_datetime(start_date) if start_date else pd.to_datetime(start)
+    crop_end = pd.to_datetime(end_date) if end_date else pd.to_datetime(end)
+    if user_series is not None and not user_series.empty:
+        crop_start = min(crop_start, pd.to_datetime(user_series.index.min()))
+        crop_end = min(crop_end, pd.to_datetime(user_series.index.max()))
+
+    crop_start_d = _as_date(crop_start)
+    crop_end_d = _as_date(crop_end)
+
+    today = _today()
+    bench_end = max(end, today)
     bench_start = start - dt.timedelta(days=BENCH_LOOKBACK_DAYS)
+    crop_start_ts = pd.to_datetime(crop_start)
+
     names = list(benchmarks or [])
-    bench = series.get_many(names, bench_start, end)
+    bench = series.get_many(names, bench_start, bench_end)
     rf = series.get_series("CDI", start, end)
 
     frames: list[pd.Series] = []
@@ -118,6 +135,10 @@ def build_dataset(
 
     for name in names:
         s = bench.get(name)
+        if s is None or s.empty or not (pd.to_datetime(s.index) <= crop_start_ts).any():
+            s_epoch = series.get_series(name, catalog.EPOCH, bench_end)
+            if s_epoch is not None and not s_epoch.empty:
+                s = s_epoch
         if s is None or s.empty:
             continue
         s = s.copy()
@@ -126,7 +147,11 @@ def build_dataset(
         frames.append(pd.to_numeric(s, errors="coerce"))
 
     for spec in extra_specs or []:
-        base = series.get_series(spec.base, bench_start, end)
+        base = series.get_series(spec.base, bench_start, bench_end)
+        if base is None or base.empty or not (pd.to_datetime(base.index) <= crop_start_ts).any():
+            base_epoch = series.get_series(spec.base, catalog.EPOCH, bench_end)
+            if base_epoch is not None and not base_epoch.empty:
+                base = base_epoch
         if base is None or base.empty:
             continue
         syn = transforms.synthetic_from_spec(spec, base)
@@ -138,15 +163,8 @@ def build_dataset(
         logger.warning("Nenhum dado disponível para análise.")
         return DatasetResult(df_combined=pd.DataFrame(), rf_series=rf, portfolio_df=portfolio_df)
 
-    crop_start = pd.to_datetime(start_date) if start_date else pd.to_datetime(start)
-    if user_series is not None and not user_series.empty:
-        crop_start = min(crop_start, pd.to_datetime(user_series.index.min()))
-    crop_end = str(end_date) if end_date else str(end)
-
-    crop_start_d = _as_date(crop_start)
-    crop_end_d = _as_date(crop_end)
-
     gaps_list: list[SeriesGap] = []
+    tail_until = min(crop_end_d, today)
     for f in frames:
         if f.name == "Carteira":
             continue
@@ -154,6 +172,9 @@ def build_dataset(
         for g in gaps.find_gaps(f.index, periodicity):
             if g.end > crop_start_d and g.start < crop_end_d:
                 gaps_list.append(SeriesGap(series=str(f.name), start=g.start, end=g.end))
+        tail = gaps.stale_tail(f.index, periodicity, until=tail_until)
+        if tail is not None and tail.end > crop_start_d and tail.start < crop_end_d:
+            gaps_list.append(SeriesGap(series=str(f.name), start=tail.start, end=tail.end))
 
     raw = pd.concat(frames, axis=1).sort_index()
     raw = raw.ffill()

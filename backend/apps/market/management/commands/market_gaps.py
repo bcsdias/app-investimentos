@@ -7,11 +7,17 @@ mensal >45 dias). Sempre exit 0.
 """
 from __future__ import annotations
 
+import datetime as dt
+
 from django.core.management.base import BaseCommand
 
 from apps.market import catalog, repository
-from apps.market.gaps import find_gaps
+from apps.market.gaps import find_gaps, stale_tail
 from apps.market.management.commands.ingest_market_data import _on_demand_defs
+
+
+def _today() -> dt.date:
+    return dt.date.today()
 
 
 class Command(BaseCommand):
@@ -41,3 +47,7 @@ class Command(BaseCommand):
             for gap in gaps:
                 dias = (gap.end - gap.start).days
                 self.stdout.write(f"  {gap.start} → {gap.end} ({dias} dias)")
+            tail = stale_tail(dates, sdef.periodicity, until=_today())
+            if tail is not None:
+                dias = (tail.end - tail.start).days
+                self.stdout.write(f"  defasada desde {tail.start} ({dias} dias)")

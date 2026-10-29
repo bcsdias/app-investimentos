@@ -247,4 +247,105 @@ def test_dataset_does_not_include_portfolio_in_gaps(monkeypatch):
     assert res.gaps == []
 
 
+def _setup_dataset_mock(monkeypatch, series_map):
+    calls = []
+
+    def fake_get_series(name, s, e):
+        s_date = s.date() if isinstance(s, (dt.datetime, pd.Timestamp)) else s
+        e_date = e.date() if isinstance(e, (dt.datetime, pd.Timestamp)) else e
+        calls.append((name, s_date, e_date))
+        s_full = series_map.get(name)
+        if s_full is None or s_full.empty:
+            return None
+        s_ts = pd.to_datetime(s_date)
+        e_ts = pd.to_datetime(e_date)
+        sliced = s_full[(s_full.index >= s_ts) & (s_full.index <= e_ts)]
+        return sliced if not sliced.empty else None
+
+    def fake_get_many(names, s, e):
+        out = {}
+        for n in names:
+            val = fake_get_series(n, s, e)
+            if val is not None and not val.empty:
+                out[n] = val
+        return out
+
+    monkeypatch.setattr(dataset, "_today", lambda: dt.date(2026, 10, 29))
+    monkeypatch.setattr(dataset.series, "get_series", fake_get_series)
+    monkeypatch.setattr(dataset.series, "get_many", fake_get_many)
+    return calls
+
+
+def test_gap_crossing_opening_beyond_lookback_is_reported_and_ffilled(monkeypatch):
+    from apps.market.gaps import SeriesGap
+
+    idx = [pd.Timestamp("2023-05-22"), pd.Timestamp("2024-02-21")] + list(
+        pd.date_range("2024-02-22", "2024-12-31", freq="D")
+    )
+    vals = [100.0, 101.0] + [101.0 + i * 0.01 for i in range(1, len(idx) - 1)]
+    imas = pd.Series(vals, index=pd.to_datetime(idx))
+
+    _setup_dataset_mock(monkeypatch, {"IMA-S": imas})
+    carteira = pd.Series([1.0, 1.1], index=pd.to_datetime(["2023-12-31", "2024-12-31"]))
+
+    res = dataset.build_dataset(
+        user_series=carteira, benchmarks=["IMA-S"], start_date="2024-01-01", end_date="2024-12-31"
+    )
+    assert SeriesGap("IMA-S", dt.date(2023, 5, 22), dt.date(2024, 2, 21)) in res.gaps
+    assert res.df_combined["IMA-S"].iloc[0] == pytest.approx(100.0)
+
+
+def test_gap_crossing_window_end_is_reported(monkeypatch):
+    from apps.market.gaps import SeriesGap
+
+    idx1 = pd.date_range("2023-12-01", "2024-09-26", freq="D")
+    idx2 = pd.date_range("2025-02-24", "2026-10-29", freq="D")
+    idx = idx1.union(idx2)
+    lfts = pd.Series(range(len(idx)), index=idx, dtype=float)
+
+    _setup_dataset_mock(monkeypatch, {"LFTS11.SA": lfts})
+    carteira = pd.Series([1.0, 1.1], index=pd.to_datetime(["2023-12-31", "2024-12-31"]))
+
+    res = dataset.build_dataset(
+        user_series=carteira, benchmarks=["LFTS11.SA"], start_date="2024-01-01", end_date="2024-12-31"
+    )
+    assert SeriesGap("LFTS11.SA", dt.date(2024, 9, 26), dt.date(2025, 2, 24)) in res.gaps
+
+
+def test_series_stale_until_today_reports_tail(monkeypatch):
+    from apps.market.gaps import SeriesGap
+
+    idx = pd.date_range("2023-01-02", "2024-04-10", freq="D")
+    imas = pd.Series(range(len(idx)), index=idx, dtype=float)
+
+    _setup_dataset_mock(monkeypatch, {"IMA-S": imas})
+    carteira = pd.Series([1.0, 1.1], index=pd.to_datetime(["2023-12-31", "2024-12-31"]))
+
+    res = dataset.build_dataset(
+        user_series=carteira, benchmarks=["IMA-S"], start_date="2024-01-01", end_date="2024-12-31"
+    )
+    assert SeriesGap("IMA-S", dt.date(2024, 4, 10), dt.date(2024, 12, 31)) in res.gaps
+
+
+def test_series_starting_after_opening_has_no_gap_and_refetches_once(monkeypatch):
+    idx = pd.date_range("2024-06-03", "2024-12-31", freq="D")
+    etf = pd.Series(range(len(idx)), index=idx, dtype=float)
+
+    calls = _setup_dataset_mock(monkeypatch, {"ETF": etf})
+    carteira = pd.Series([1.0, 1.1], index=pd.to_datetime(["2023-12-31", "2024-12-31"]))
+
+    res = dataset.build_dataset(
+        user_series=carteira, benchmarks=["ETF"], start_date="2024-01-01", end_date="2024-12-31"
+    )
+    assert res.gaps == []
+    etf_calls = [c for c in calls if c[0] == "ETF"]
+    assert len(etf_calls) == 2
+    from apps.market import catalog
+    assert etf_calls[0][1] == dt.date(2023, 11, 21)
+    assert etf_calls[0][2] == dt.date(2026, 10, 29)
+    assert etf_calls[1][1] == catalog.EPOCH
+    assert etf_calls[1][2] == dt.date(2026, 10, 29)
+
+
+
 

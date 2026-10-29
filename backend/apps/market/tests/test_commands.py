@@ -282,6 +282,27 @@ def test_market_gaps_includes_on_demand_yf(db, capsys):
     assert "2024-01-02 → 2024-01-25 (23 dias)" in out
 
 
+def test_market_gaps_prints_stale_tail(monkeypatch, db, capsys):
+    from apps.market import repository
+    from apps.market.management.commands import market_gaps as cmd
+    from apps.market.services.sources.base import RawPoint
+
+    monkeypatch.setattr(cmd, "_today", lambda: dt.date(2024, 3, 1))
+    repository.upsert_points(
+        "bcb:12",
+        "BCB",
+        "rate",
+        [
+            RawPoint(dt.date(2024, 1, 2), 0.04),
+            RawPoint(dt.date(2024, 1, 10), 0.04),
+        ],
+    )
+    call_command("market_gaps", "--only", "bcb:12")
+    out = capsys.readouterr().out
+    assert "defasada desde 2024-01-10 (51 dias)" in out
+
+
+
 # --- ingest_market_data: re-busca de lacunas (Task 3) ---
 
 

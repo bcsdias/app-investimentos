@@ -52,6 +52,22 @@ def find_gaps(dates: Iterable, periodicity: str) -> list[Gap]:
     return gaps
 
 
+def stale_tail(dates: Iterable, periodicity: str, until: dt.date) -> Gap | None:
+    """Devolve Gap(last, until) se (until - last).days > TOLERANCE_DAYS[periodicity]; senão None.
+    Série vazia -> None.
+    """
+    clean_dates = sorted({_to_date(d) for d in dates})
+    if not clean_dates:
+        return None
+    last = clean_dates[-1]
+    until_d = _to_date(until)
+    tolerance = TOLERANCE_DAYS[periodicity]
+    if (until_d - last).days > tolerance:
+        return Gap(start=last, end=until_d)
+    return None
+
+
+
 def infer_periodicity(index: pd.Index) -> str:
     """Infere se o índice temporal é 'monthly' (mediana de passos >= 20 dias) ou 'daily'."""
     if len(index) < 2:
