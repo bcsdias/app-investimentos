@@ -50,10 +50,16 @@ export function BaseChart({
         ...(option?.tooltip || {}),
       },
       legend: {
+        type: 'scroll',
         top: 0,
         textStyle: {
           color: '#d4d4d8',
           fontSize: 12,
+        },
+        pageIconColor: '#a1a1aa',
+        pageIconInactiveColor: '#3f3f46',
+        pageTextStyle: {
+          color: '#a1a1aa',
         },
         ...(option?.legend || {}),
       },

@@ -16,6 +16,7 @@ import { TwrChart } from '../components/portfolio/charts/TwrChart';
 import { YearlyTable } from '../components/portfolio/tables/YearlyTable';
 import { ShadowChart } from '../components/portfolio/charts/ShadowChart';
 import { IrrEvolutionChart } from '../components/portfolio/charts/IrrEvolutionChart';
+import { BaseChart } from '../components/portfolio/charts/BaseChart';
 import { dlpApi } from '../api/dlp';
 
 function QueriesInspector() {
@@ -179,6 +180,44 @@ describe('usePortfolioQueries e Componentes da Aba Performance', () => {
 
     const charts = screen.getAllByTestId('echarts-mock');
     expect(charts).toHaveLength(2);
+  });
+
+  it('legenda base é de rolagem para não quebrar sobre o gráfico', () => {
+    const shadowData = {
+      data: {
+        series: [
+          { name: 'Carteira Real', data: [['2025-01-01', 100]] },
+          { name: 'Total Investido', data: [['2025-01-01', 90]] },
+          { name: 'CDI', data: [['2025-01-01', 95]] },
+          { name: 'IBOV', data: [['2025-01-01', 92]] },
+          { name: 'IPCA + 6%', data: [['2025-01-01', 94]] },
+          { name: 'LFTS11.SA', data: [['2025-01-01', 96]] },
+        ],
+      },
+    };
+
+    render(<ShadowChart data={shadowData} isLoading={false} />);
+    const chartEl = screen.getByTestId('echarts-mock');
+    const option = JSON.parse(chartEl.getAttribute('data-option'));
+
+    expect(option.legend).toBeDefined();
+    expect(option.legend.type).toBe('scroll');
+    expect(option.legend.top).toBe(0);
+  });
+
+  it('BaseChart permite sobrescrever legend ou ocultar com legend: false', () => {
+    const { rerender } = render(
+      <BaseChart option={{ legend: { type: 'plain', top: 10 } }} />
+    );
+    let chartEl = screen.getByTestId('echarts-mock');
+    let option = JSON.parse(chartEl.getAttribute('data-option'));
+    expect(option.legend.type).toBe('plain');
+    expect(option.legend.top).toBe(10);
+
+    rerender(<BaseChart option={{ legend: false }} />);
+    chartEl = screen.getByTestId('echarts-mock');
+    option = JSON.parse(chartEl.getAttribute('data-option'));
+    expect(option.legend.show).toBe(false);
   });
 });
 
