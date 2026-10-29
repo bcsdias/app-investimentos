@@ -31,6 +31,13 @@ def test_defaults():
     assert v.benchmarks == catalog.DEFAULT_BENCHMARKS
 
 
+def test_only_end_defaults_start_one_year_before_end():
+    v = validate_request(AnalysisRequest(end=dt.date(2020, 6, 30)), today=dt.date(2026, 10, 29))
+    assert v.start == dt.date(2019, 6, 30)
+    assert v.end == dt.date(2020, 6, 30)
+
+
+
 def test_empty_benchmarks_is_valid():
     assert validate_request(_req(benchmarks=[]), today=TODAY).benchmarks == []
 

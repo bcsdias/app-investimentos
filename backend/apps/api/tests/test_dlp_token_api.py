@@ -71,3 +71,63 @@ def test_delete_removes_unreadable_stored_token(auth_client, user):
     UserToken.objects.filter(user=user).update(encrypted_token="lixo")
     assert auth_client.delete(f"{URL}/token").status_code == 204
     assert not UserToken.objects.filter(user=user).exists()
+
+
+def test_save_token_survives_concurrent_insert(auth_client, user, monkeypatch):
+    from apps.core.models import UserToken
+
+    _post(auth_client, "old_token")
+
+    # Simula a corrida: o router acha que não existe token (.first() -> None)
+    # mas o registro já existe no banco
+    monkeypatch.setattr(
+        UserToken.objects,
+        "first",
+        lambda: None,
+    )
+    # No router atual: ut = UserToken.objects.filter(...).first() or UserToken(user=...)
+    # Vai instanciar novo UserToken e dar IntegrityError no save().
+    orig_filter = UserToken.objects.filter
+
+    class FakeQS:
+        def __init__(self, qs):
+            self.qs = qs
+        def first(self):
+            return None
+        def __getattr__(self, name):
+            return getattr(self.qs, name)
+
+    monkeypatch.setattr(
+        UserToken.objects,
+        "filter",
+        lambda **kw: FakeQS(orig_filter(**kw)),
+    )
+    r = _post(auth_client, "concurrent_winner")
+    assert r.status_code == 200
+    assert r.json()["configured"] is True
+    assert UserToken.objects.filter(user=user).count() == 1
+    assert UserToken.objects.get(user=user).get_token() == "concurrent_winner"
+
+
+def test_save_token_survives_integrity_error_on_update_or_create(auth_client, user, monkeypatch):
+    from apps.core.models import UserToken
+    from django.db import IntegrityError
+
+    _post(auth_client, "old_token")
+
+    first_call = True
+
+    def fail_once(*args, **kwargs):
+        nonlocal first_call
+        if first_call:
+            first_call = False
+            raise IntegrityError("unique constraint")
+        return UserToken.objects.get(user=user), False
+
+    monkeypatch.setattr(UserToken.objects, "update_or_create", fail_once)
+    r = _post(auth_client, "recovered_token")
+    assert r.status_code == 200
+    assert r.json()["configured"] is True
+    assert UserToken.objects.filter(user=user).count() == 1
+    assert UserToken.objects.get(user=user).get_token() == "recovered_token"
+

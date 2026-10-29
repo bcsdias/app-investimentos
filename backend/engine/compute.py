@@ -209,6 +209,49 @@ def compute_summary_kpis(portfolio_df: pd.DataFrame) -> dict[str, float]:
     }
 
 
+def compute_summary(
+    df_combined: pd.DataFrame,
+    portfolio_df: pd.DataFrame,
+    rf_series: pd.Series | None = None,
+) -> dict[str, Any]:
+    """Calcula os indicadores resumidos da carteira (KPIs, TWR, risco/retorno, drawdown, TIR)."""
+    summary_kpis = compute_summary_kpis(portfolio_df)
+
+    twr_out = compute_twr_evolution(df_combined)
+    twr_total = twr_out["final_returns"].get("Carteira")
+
+    rr_df = compute_risk_return(df_combined, rf_series)
+    if "Carteira" in rr_df.index:
+        cagr = rr_df.loc["Carteira", "Retorno (CAGR)"]
+        vol = rr_df.loc["Carteira", "Volatilidade"]
+        sharpe = rr_df.loc["Carteira", "Sharpe"]
+    else:
+        cagr = vol = sharpe = None
+
+    dd_df = compute_drawdown(df_combined)
+    max_dd = dd_df["Carteira"].min() if "Carteira" in dd_df.columns else None
+
+    irr_summary = compute_summary_irr(portfolio_df)
+    xirr = irr_summary["xirr"]
+    xirr_period = irr_summary["xirr_period"]
+    xirr_is_annual = irr_summary["xirr_is_annual"]
+
+    return {
+        "patrimonio_inicial": summary_kpis["patrimonio_inicial"],
+        "aportes_periodo": summary_kpis["aportes_periodo"],
+        "patrimonio": summary_kpis["patrimonio"],
+        "ganho_periodo": summary_kpis["ganho_periodo"],
+        "twr_total": twr_total,
+        "cagr": cagr,
+        "volatilidade": vol,
+        "sharpe": sharpe,
+        "max_drawdown": max_dd,
+        "xirr": xirr,
+        "xirr_period": xirr_period,
+        "xirr_is_annual": xirr_is_annual,
+    }
+
+
 def compute_shadow(portfolio_df: pd.DataFrame, df_combined: pd.DataFrame) -> pd.DataFrame:
     if df_combined.empty or portfolio_df is None or portfolio_df.empty:
         return pd.DataFrame()

@@ -252,3 +252,39 @@ def test_compute_summary_irr_short_vs_long():
     assert long_out["xirr_period"] is not None
 
 
+def test_compute_summary_keys():
+    df = _combined()
+    cdi = df["CDI"]
+    dates = df.index[:: len(df) // 4][:4]
+    pdf = pd.DataFrame(
+        {
+            "date": dates,
+            "vlr_mercado": [1000.0, 1200.0, 1500.0, 1800.0],
+            "vlr_investido": [1000.0, 1100.0, 1300.0, 1500.0],
+            "proventos": [0.0, 0.0, 0.0, 0.0],
+        }
+    )
+    pdf["fluxo"] = pdf["vlr_investido"].diff().fillna(pdf["vlr_investido"].iloc[0]) - pdf["proventos"]
+    out = compute.compute_summary(df, pdf, rf_series=cdi)
+    expected_keys = {
+        "patrimonio_inicial",
+        "aportes_periodo",
+        "patrimonio",
+        "ganho_periodo",
+        "twr_total",
+        "cagr",
+        "volatilidade",
+        "sharpe",
+        "max_drawdown",
+        "xirr",
+        "xirr_period",
+        "xirr_is_annual",
+    }
+    assert set(out.keys()) == expected_keys
+    assert out["patrimonio_inicial"] == 1000.0
+    assert out["patrimonio"] == 1800.0
+    assert out["twr_total"] is not None
+    assert out["xirr"] is not None
+    assert out["xirr_period"] is not None
+    assert isinstance(out["xirr_is_annual"], (bool, np.bool_))
+

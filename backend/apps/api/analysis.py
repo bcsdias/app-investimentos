@@ -81,7 +81,7 @@ def _validate_synthetic(s) -> SyntheticSpec:
 def validate_request(req: AnalysisRequest, today: dt.date | None = None) -> ValidRequest:
     ref_today = today or dt.date.today()
     end = req.end or ref_today
-    start = req.start or _one_year_ago(ref_today)
+    start = req.start or _one_year_ago(end)
     if start > end:
         raise ApiError(
             422,

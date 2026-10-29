@@ -1,11 +1,13 @@
 import logging
 
 from cryptography.fernet import InvalidToken
+from django.db import IntegrityError, transaction
 from django.http import HttpRequest
 from ninja import Router, Status
 
 from apps.api.errors import ApiError
 from apps.api.schemas import TokenIn, TokenStatusOut
+from apps.core import security
 from apps.core.models import UserToken
 from apps.market.services.sources import dlp
 
@@ -31,10 +33,22 @@ def save_token(request: HttpRequest, payload: TokenIn):
     token = payload.token.strip()
     if not token:
         raise ApiError(422, "invalid_token", "Informe o token DLP.")
-    ut = UserToken.objects.filter(user=request.user).first() or UserToken(user=request.user)
-    old = _old_token(ut) if ut.pk else None
-    ut.set_token(token)
-    ut.save()
+    existing = UserToken.objects.filter(user=request.user).first()
+    old = _old_token(existing) if existing else None
+    encrypted = security.encrypt(token)
+    try:
+        with transaction.atomic():
+            ut, _ = UserToken.objects.update_or_create(
+                user=request.user,
+                defaults={"encrypted_token": encrypted},
+            )
+    except IntegrityError:
+        with transaction.atomic():
+            ut = UserToken.objects.get(user=request.user)
+            if old is None:
+                old = _old_token(ut)
+            ut.encrypted_token = encrypted
+            ut.save()
     if old and old != token:
         dlp.invalidate_user_cache(old)
     return _status(ut)

@@ -35,8 +35,7 @@ from engine.compute import (
     compute_risk_return,
     compute_rolling_metrics,
     compute_shadow,
-    compute_summary_irr,
-    compute_summary_kpis,
+    compute_summary,
     compute_twr_evolution,
     compute_yearly_summary,
     irr_period_series,
@@ -110,42 +109,20 @@ def refresh(request: HttpRequest):
 @router.post("/summary", response=SummaryOut)
 def summary(request: HttpRequest, payload: AnalysisRequest):
     ctx = run_analysis(request.user, payload)
-    pdf = ctx.portfolio_df
-
-    summary_kpis = compute_summary_kpis(pdf)
-
-    twr_out = compute_twr_evolution(ctx.df_combined)
-    twr_total = clean(twr_out["final_returns"].get("Carteira"))
-
-    rr_df = compute_risk_return(ctx.df_combined, ctx.rf)
-    if "Carteira" in rr_df.index:
-        cagr = clean(rr_df.loc["Carteira", "Retorno (CAGR)"])
-        vol = clean(rr_df.loc["Carteira", "Volatilidade"])
-        sharpe = clean(rr_df.loc["Carteira", "Sharpe"])
-    else:
-        cagr = vol = sharpe = None
-
-    dd_df = compute_drawdown(ctx.df_combined)
-    max_dd = clean(dd_df["Carteira"].min()) if "Carteira" in dd_df.columns else None
-
-    irr_summary = compute_summary_irr(pdf)
-    xirr = clean(irr_summary["xirr"])
-    xirr_period = clean(irr_summary["xirr_period"])
-    xirr_is_annual = bool(irr_summary["xirr_is_annual"])
-
+    raw = compute_summary(ctx.df_combined, ctx.portfolio_df, ctx.rf)
     data = {
-        "patrimonio_inicial": clean(summary_kpis["patrimonio_inicial"]),
-        "aportes_periodo": clean(summary_kpis["aportes_periodo"]),
-        "patrimonio": clean(summary_kpis["patrimonio"]),
-        "ganho_periodo": clean(summary_kpis["ganho_periodo"]),
-        "twr_total": twr_total,
-        "cagr": cagr,
-        "volatilidade": vol,
-        "sharpe": sharpe,
-        "max_drawdown": max_dd,
-        "xirr": xirr,
-        "xirr_period": xirr_period,
-        "xirr_is_annual": xirr_is_annual,
+        "patrimonio_inicial": clean(raw["patrimonio_inicial"]),
+        "aportes_periodo": clean(raw["aportes_periodo"]),
+        "patrimonio": clean(raw["patrimonio"]),
+        "ganho_periodo": clean(raw["ganho_periodo"]),
+        "twr_total": clean(raw["twr_total"]),
+        "cagr": clean(raw["cagr"]),
+        "volatilidade": clean(raw["volatilidade"]),
+        "sharpe": clean(raw["sharpe"]),
+        "max_drawdown": clean(raw["max_drawdown"]),
+        "xirr": clean(raw["xirr"]),
+        "xirr_period": clean(raw["xirr_period"]),
+        "xirr_is_annual": bool(raw["xirr_is_annual"]),
         "data_inicio": ctx.start.isoformat(),
         "data_fim": ctx.end.isoformat(),
     }

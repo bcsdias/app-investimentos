@@ -1,4 +1,5 @@
 from ninja import NinjaAPI
+import ninja.errors
 
 from apps.accounts.api import router as accounts_router
 from apps.api.csrf import ApiSessionAuth
@@ -25,6 +26,20 @@ def handle_api_error(request, exc: ApiError):
         {"code": exc.code, "message": exc.message, "details": exc.details},
         status=exc.status,
     )
+
+
+@api.exception_handler(ninja.errors.ValidationError)
+def handle_validation_error(request, exc: ninja.errors.ValidationError):
+    return api.create_response(
+        request,
+        {
+            "code": "invalid_request",
+            "message": "Requisição inválida.",
+            "details": exc.errors,
+        },
+        status=422,
+    )
+
 
 api.add_router("/auth/", accounts_router)
 api.add_router("/dlp/", dlp_router)
