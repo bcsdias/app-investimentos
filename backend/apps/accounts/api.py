@@ -4,6 +4,7 @@ from django.views.decorators.csrf import csrf_protect, ensure_csrf_cookie
 from ninja import Router, Schema, Status
 from ninja.decorators import decorate_view
 
+from apps.accounts import ratelimit
 from apps.api.errors import ApiError
 from apps.core.models import UserToken
 
@@ -34,9 +35,17 @@ def csrf(request: HttpRequest):
 @router.post("/login", auth=None, response=UserOut)
 @decorate_view(csrf_protect)
 def login_view(request: HttpRequest, payload: LoginIn):
+    ip = ratelimit.client_ip(request)
+    key = ratelimit.key_for(payload.username, ip)
+    if ratelimit.is_blocked(key):
+        raise ApiError(429, "too_many_attempts", "Muitas tentativas de login. Tente novamente em alguns minutos.")
+
     user = authenticate(request, username=payload.username, password=payload.password)
     if user is None:
+        ratelimit.register_failure(key)
         raise ApiError(401, "invalid_credentials", "Usuário ou senha inválidos.")
+
+    ratelimit.reset(key)
     login(request, user)
     return user
 
