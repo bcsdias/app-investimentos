@@ -281,3 +281,170 @@ def test_market_gaps_includes_on_demand_yf(db, capsys):
     assert "yf:CUSTOM.SA (daily) última=2024-01-25 lacunas=1" in out
     assert "2024-01-02 → 2024-01-25 (23 dias)" in out
 
+
+# --- ingest_market_data: re-busca de lacunas (Task 3) ---
+
+
+def test_ingest_refills_middle_gap(monkeypatch, db):
+    from apps.core.models import MarketSeries
+    from apps.market import repository
+    from apps.market.management.commands import ingest_market_data as cmd
+
+    repository.upsert_points(
+        "bcb:12",
+        "BCB",
+        "rate",
+        [
+            RawPoint(dt.date(2024, 1, 2), 0.04),
+            RawPoint(dt.date(2024, 2, 1), 0.05),
+        ],
+    )
+
+    fetch_calls = []
+
+    def fake_fetch(sdef, start, end):
+        fetch_calls.append((sdef.series_key, start, end))
+        if sdef.series_key == "bcb:12" and start == dt.date(2024, 1, 3):
+            return [RawPoint(dt.date(2024, 1, 15), 0.045)]
+        return []
+
+    monkeypatch.setattr(cmd, "_fetch", fake_fetch)
+    monkeypatch.setattr(cmd, "_warm_cache", lambda *a, **k: None)
+
+    out = StringIO()
+    call_command("ingest_market_data", "--only", "bcb:12", stdout=out)
+
+    assert ("bcb:12", dt.date(2024, 1, 3), dt.date(2024, 1, 31)) in fetch_calls
+    assert MarketSeries.objects.filter(series_key="bcb:12").count() == 3
+    assert "1 lacuna(s) re-buscada(s), 0 sem dado na fonte" in out.getvalue()
+
+
+def test_gap_without_source_data_is_not_a_failure(monkeypatch, db, caplog):
+    import logging
+    from apps.market import repository
+    from apps.market.management.commands import ingest_market_data as cmd
+
+    repository.upsert_points(
+        "bcb:12",
+        "BCB",
+        "rate",
+        [
+            RawPoint(dt.date(2024, 1, 2), 0.04),
+            RawPoint(dt.date(2024, 2, 1), 0.05),
+        ],
+    )
+
+    def fake_fetch(sdef, start, end):
+        if start == dt.date(2024, 1, 3):
+            raise FetchError("dados indisponíveis no SGS")
+        return []
+
+    monkeypatch.setattr(cmd, "_fetch", fake_fetch)
+    monkeypatch.setattr(cmd, "_warm_cache", lambda *a, **k: None)
+
+    out = StringIO()
+    with caplog.at_level(logging.WARNING):
+        call_command("ingest_market_data", "--only", "bcb:12", stdout=out)
+
+    assert "lacuna sem dado na fonte em bcb:12" in caplog.text
+    assert "1 lacuna(s) re-buscada(s), 1 sem dado na fonte" in out.getvalue()
+
+
+def test_only_filters_gap_refill(monkeypatch, db):
+    from apps.market import repository
+    from apps.market.management.commands import ingest_market_data as cmd
+
+    repository.upsert_points(
+        "bcb:12",
+        "BCB",
+        "rate",
+        [
+            RawPoint(dt.date(2024, 1, 2), 0.04),
+            RawPoint(dt.date(2024, 2, 1), 0.05),
+        ],
+    )
+    repository.upsert_points(
+        "bcb:11",
+        "BCB",
+        "rate",
+        [
+            RawPoint(dt.date(2024, 1, 2), 0.04),
+            RawPoint(dt.date(2024, 2, 1), 0.05),
+        ],
+    )
+
+    fetched_keys = set()
+
+    def fake_fetch(sdef, start, end):
+        fetched_keys.add(sdef.series_key)
+        return []
+
+    monkeypatch.setattr(cmd, "_fetch", fake_fetch)
+    monkeypatch.setattr(cmd, "_warm_cache", lambda *a, **k: None)
+
+    call_command("ingest_market_data", "--only", "bcb:12")
+
+    assert "bcb:11" not in fetched_keys
+    assert "bcb:12" in fetched_keys
+
+
+def test_ingest_refills_gap_even_when_already_up_to_date(monkeypatch, db):
+    from apps.core.models import MarketSeries
+    from apps.market import catalog, repository
+    from apps.market.management.commands import ingest_market_data as cmd
+
+    # Data mais recente no futuro de "today" (simulando "já atualizado")
+    future = dt.date.today() + dt.timedelta(days=2)
+    repository.upsert_points(
+        "bcb:12",
+        "BCB",
+        "rate",
+        [
+            RawPoint(dt.date(2024, 1, 2), 0.04),
+            RawPoint(future, 0.05),
+        ],
+    )
+
+    fetch_calls = []
+
+    def fake_fetch(sdef, start, end):
+        fetch_calls.append((sdef.series_key, start, end))
+        return [RawPoint(dt.date(2024, 1, 15), 0.045)]
+
+    monkeypatch.setattr(cmd, "_fetch", fake_fetch)
+    monkeypatch.setattr(cmd, "_warm_cache", lambda *a, **k: None)
+
+    out = StringIO()
+    call_command("ingest_market_data", "--only", "bcb:12", stdout=out)
+
+    val = out.getvalue()
+    assert "bcb:12: já atualizado" in val
+    assert "bcb:12: 1 lacuna(s) re-buscada(s), 0 sem dado na fonte" in val
+    assert MarketSeries.objects.filter(series_key="bcb:12").count() == 3
+
+
+def test_refill_gaps_function_signature_and_types(monkeypatch, db):
+    from apps.market import catalog, gaps, repository
+    from apps.market.management.commands import ingest_market_data as cmd
+
+    sdef = catalog.SeriesDef("CDI", "BCB", "bcb:12", "rate")
+    repository.upsert_points(
+        "bcb:12",
+        "BCB",
+        "rate",
+        [
+            RawPoint(dt.date(2024, 1, 2), 0.04),
+            RawPoint(dt.date(2024, 2, 1), 0.05),
+        ],
+    )
+
+    monkeypatch.setattr(cmd, "_fetch", lambda s, st, e: [RawPoint(dt.date(2024, 1, 15), 0.045)])
+    pts_written, remaining = cmd._refill_gaps(sdef)
+
+    assert isinstance(pts_written, int)
+    assert pts_written == 1
+    assert isinstance(remaining, list)
+    assert len(remaining) == 0
+
+
+

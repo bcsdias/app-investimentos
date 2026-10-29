@@ -15,7 +15,7 @@ from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.db import DatabaseError
 
-from apps.market import catalog, repository, series
+from apps.market import catalog, gaps, repository, series
 from apps.market.services.sources import b3, bcb, ptax, tesouro, yahoo
 from apps.market.services.sources.base import FetchError, RawPoint
 
@@ -78,6 +78,70 @@ def _warm_cache(today: dt.date) -> None:
                 logger.warning("warm cache falhou para %s: %s", name, exc)
 
 
+class RefillResult(tuple):
+    total_gaps: int
+    points_written: int
+    remaining_gaps: list[gaps.Gap]
+
+    def __new__(
+        cls,
+        points_written: int,
+        remaining_gaps: list[gaps.Gap],
+        total_gaps: int = 0,
+    ) -> RefillResult:
+        instance = super().__new__(cls, (points_written, remaining_gaps))
+        instance.points_written = points_written
+        instance.remaining_gaps = remaining_gaps
+        instance.total_gaps = total_gaps
+        return instance
+
+
+def _refill_gaps(
+    sdef: catalog.SeriesDef,
+    gap_list: list[gaps.Gap] | None = None,
+) -> tuple[int, list[gaps.Gap]]:
+    if gap_list is None:
+        dates = repository.load_dates(sdef.series_key)
+        gap_list = gaps.find_gaps(dates, sdef.periodicity)
+    if not gap_list:
+        return RefillResult(0, [], 0)
+
+    points_written = 0
+    remaining: list[gaps.Gap] = []
+    for gap in gap_list:
+        start = gap.start + dt.timedelta(days=1)
+        end = gap.end - dt.timedelta(days=1)
+        if start > end:
+            remaining.append(gap)
+            logger.warning(
+                "lacuna sem dado na fonte em %s: %s..%s",
+                sdef.series_key,
+                gap.start,
+                gap.end,
+            )
+            continue
+        try:
+            pts = _fetch(sdef, start, end)
+        except _PartialFetch as exc:
+            pts = exc.points
+        except FetchError:
+            pts = []
+        if pts:
+            n = repository.upsert_points(
+                sdef.series_key, sdef.source, sdef.kind, pts
+            )
+            points_written += n
+        else:
+            remaining.append(gap)
+            logger.warning(
+                "lacuna sem dado na fonte em %s: %s..%s",
+                sdef.series_key,
+                gap.start,
+                gap.end,
+            )
+    return RefillResult(points_written, remaining, len(gap_list))
+
+
 class Command(BaseCommand):
     help = "Ingere séries de mercado ao vivo em core.MarketSeries."
 
@@ -104,31 +168,39 @@ class Command(BaseCommand):
                 start = (last + dt.timedelta(days=1)) if last else _EPOCH
             if start > today:
                 self.stdout.write(f"  {sdef.series_key}: já atualizado")
-                continue
-            try:
-                points = _fetch(sdef, start, today)
-                n = repository.upsert_points(
-                    sdef.series_key, sdef.source, sdef.kind, points
-                )
-            except _PartialFetch as exc:
-                if exc.points:
-                    repository.upsert_points(
-                        sdef.series_key, sdef.source, sdef.kind, exc.points
-                    )
-                failed += 1
-                failed_keys.append(sdef.series_key)
-                logger.error("ingest %s falhou: %s", sdef.series_key, exc)
-                continue
-            except (FetchError, DatabaseError) as exc:
-                failed += 1
-                failed_keys.append(sdef.series_key)
-                logger.error("ingest %s falhou: %s", sdef.series_key, exc)
-                continue
-            ok += 1
-            if n:
-                self.stdout.write(f"  ok {sdef.series_key}: +{n} pontos")
             else:
-                self.stdout.write(f"  {sdef.series_key}: sem novos pontos")
+                try:
+                    points = _fetch(sdef, start, today)
+                    n = repository.upsert_points(
+                        sdef.series_key, sdef.source, sdef.kind, points
+                    )
+                except _PartialFetch as exc:
+                    if exc.points:
+                        repository.upsert_points(
+                            sdef.series_key, sdef.source, sdef.kind, exc.points
+                        )
+                    failed += 1
+                    failed_keys.append(sdef.series_key)
+                    logger.error("ingest %s falhou: %s", sdef.series_key, exc)
+                    continue
+                except (FetchError, DatabaseError) as exc:
+                    failed += 1
+                    failed_keys.append(sdef.series_key)
+                    logger.error("ingest %s falhou: %s", sdef.series_key, exc)
+                    continue
+                ok += 1
+                if n:
+                    self.stdout.write(f"  ok {sdef.series_key}: +{n} pontos")
+                else:
+                    self.stdout.write(f"  {sdef.series_key}: sem novos pontos")
+
+            res = _refill_gaps(sdef)
+            total_gaps = getattr(res, "total_gaps", 0)
+            if total_gaps:
+                remaining_gaps = res[1] if isinstance(res, tuple) else []
+                self.stdout.write(
+                    f"  {sdef.series_key}: {total_gaps} lacuna(s) re-buscada(s), {len(remaining_gaps)} sem dado na fonte"
+                )
 
         _warm_cache(today)
 
