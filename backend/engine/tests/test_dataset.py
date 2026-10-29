@@ -170,3 +170,30 @@ def test_window_outside_history_returns_none(mock_dlp_history):
     assert dataset.fetch_user_portfolio("t", start_date="2025-01-01") == (None, None)
     assert dataset.fetch_user_portfolio("t", end_date="2023-12-31") == (None, None)
 
+
+def test_benchmark_opens_at_last_value_before_portfolio_opening(monkeypatch):
+    # CDI com pontos em 2023-12-29 (100.0), 2024-01-02 (101.0), 2024-01-31 (102.0);
+    # carteira em 2023-12-31 e 2024-01-31; start_date="2024-01-01", end_date="2024-01-31"
+    cdi_all = pd.Series(
+        [100.0, 101.0, 102.0],
+        index=pd.to_datetime(["2023-12-29", "2024-01-02", "2024-01-31"]),
+    )
+
+    def fake_get_many(names, s, e):
+        s_ts = pd.to_datetime(s)
+        e_ts = pd.to_datetime(e)
+        return {"CDI": cdi_all[(cdi_all.index >= s_ts) & (cdi_all.index <= e_ts)]}
+
+    monkeypatch.setattr(dataset.series, "get_many", fake_get_many)
+    monkeypatch.setattr(dataset.series, "get_series", lambda *a, **k: None)
+
+    user = pd.Series([1.0, 1.05], index=pd.to_datetime(["2023-12-31", "2024-01-31"]))
+    res = dataset.build_dataset(
+        user_series=user, benchmarks=["CDI"], start_date="2024-01-01", end_date="2024-01-31"
+    )
+    df = res.df_combined
+    assert df.index[0] == pd.Timestamp("2023-12-31")
+    assert df["CDI"].iloc[0] == pytest.approx(100.0)
+    assert df["CDI"].iloc[-1] == pytest.approx(102.0)
+
+

@@ -6,6 +6,7 @@ apps.market.series (NÃO mais processar_benchmarks). Corrige o bug self.logger.
 """
 from __future__ import annotations
 
+import datetime as dt
 import logging
 from dataclasses import dataclass
 
@@ -18,6 +19,8 @@ from engine import flows
 from engine.twr import calculate_twr
 
 logger = logging.getLogger(__name__)
+
+BENCH_LOOKBACK_DAYS = 40
 
 
 @dataclass
@@ -90,8 +93,9 @@ def build_dataset(
         start = pd.to_datetime(start_date).date() if start_date else (pd.Timestamp.today() - pd.DateOffset(years=1)).date()
         end = pd.to_datetime(end_date).date() if end_date else pd.Timestamp.today().date()
 
+    bench_start = start - dt.timedelta(days=BENCH_LOOKBACK_DAYS)
     names = list(benchmarks or [])
-    bench = series.get_many(names, start, end)
+    bench = series.get_many(names, bench_start, end)
     rf = series.get_series("CDI", start, end)
 
     frames: list[pd.Series] = []
@@ -111,7 +115,7 @@ def build_dataset(
         frames.append(pd.to_numeric(s, errors="coerce"))
 
     for spec in extra_specs or []:
-        base = series.get_series(spec.base, start, end)
+        base = series.get_series(spec.base, bench_start, end)
         if base is None or base.empty:
             continue
         syn = transforms.synthetic_from_spec(spec, base)
@@ -124,13 +128,14 @@ def build_dataset(
         return DatasetResult(df_combined=pd.DataFrame(), rf_series=rf, portfolio_df=portfolio_df)
 
     raw = pd.concat(frames, axis=1).sort_index()
-    if start_date and end_date:
-        # A carteira pode abrir no fechamento anterior a start_date (fetch_user_portfolio).
-        crop_start = pd.to_datetime(start_date)
-        if user_series is not None and not user_series.empty:
-            crop_start = min(crop_start, pd.to_datetime(user_series.index.min()))
-        raw = raw.loc[crop_start:str(end_date)]
     raw = raw.ffill()
+
+    crop_start = pd.to_datetime(start_date) if start_date else pd.to_datetime(start)
+    if user_series is not None and not user_series.empty:
+        crop_start = min(crop_start, pd.to_datetime(user_series.index.min()))
+    crop_end = str(end_date) if end_date else str(end)
+    raw = raw.loc[crop_start:crop_end]
+
     raw = raw.dropna(subset=["Carteira"]) if "Carteira" in raw.columns else raw.dropna(how="all")
 
     for col in raw.columns:

@@ -53,7 +53,7 @@
   - Chave das séries: `cache.make_key("series", f"g{gen}", name, start, end)`.
   - `repository.upsert_points(...)` chama `cache.bump_series_generation()` quando grava ≥ 1 linha.
 
-- [ ] **Step 1: Escrever os testes**
+- [x] **Step 1: Escrever os testes**
 
 Usar a fixture `_locmem_cache` já existente em `test_series.py`. Em `test_cache.py`, usar a fixture `locmem_cache` do `conftest.py`.
 
@@ -89,24 +89,24 @@ def test_upsert_without_rows_does_not_bump(monkeypatch):
 
 Ajustar `test_cache_key_includes_window` ao novo formato de chave.
 
-- [ ] **Step 2: Rodar e ver falhar**
+- [x] **Step 2: Rodar e ver falhar**
 
 Run: `cd backend && .venv/bin/pytest apps/market -q`
 Expected: FAIL (`AttributeError: series_generation` / `GEN_KEY`; série antiga servida após o upsert)
 
-- [ ] **Step 3: Implementar**
+- [x] **Step 3: Implementar**
 
 Em `get_series`:
 1. Ler a geração e consultar o cache.
 2. No miss, rodar `_ensure_fresh`, que pode gravar e fazer bump.
 3. **Reler a geração** antes do `set_df`, para não gravar na chave da geração antiga.
 
-- [ ] **Step 4: Rodar e ver passar**
+- [x] **Step 4: Rodar e ver passar**
 
 Run: `cd backend && .venv/bin/pytest -q && cd ../scripts/parity && ../../backend/.venv/bin/pytest -q`
 Expected: PASS nas duas suítes. O harness usa `DummyCache` e proíbe escrita; nada muda.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/apps/market
@@ -132,7 +132,7 @@ git commit -m "🐛 fix(market): invalida o cache de séries a cada escrita por 
 - `repository.load_dates(series_key: str) -> list[dt.date]`: todas as datas da série, ordenadas.
 - `python manage.py market_gaps [--only k1,k2]`: percorre `catalog.ingestible()` e as chaves `yf:*` sob demanda (reusar `ingest_market_data._on_demand_defs`). Imprime por série `"<key> (<periodicity>) última=<data> lacunas=<n>"` e, para cada lacuna, `"  <start> → <end> (<dias> dias)"`. Sempre `exit 0`.
 
-- [ ] **Step 1: Escrever os testes**
+- [x] **Step 1: Escrever os testes**
 
 ```python
 D = dt.date
@@ -156,19 +156,19 @@ def test_market_gaps_lists_gap(db, capsys):
     # upsert bcb:12 em 2024-01-02, 2024-01-03, 2024-02-01 -> saída contém "bcb:12" e "2024-01-03 → 2024-02-01"
 ```
 
-- [ ] **Step 2: Rodar e ver falhar**
+- [x] **Step 2: Rodar e ver falhar**
 
 Run: `cd backend && .venv/bin/pytest apps/market/tests/test_gaps.py apps/market/tests/test_commands.py -q`
 Expected: FAIL (`ModuleNotFoundError: apps.market.gaps`; `Unknown command: 'market_gaps'`)
 
-- [ ] **Step 3: Implementar `gaps.py`, `load_dates` e o comando**
+- [x] **Step 3: Implementar `gaps.py`, `load_dates` e o comando**
 
-- [ ] **Step 4: Rodar e ver passar**
+- [x] **Step 4: Rodar e ver passar**
 
 Run: `cd backend && .venv/bin/pytest apps/market -q`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/apps/market
@@ -192,7 +192,7 @@ git commit -m "✨ feat(market): detecção de lacunas por cadência e comando m
 - `handle` chama `_refill_gaps` para cada série depois do fetch incremental, inclusive quando o incremental respondeu "já atualizado". A cadência vem de `sdef.periodicity`. Saída por série com lacunas: `"  <key>: <n> lacuna(s) re-buscada(s), <m> sem dado na fonte"`. Uma lacuna que continua **não** incrementa `failed`.
 - `--only` também filtra a re-busca.
 
-- [ ] **Step 1: Escrever os testes**
+- [x] **Step 1: Escrever os testes**
 
 ```python
 def test_ingest_refills_middle_gap(monkeypatch, db):
@@ -206,19 +206,19 @@ def test_only_filters_gap_refill(monkeypatch, db):
     # lacunas em bcb:12 e bcb:11, --only bcb:12 -> _fetch nunca chamado com bcb:11
 ```
 
-- [ ] **Step 2: Rodar e ver falhar**
+- [x] **Step 2: Rodar e ver falhar**
 
 Run: `cd backend && .venv/bin/pytest apps/market/tests/test_commands.py -q`
 Expected: FAIL (lacuna não re-buscada)
 
-- [ ] **Step 3: Implementar**
+- [x] **Step 3: Implementar**
 
-- [ ] **Step 4: Rodar e ver passar**
+- [x] **Step 4: Rodar e ver passar**
 
 Run: `cd backend && .venv/bin/pytest apps/market -q`
 Expected: PASS, incluindo os testes antigos de ingestão.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/apps/market
@@ -242,7 +242,7 @@ Pendência da Fase 7a (ADR 0018, "Revisão pós-teste"): a carteira abre num fec
   - Em seguida faz `concat`, depois `ffill` e só então recorta em `[crop_start, end]`. O `crop_start` é o da Fase 7a (o menor entre `start_date` e a 1ª data da carteira).
   - `rf = get_series("CDI", start, end)` não muda.
 
-- [ ] **Step 1: Escrever o teste**
+- [x] **Step 1: Escrever o teste**
 
 ```python
 def test_benchmark_opens_at_last_value_before_portfolio_opening(monkeypatch):
@@ -257,14 +257,14 @@ def test_benchmark_opens_at_last_value_before_portfolio_opening(monkeypatch):
 
 O fake de `get_many` precisa respeitar o `start` recebido. Com isso, o teste falha se o lookback não existir.
 
-- [ ] **Step 2: Rodar e ver falhar**
+- [x] **Step 2: Rodar e ver falhar**
 
 Run: `cd backend && .venv/bin/pytest engine/tests/test_dataset.py -q`
 Expected: FAIL (`df["CDI"].iloc[-1] == 100.99…`, rebase em 02/01)
 
-- [ ] **Step 3: Implementar**
+- [x] **Step 3: Implementar**
 
-- [ ] **Step 4: Rodar suítes e regressão**
+- [x] **Step 4: Rodar suítes e regressão**
 
 Run: `cd backend && .venv/bin/pytest -q && cd ../scripts/parity && ../../backend/.venv/bin/pytest -q && ../../backend/.venv/bin/python -m parity.regress --baseline ../../reports/parity/20261028-180012-fase7-abertura/baseline`
 
@@ -276,12 +276,12 @@ Expected:
   - um benchmark diário só pode mudar em caso cuja data de abertura não tenha ponto desse benchmark.
 - Qualquer outra mudança → **parar e investigar**. Registrar a tabela para o ADR.
 
-- [ ] **Step 5: Gravar a nova linha de base e re-verificar**
+- [x] **Step 5: Gravar a nova linha de base e re-verificar**
 
 Run: `cd scripts/parity && ../../backend/.venv/bin/python -m parity.regress --baseline ../../reports/parity/20261028-180012-fase7-abertura/baseline --save ../../reports/parity/$(date +%Y%m%d-%H%M%S)-fase7b`, e de novo com `--baseline` na nova.
 Expected: tudo `=`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add backend/engine/dataset.py backend/engine/tests/test_dataset.py
