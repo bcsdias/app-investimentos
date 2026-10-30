@@ -45,7 +45,7 @@ describe('helpers de erro da API', () => {
     expect(shouldRetry(0, {})).toBe(true);
   });
 
-  it('interceptor abre modal DLP quando erro 409 vem como Blob', async () => {
+  it('interceptor parseia Blob em erro 409 sem abrir modal automaticamente', async () => {
     const listener = vi.fn();
     window.addEventListener('open-dlp-modal', listener);
     const adapter = async (config) => {
@@ -63,7 +63,6 @@ describe('helpers de erro da API', () => {
       .catch((e) => e);
     window.removeEventListener('open-dlp-modal', listener);
     expect(err.response.data).toEqual({ code: 'dlp_token_missing', message: 'Sem token' });
-    expect(listener).toHaveBeenCalledTimes(1);
-    expect(listener.mock.calls[0][0].detail.reason).toBe('missing');
+    expect(listener).not.toHaveBeenCalled();
   });
 });

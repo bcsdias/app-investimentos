@@ -8,6 +8,7 @@ import { EmptyState } from '../components/common/EmptyState';
 import { ErrorState } from '../components/common/ErrorState';
 import { Skeleton } from '../components/common/Skeleton';
 import { DlpTokenRequiredState } from '../components/dlp/DlpTokenRequiredState';
+import { DlpTokenErrorState, dlpTokenErrorCode } from '../components/dlp/DlpTokenErrorState';
 import { useDlpTokenStatus } from '../hooks/useDlpTokenStatus';
 import { TwrChart } from '../components/portfolio/charts/TwrChart';
 import { YearlyTable } from '../components/portfolio/tables/YearlyTable';
@@ -28,6 +29,8 @@ export function PortfolioPage() {
     usePortfolioQueries();
   const tokenStatus = useDlpTokenStatus();
 
+  const dlpErrorCode = dlpTokenErrorCode(summary.error);
+
   const isPortfolioEmpty =
     summary.error?.response?.status === 404 &&
     summary.error?.response?.data?.code === 'portfolio_empty';
@@ -47,9 +50,13 @@ export function PortfolioPage() {
       </div>
 
       <FiltersBar />
-      <PeriodNotice meta={summary.data?.meta} />
+      {tokenConfigured === true && !dlpErrorCode && (
+        <PeriodNotice meta={summary.data?.meta} />
+      )}
 
-      {tokenStatus.isError && !tokenStatus.data ? (
+      {dlpErrorCode ? (
+        <DlpTokenErrorState code={dlpErrorCode} />
+      ) : tokenStatus.isError && !tokenStatus.data ? (
         <ErrorState error={tokenStatus.error} onRetry={tokenStatus.refetch} />
       ) : tokenConfigured === false ? (
         <DlpTokenRequiredState />

@@ -34,8 +34,6 @@ api.interceptors.response.use(
       error.response.data = await parseBlobErrorData(error.response.data);
     }
     const status = error.response?.status;
-    const code = error.response?.data?.code;
-    const message = error.response?.data?.message;
 
     if (typeof window !== 'undefined') {
       const requestUrl = error.config?.url || '';
@@ -49,18 +47,6 @@ api.interceptors.response.use(
         } catch {
           // jsdom pode não implementar navigation completa
         }
-      } else if (status === 409 && code === 'dlp_token_missing') {
-        window.dispatchEvent(
-          new CustomEvent('open-dlp-modal', {
-            detail: { reason: 'missing', message: message || 'Token DLP não configurado.' },
-          })
-        );
-      } else if (status === 422 && code === 'dlp_token_rejected') {
-        window.dispatchEvent(
-          new CustomEvent('open-dlp-modal', {
-            detail: { reason: 'rejected', message: message || 'Token DLP rejeitado pela API externa.' },
-          })
-        );
       }
     }
 

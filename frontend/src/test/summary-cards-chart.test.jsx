@@ -28,6 +28,13 @@ describe('SummaryCards e BaseChart', () => {
     expect(skeletons.length).toBeGreaterThanOrEqual(5);
   });
 
+  it('mensagem de primeira carga durante o loading do summary sem dados', () => {
+    render(<SummaryCards data={null} isLoading={true} isError={false} />);
+    expect(
+      screen.getByText('Buscando sua carteira na DLP — a primeira carga pode levar até um minuto.')
+    ).toBeInTheDocument();
+  });
+
   it('formata valores monetários em BRL e percentuais com sinal (+ verde, - vermelho)', () => {
     const sampleData = {
       pat_fim: 150000,

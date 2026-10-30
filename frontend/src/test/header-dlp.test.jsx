@@ -15,6 +15,7 @@ import { PortfolioFilterProvider } from '../context/PortfolioFilterContext';
 import { PortfolioPage } from '../pages/PortfolioPage';
 import { portfolioApi } from '../api/portfolio';
 import { benchmarksApi } from '../api/benchmarks';
+import { DlpTokenModal } from '../components/dlp/DlpTokenModal';
 
 function renderHeader(queryClient) {
   return render(
@@ -199,5 +200,36 @@ describe('Header, DlpTokenModal e Primitivas de UI', () => {
     await waitFor(() => expect(summarySpy).toHaveBeenCalled());
     await new Promise((r) => setTimeout(r, 200));
     expect(summarySpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('modal descarta token digitado e não salvo ao fechar', async () => {
+    function ModalWrapper() {
+      const [isOpen, setIsOpen] = React.useState(true);
+      return (
+        <div>
+          <button onClick={() => setIsOpen(true)}>Reabrir</button>
+          <DlpTokenModal
+            isOpen={isOpen}
+            onClose={() => setIsOpen(false)}
+            statusData={{ configured: true }}
+          />
+        </div>
+      );
+    }
+
+    render(<ModalWrapper />);
+
+    const input = screen.getByPlaceholderText(/Cole seu token DLP/i);
+    fireEvent.change(input, { target: { value: 'token-nao-salvo' } });
+    expect(input.value).toBe('token-nao-salvo');
+
+    // Fecha o modal via Cancelar
+    fireEvent.click(screen.getByRole('button', { name: /Cancelar/i }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+
+    // Reabre o modal
+    fireEvent.click(screen.getByRole('button', { name: 'Reabrir' }));
+    const reopenedInput = screen.getByPlaceholderText(/Cole seu token DLP/i);
+    expect(reopenedInput.value).toBe('');
   });
 });

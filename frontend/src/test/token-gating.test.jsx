@@ -112,4 +112,74 @@ describe('Gating pelo status do token DLP', () => {
 
     expect(await screen.findByText('Servidor indisponível')).toBeInTheDocument();
   });
+
+  it('token rejeitado mostra um único estado e não abre o modal', async () => {
+    dlpApi.getTokenStatus.mockResolvedValue({ configured: true });
+    const err = new Error('Token rejeitado');
+    err.response = {
+      status: 422,
+      data: { code: 'dlp_token_rejected', message: 'Token DLP rejeitado pela API externa.' },
+    };
+    FETCHERS.forEach((name) => vi.spyOn(portfolioApi, name).mockRejectedValue(err));
+
+    const listener = vi.fn();
+    window.addEventListener('open-dlp-modal', listener);
+
+    renderWithClient(
+      <PortfolioFilterProvider>
+        <PortfolioPage />
+      </PortfolioFilterProvider>
+    );
+
+    expect(await screen.findByText(/Token DLP rejeitado/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Token DLP rejeitado/).length).toBe(1);
+    expect(screen.queryByRole('dialog')).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: /Atualizar token/i }));
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(listener.mock.calls[0][0].detail.reason).toBe('dlp_token_rejected');
+
+    window.removeEventListener('open-dlp-modal', listener);
+  });
+
+  it('PeriodNotice some sem token configurado', async () => {
+    dlpApi.getTokenStatus.mockResolvedValue({ configured: false });
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    qc.setQueryData(['portfolio', 'summary', { start: null, end: null, ativos: [], classes: [] }], {
+      data: {},
+      meta: { start: '2025-01-01', end: '2026-01-01' },
+    });
+
+    render(
+      <QueryClientProvider client={qc}>
+        <PortfolioFilterProvider>
+          <PortfolioPage />
+        </PortfolioFilterProvider>
+      </QueryClientProvider>
+    );
+
+    expect(await screen.findByText('Configure seu token DLP')).toBeInTheDocument();
+    expect(screen.queryByText(/Período analisado/)).not.toBeInTheDocument();
+  });
+
+  it('MigrationPage com token rejeitado mostra estado de token e não abre modal', async () => {
+    dlpApi.getTokenStatus.mockResolvedValue({ configured: true });
+    const err = new Error('Token rejeitado');
+    err.response = {
+      status: 422,
+      data: { code: 'dlp_token_rejected', message: 'Token DLP rejeitado pela API externa.' },
+    };
+    vi.spyOn(migrationApi, 'getWallet').mockRejectedValue(err);
+
+    const listener = vi.fn();
+    window.addEventListener('open-dlp-modal', listener);
+
+    renderWithClient(<MigrationPage />);
+
+    expect(await screen.findByText(/Token DLP rejeitado/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Token DLP rejeitado/).length).toBe(1);
+    expect(screen.queryByRole('dialog')).toBeNull();
+
+    window.removeEventListener('open-dlp-modal', listener);
+  });
 });

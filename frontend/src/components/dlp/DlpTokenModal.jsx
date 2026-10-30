@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff, KeyRound, Trash2, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { Modal } from '../common/Modal';
 import { Button } from '../common/Button';
@@ -20,6 +20,23 @@ export function DlpTokenModal({
 
   const configured = Boolean(statusData?.configured);
 
+  const resetState = () => {
+    setToken('');
+    setShowToken(false);
+    setError('');
+  };
+
+  const handleClose = () => {
+    resetState();
+    if (onClose) onClose();
+  };
+
+  useEffect(() => {
+    if (!isOpen) {
+      resetState();
+    }
+  }, [isOpen]);
+
   const handleSave = async (e) => {
     e.preventDefault();
     const trimmed = token.trim();
@@ -31,7 +48,7 @@ export function DlpTokenModal({
     setIsSaving(true);
     try {
       const updated = await dlpApi.saveToken(trimmed);
-      setToken('');
+      resetState();
       if (onStatusUpdated) {
         await onStatusUpdated(updated);
       }
@@ -59,14 +76,14 @@ export function DlpTokenModal({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Configuração do Token DLP Invest">
+    <Modal isOpen={isOpen} onClose={handleClose} title="Configuração do Token DLP Invest">
       <div className="space-y-4">
         {alertReason && (
           <div className="flex items-start gap-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-200 text-sm">
             <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
             <div>
               <p className="font-medium">
-                {alertReason === 'rejected'
+                {alertReason === 'rejected' || alertReason === 'dlp_token_rejected'
                   ? 'Credencial recusada pela DLP'
                   : 'Credencial DLP ausente'}
               </p>
@@ -142,7 +159,7 @@ export function DlpTokenModal({
               <div />
             )}
             <div className="flex items-center gap-2">
-              <Button type="button" variant="ghost" size="sm" onClick={onClose}>
+              <Button type="button" variant="ghost" size="sm" onClick={handleClose}>
                 Cancelar
               </Button>
               <Button type="submit" variant="primary" size="sm" isLoading={isSaving}>

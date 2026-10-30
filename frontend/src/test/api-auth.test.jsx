@@ -45,7 +45,7 @@ describe('Cliente Axios, Interceptores CSRF/DLP e AuthContext', () => {
     expect(capturedConfig.headers['X-CSRFToken']).toBe('test-csrf-token-123');
   });
 
-  it('dispara evento open-dlp-modal com reason="missing" ao receber HTTP 409 dlp_token_missing', async () => {
+  it('não dispara evento open-dlp-modal no interceptor ao receber HTTP 409 dlp_token_missing', async () => {
     const handler = vi.fn();
     window.addEventListener('open-dlp-modal', handler);
 
@@ -60,16 +60,12 @@ describe('Cliente Axios, Interceptores CSRF/DLP e AuthContext', () => {
     };
 
     await expect(api.get('/portfolio/filters', { adapter })).rejects.toThrow();
-    expect(handler).toHaveBeenCalledTimes(1);
-    expect(handler.mock.calls[0][0].detail).toEqual({
-      reason: 'missing',
-      message: 'Token não configurado',
-    });
+    expect(handler).not.toHaveBeenCalled();
 
     window.removeEventListener('open-dlp-modal', handler);
   });
 
-  it('dispara evento open-dlp-modal com reason="rejected" ao receber HTTP 422 dlp_token_rejected', async () => {
+  it('não dispara evento open-dlp-modal no interceptor ao receber HTTP 422 dlp_token_rejected', async () => {
     const handler = vi.fn();
     window.addEventListener('open-dlp-modal', handler);
 
@@ -84,11 +80,7 @@ describe('Cliente Axios, Interceptores CSRF/DLP e AuthContext', () => {
     };
 
     await expect(api.post('/portfolio/summary', {}, { adapter })).rejects.toThrow();
-    expect(handler).toHaveBeenCalledTimes(1);
-    expect(handler.mock.calls[0][0].detail).toEqual({
-      reason: 'rejected',
-      message: 'Token inválido na DLP',
-    });
+    expect(handler).not.toHaveBeenCalled();
 
     window.removeEventListener('open-dlp-modal', handler);
   });

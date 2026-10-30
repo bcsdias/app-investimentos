@@ -12,6 +12,7 @@ import { EmptyState } from '../components/common/EmptyState';
 import { ErrorState } from '../components/common/ErrorState';
 import { getApiError } from '../api/errors';
 import { DlpTokenRequiredState } from '../components/dlp/DlpTokenRequiredState';
+import { DlpTokenErrorState, dlpTokenErrorCode } from '../components/dlp/DlpTokenErrorState';
 import { useDlpTokenStatus } from '../hooks/useDlpTokenStatus';
 
 export function MigrationPage() {
@@ -37,6 +38,8 @@ export function MigrationPage() {
   } = useMigrationPlan();
   const tokenStatus = useDlpTokenStatus();
 
+  const dlpErrorCode = dlpTokenErrorCode(walletQuery.error);
+
   const isPortfolioEmpty =
     walletQuery.error?.response?.status === 404 &&
     walletQuery.error?.response?.data?.code === 'portfolio_empty';
@@ -54,7 +57,9 @@ export function MigrationPage() {
         </p>
       </div>
 
-      {tokenStatus.isError && !tokenStatus.data ? (
+      {dlpErrorCode ? (
+        <DlpTokenErrorState code={dlpErrorCode} />
+      ) : tokenStatus.isError && !tokenStatus.data ? (
         <ErrorState error={tokenStatus.error} onRetry={tokenStatus.refetch} />
       ) : tokenConfigured === false ? (
         <DlpTokenRequiredState />

@@ -26,17 +26,27 @@ export function formatSignedPercent(pctValue) {
 
 export function SummaryCards({ data, isLoading = false, isError = false, error = null, onRetry }) {
   if (isLoading) {
+    const hasData = Boolean(
+      data && (data.data || data.patrimonio !== undefined || data.pat_fim !== undefined)
+    );
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        {Array.from({ length: 5 }).map((_, idx) => (
-          <div
-            key={idx}
-            className="bg-zinc-900/90 border border-zinc-800 rounded-xl p-4 space-y-3"
-          >
-            <Skeleton className="h-4 w-28" />
-            <Skeleton className="h-7 w-36" />
-          </div>
-        ))}
+      <div className="space-y-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          {Array.from({ length: 5 }).map((_, idx) => (
+            <div
+              key={idx}
+              className="bg-zinc-900/90 border border-zinc-800 rounded-xl p-4 space-y-3"
+            >
+              <Skeleton className="h-4 w-28" />
+              <Skeleton className="h-7 w-36" />
+            </div>
+          ))}
+        </div>
+        {!hasData && (
+          <p className="text-xs text-zinc-400 text-center sm:text-left">
+            Buscando sua carteira na DLP — a primeira carga pode levar até um minuto.
+          </p>
+        )}
       </div>
     );
   }
