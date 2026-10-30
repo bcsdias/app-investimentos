@@ -157,12 +157,25 @@ def test_day_rollover_invalidates(user_with_token, counting_fetch, monkeypatch):
 
 def test_cache_failure_falls_back_to_compute(user_with_token, counting_fetch, monkeypatch):
     req = _req()
+    real_get, real_set = analysis.cache.get, analysis.cache.set
 
-    def boom(*args, **kwargs):
-        raise ConnectionError("Redis is down")
+    # Falha só nas chaves do memo: o lock do single_flight (":lock") usa o mesmo cache e,
+    # se a leitura dele falhasse, o lock ficaria preso até o timeout (90 s), por desenho.
+    def _is_memo(key):
+        return key.startswith("market:analysis:") and not key.endswith(":lock")
 
-    monkeypatch.setattr(analysis.cache, "get", boom)
-    monkeypatch.setattr(analysis.cache, "set", boom)
+    def get(key, *args, **kwargs):
+        if _is_memo(key):
+            raise ConnectionError("Redis is down")
+        return real_get(key, *args, **kwargs)
+
+    def set_(key, *args, **kwargs):
+        if _is_memo(key):
+            raise ConnectionError("Redis is down")
+        return real_set(key, *args, **kwargs)
+
+    monkeypatch.setattr(analysis.cache, "get", get)
+    monkeypatch.setattr(analysis.cache, "set", set_)
 
     ctx1 = run_analysis(user_with_token, req)
     assert len(counting_fetch) == 1

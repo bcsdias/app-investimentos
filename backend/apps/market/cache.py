@@ -134,8 +134,5 @@ def single_flight(key: str, timeout: float = 90, poll: float = 0.1):
             try:
                 if cache.get(lock_key) == my_token:
                     cache.delete(lock_key)
-            except Exception:
-                try:
-                    cache.delete(lock_key)
-                except Exception as exc:
-                    logger.warning("single_flight delete falhou para %s: %s", lock_key, exc)
+            except Exception as exc:
+                logger.warning("single_flight delete falhou para %s: %s", lock_key, exc)
