@@ -61,3 +61,11 @@ def test_lookup_prefers_br_then_exchange_rank(assets_csv):
     assert assets.lookup("GDX", "LON:GDX").yf_ticker == "GDX.L"
     assert assets.lookup("PETR4").yf_ticker == "PETR4.SA"
     assert assets.lookup("NADA") is None
+
+
+def test_real_file_names_have_no_mojibake():
+    # UTF-8 lido como cp1252 e regravado vira "â€“" no lugar de "–" e "Ã€" no lugar de "À".
+    # Aparecia na busca de ticker da SPA ("INVESTO TEVA TESOURO SELIC ETF â€¦").
+    assets.load_universe.cache_clear()
+    bad = [a.sigla for a in assets.load_universe().values() if "â€" in a.nome or "Ã" in a.nome]
+    assert bad == []
