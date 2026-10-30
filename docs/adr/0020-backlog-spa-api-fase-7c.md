@@ -81,6 +81,14 @@ Uma validação independente da Fase 7c (suítes, paridade contra as linhas de b
 
 Menor, corrigido junto: `DateInput` espalhava `{...rest}` depois de `onClick`/`aria-label`, e um `onClick` passado por fora anulava o `showPicker`.
 
+**Teste no navegador (Chromium no LAB, conta real).** Conferidos: link `?period=custom` sobrevivendo ao login, os três avisos de lacuna do período 2024, tabela anual só com `2024`, "TIR no período" numa janela de 6 meses, URL com `?period=1a`, `period` inválido caindo em "Tudo", "Personalizado" depois de "Tudo" com data vazia, "Sair" seguido de login voltando a "Tudo", PDF com o nome do servidor, e token inválido como estado único sem o modal abrir sozinho (9 respostas `422`, sem `PeriodNotice` nem gráficos). O teste também achou quatro problemas que os testes unitários não pegavam, todos corrigidos com TDD:
+4. **Legenda sobre o nome dos eixos** (`BaseChart.jsx`). A legenda de rolagem da Task 3 (A5) resolvia o shadow, mas em "Sharpe e Volatilidade" e "Risco × Retorno" a linha da legenda ficava em cima dos nomes de eixo Y ("Sharpe", "Volatilidade (%)", "Retorno CAGR (%)") e das marcas de média. Regra no `BaseChart`: com legenda e algum eixo Y com `name`, `grid.top` mínimo de 64 px.
+5. **Rótulo "a.a. a partir daqui" cortado** (`IrrEvolutionChart.jsx`). Numa janela de 12 meses exatos, `annual_from` é o último ponto, e o rótulo horizontal no topo saía pela borda direita. Agora o rótulo fica ao longo da linha (`position: 'insideEndTop'`).
+6. **Painel de comparadores não fechava ao clicar fora** (`BenchmarkSelector.jsx`). Agora fecha com clique fora e com Escape.
+7. **Nomes com codificação dupla no `ativos.csv`.** Dez nomes tinham UTF-8 lido como cp1252 (ex.: `INVESTO TEVA TESOURO SELIC ETF â€“ ...` na busca do LFTS11). Corrigidos, com um teste sobre o arquivo real.
+
+Observado e **não** alterado: com o token rejeitado, o selo do cabeçalho continua "DLP Conectado", porque reflete `token-status.configured` e não a validade do token. A página mostra o estado de erro, então não há informação errada que bloqueie o uso; fica como melhoria.
+
 Pendente, registrado no [ADR 0019](0019-integridade-dos-dados-de-mercado.md) §4: as séries IMA do BCB (`bcb:12461`, `12466`, `12467`, `12468`, `12469`) têm, depois de 05/2023, pontos que **não vieram do BCB**. São projeções por ETF gravadas pelo legado no CSV do bootstrap.
 
 ## Consequências
