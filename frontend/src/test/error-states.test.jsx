@@ -3,7 +3,7 @@ import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
-vi.mock('echarts-for-react', () => ({ default: () => <div data-testid="echarts-mock" /> }));
+vi.mock('echarts-for-react/lib/core', () => ({ default: () => <div data-testid="echarts-mock" /> }));
 
 import { PortfolioFilterProvider } from '../context/PortfolioFilterContext';
 import { portfolioApi } from '../api/portfolio';

@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
-import ReactECharts from 'echarts-for-react';
+import ReactEChartsCore from 'echarts-for-react/lib/core';
+import { echarts } from './echarts';
 import { Skeleton } from '../../common/Skeleton';
 import { ErrorState } from '../../common/ErrorState';
 
@@ -38,7 +39,6 @@ export function BaseChart({
         color: '#a1a1aa',
       },
       grid: {
-        top: 36,
         left: 56,
         right: 24,
         bottom: 48,
@@ -100,7 +100,8 @@ export function BaseChart({
 
   return (
     <div className={`w-full ${className}`} style={{ height }}>
-      <ReactECharts
+      <ReactEChartsCore
+        echarts={echarts}
         option={mergedOption}
         style={{ height: `${height}px`, width: '100%' }}
         notMerge={true}

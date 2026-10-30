@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 let lastRenderedOptions = [];
 
-vi.mock('echarts-for-react', () => ({
+vi.mock('echarts-for-react/lib/core', () => ({
   default: ({ option }) => {
     lastRenderedOptions.push(option);
     return <div data-testid="echarts-mock" data-option={JSON.stringify(option)} />;
