@@ -264,11 +264,14 @@ def _schedule_stocks(inp: PlanInput, stocks: list[Holding]) -> list[list[_Lot]]:
         nonlocal remaining
         months.append([])
         remaining = cap
-        if len(months) > MAX_MONTHS:
+
+    def _add_lot(i: int, lot: _Lot) -> None:
+        if i >= MAX_MONTHS:
             raise PlanError(
                 "invalid_parameters",
                 f"O plano passaria de {MAX_MONTHS} meses; aumente o teto mensal ou venda menos papéis.",
             )
+        months[i].append(lot)
 
     for h in sorted(stocks, key=lambda x: (x.saldo, x.ativo)):
         price, q, last = h.price, h.qtd, None
@@ -277,12 +280,12 @@ def _schedule_stocks(inp: PlanInput, stocks: list[Holding]) -> list[list[_Lot]]:
             cur = len(months) - 1
             if n >= 1:
                 last = _Lot(h, n)
-                months[cur].append(last)
+                _add_lot(cur, last)
                 remaining -= n * price
                 q -= n
             elif is_empty(cur) and price > cap:
                 last = _Lot(h, 1)
-                months[cur].append(last)
+                _add_lot(cur, last)
                 q -= 1
                 close()
             else:
@@ -295,11 +298,16 @@ def _schedule_stocks(inp: PlanInput, stocks: list[Holding]) -> list[list[_Lot]]:
             if last is not None and any(lot is last for lot in months[-1]):
                 last.qtd += q
             else:
-                months[-1].append(_Lot(h, q))
+                _add_lot(len(months) - 1, _Lot(h, q))
             remaining -= extra
 
     while len(months) > 1 and not months[-1]:
         months.pop()
+    if len(months) > MAX_MONTHS:
+        raise PlanError(
+            "invalid_parameters",
+            f"O plano passaria de {MAX_MONTHS} meses; aumente o teto mensal ou venda menos papéis.",
+        )
     return months
 
 
