@@ -10,6 +10,7 @@ import { portfolioApi } from '../../api/portfolio';
 import { useDlpTokenConfigured } from '../../hooks/useDlpTokenStatus';
 import { BenchmarkSelector } from './BenchmarkSelector';
 import { Badge } from '../common/Badge';
+import { DateInput } from '../common/DateInput';
 
 const PRESET_PERIODS = ['1A', '2A', '5A', 'Tudo', 'Personalizado'];
 
@@ -67,22 +68,18 @@ export function FiltersBar() {
 
           {period === 'Personalizado' && (
             <div className="flex items-center gap-2 ml-2">
-              <input
-                type="date"
-                aria-label="Data inicial"
+              <DateInput
+                ariaLabel="Data inicial"
                 value={start === ALL_TIME_START ? '' : start || ''}
                 onChange={(e) => setCustomDates(e.target.value, end)}
-                className="bg-zinc-950 border border-zinc-700 rounded-lg px-2.5 py-1 text-xs text-zinc-100"
               />
               <span className="text-xs text-zinc-500">até</span>
-              <input
-                type="date"
-                aria-label="Data final"
+              <DateInput
+                ariaLabel="Data final"
                 value={end || ''}
                 onChange={(e) =>
                   setCustomDates(start === ALL_TIME_START ? null : start, e.target.value)
                 }
-                className="bg-zinc-950 border border-zinc-700 rounded-lg px-2.5 py-1 text-xs text-zinc-100"
               />
             </div>
           )}

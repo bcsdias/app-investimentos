@@ -270,5 +270,58 @@ describe('PortfolioFilterContext, FiltersBar e BenchmarkSelector', () => {
     expect(screen.getByTestId('start-val')).toHaveTextContent('2024-03-01');
     expect(startInput).toHaveValue('2024-03-01');
   });
+
+  describe('DateInput nos campos personalizados (A7)', () => {
+    it('campo de data mostra botão de calendário', () => {
+      renderFiltersBar({ initialUrl: '/?period=custom&start=2024-01-01&end=2024-12-31' });
+
+      const calendarButtons = screen.getAllByRole('button', { name: 'Abrir calendário' });
+      expect(calendarButtons).toHaveLength(2);
+    });
+
+    it('clicar no ícone chama showPicker', () => {
+      const showPickerMock = vi.fn();
+      HTMLInputElement.prototype.showPicker = showPickerMock;
+
+      try {
+        renderFiltersBar({ initialUrl: '/?period=custom&start=2024-01-01&end=2024-12-31' });
+
+        const calendarButtons = screen.getAllByRole('button', { name: 'Abrir calendário' });
+        fireEvent.click(calendarButtons[0]);
+        expect(showPickerMock).toHaveBeenCalledTimes(1);
+
+        const startInput = screen.getByLabelText(/Data inicial/i);
+        fireEvent.click(startInput);
+        expect(showPickerMock).toHaveBeenCalledTimes(2);
+      } finally {
+        delete HTMLInputElement.prototype.showPicker;
+      }
+    });
+
+    it('showPicker ausente não quebra', () => {
+      delete HTMLInputElement.prototype.showPicker;
+
+      renderFiltersBar({ initialUrl: '/?period=custom&start=2024-01-01&end=2024-12-31' });
+
+      const calendarButtons = screen.getAllByRole('button', { name: 'Abrir calendário' });
+      const startInput = screen.getByLabelText(/Data inicial/i);
+
+      expect(() => fireEvent.click(calendarButtons[0])).not.toThrow();
+      expect(() => fireEvent.click(startInput)).not.toThrow();
+    });
+
+    it('mudar a data mantém ISO no filtro', () => {
+      renderFiltersBar({ initialUrl: '/?period=custom&start=2024-01-01&end=2024-12-31' });
+
+      const startInput = screen.getByLabelText(/Data inicial/i);
+      const endInput = screen.getByLabelText(/Data final/i);
+
+      fireEvent.change(startInput, { target: { value: '2024-02-15' } });
+      expect(screen.getByTestId('start-val')).toHaveTextContent('2024-02-15');
+
+      fireEvent.change(endInput, { target: { value: '2024-11-20' } });
+      expect(screen.getByTestId('end-val')).toHaveTextContent('2024-11-20');
+    });
+  });
 });
 
