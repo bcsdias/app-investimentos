@@ -2,10 +2,13 @@ import React from 'react';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { BrowserRouter } from 'react-router-dom';
 import {
   PortfolioFilterProvider,
   usePortfolioFilters,
   toLocalISODate,
+  parsePeriodParams,
+  periodToParams,
 } from '../context/PortfolioFilterContext';
 import { FiltersBar } from '../components/portfolio/FiltersBar';
 import { benchmarksApi } from '../api/benchmarks';
@@ -27,16 +30,19 @@ function FilterStateInspector() {
   );
 }
 
-function renderFiltersBar() {
+function renderFiltersBar({ initialUrl = '/' } = {}) {
+  window.history.pushState({}, '', initialUrl);
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
   return render(
     <QueryClientProvider client={queryClient}>
-      <PortfolioFilterProvider>
-        <FiltersBar />
-        <FilterStateInspector />
-      </PortfolioFilterProvider>
+      <BrowserRouter>
+        <PortfolioFilterProvider>
+          <FiltersBar />
+          <FilterStateInspector />
+        </PortfolioFilterProvider>
+      </BrowserRouter>
     </QueryClientProvider>
   );
 }
@@ -161,6 +167,108 @@ describe('PortfolioFilterContext, FiltersBar e BenchmarkSelector', () => {
 
     const syntheticsList = JSON.parse(screen.getByTestId('synthetics-val').textContent);
     expect(syntheticsList).toContainEqual({ base: 'CDI', operador: '+', valor: 2 });
+  });
+
+  describe('parsePeriodParams e periodToParams', () => {
+    it('mapeia períodos predefinidos e cai em Tudo para valores desconhecidos', () => {
+      expect(parsePeriodParams('?period=1a').period).toBe('1A');
+      expect(parsePeriodParams('?period=2a').period).toBe('2A');
+      expect(parsePeriodParams('?period=5a').period).toBe('5A');
+      expect(parsePeriodParams('?period=tudo').period).toBe('Tudo');
+      expect(parsePeriodParams('?period=desconhecido').period).toBe('Tudo');
+      expect(parsePeriodParams('').period).toBe('Tudo');
+    });
+
+    it('faz parse de custom com datas válidas e rejeita datas malformadas ou invertidas', () => {
+      const ok = parsePeriodParams('?period=custom&start=2024-01-01&end=2024-12-31');
+      expect(ok).toEqual({
+        period: 'Personalizado',
+        start: '2024-01-01',
+        end: '2024-12-31',
+      });
+
+      const badStart = parsePeriodParams('?period=custom&start=banana&end=2024-12-31');
+      expect(badStart.period).toBe('Tudo');
+
+      const badFormat = parsePeriodParams('?period=custom&start=2024-1-1&end=2024-12-31');
+      expect(badFormat.period).toBe('Tudo');
+
+      const inverted = parsePeriodParams('?period=custom&start=2024-12-31&end=2024-01-01');
+      expect(inverted.period).toBe('Tudo');
+
+      const missingEnd = parsePeriodParams('?period=custom&start=2024-01-01');
+      expect(missingEnd.period).toBe('Tudo');
+    });
+
+    it('converte estado de período para URLSearchParams', () => {
+      expect(periodToParams({ period: '1A' }).toString()).toBe('period=1a');
+      expect(periodToParams({ period: '2A' }).toString()).toBe('period=2a');
+      expect(periodToParams({ period: '5A' }).toString()).toBe('period=5a');
+      expect(periodToParams({ period: 'Tudo' }).toString()).toBe('period=tudo');
+      expect(
+        periodToParams({
+          period: 'Personalizado',
+          start: '2024-01-01',
+          end: '2024-12-31',
+        }).toString()
+      ).toBe('period=custom&start=2024-01-01&end=2024-12-31');
+    });
+  });
+
+  it('lê period=custom com datas da URL', async () => {
+    renderFiltersBar({ initialUrl: '/?period=custom&start=2024-01-01&end=2024-12-31' });
+
+    expect(screen.getByTestId('period-val')).toHaveTextContent('Personalizado');
+    expect(screen.getByTestId('start-val')).toHaveTextContent('2024-01-01');
+    expect(screen.getByTestId('end-val')).toHaveTextContent('2024-12-31');
+
+    const startInput = screen.getByLabelText(/Data inicial/i);
+    const endInput = screen.getByLabelText(/Data final/i);
+    expect(startInput).toHaveValue('2024-01-01');
+    expect(endInput).toHaveValue('2024-12-31');
+  });
+
+  it('period inválido cai em Tudo', async () => {
+    renderFiltersBar({ initialUrl: '/?period=xyz&start=banana' });
+
+    expect(screen.getByTestId('period-val')).toHaveTextContent('Tudo');
+    expect(screen.getByTestId('start-val')).toHaveTextContent('1900-01-01');
+    expect(screen.getByTestId('end-val')).toHaveTextContent('null');
+  });
+
+  it('trocar preset atualiza a URL', async () => {
+    renderFiltersBar({ initialUrl: '/' });
+
+    const btn1A = screen.getByRole('button', { name: '1A' });
+    fireEvent.click(btn1A);
+
+    expect(window.location.search).toContain('period=1a');
+
+    const btn2A = screen.getByRole('button', { name: '2A' });
+    fireEvent.click(btn2A);
+
+    expect(window.location.search).toContain('period=2a');
+
+    const btnTudo = screen.getByRole('button', { name: 'Tudo' });
+    fireEvent.click(btnTudo);
+
+    expect(window.location.search).toContain('period=tudo');
+  });
+
+  it('Personalizado após Tudo não mostra 01/01/1900', async () => {
+    renderFiltersBar({ initialUrl: '/' });
+
+    const btnCustom = screen.getByRole('button', { name: 'Personalizado' });
+    fireEvent.click(btnCustom);
+
+    const startInput = screen.getByLabelText(/Data inicial/i);
+    expect(startInput).toHaveValue('');
+    expect(startInput.value).not.toBe('1900-01-01');
+    expect(screen.getByTestId('start-val')).toHaveTextContent('1900-01-01');
+
+    fireEvent.change(startInput, { target: { value: '2024-03-01' } });
+    expect(screen.getByTestId('start-val')).toHaveTextContent('2024-03-01');
+    expect(startInput).toHaveValue('2024-03-01');
   });
 });
 

@@ -136,5 +136,96 @@ describe('Roteamento Principal, LoginPage e Fluxos de Tela', () => {
       expect(screen.getByText(/Usuário ou senha inválidos/i)).toBeInTheDocument();
     });
   });
+
+  it('login volta para a rota de origem', async () => {
+    vi.spyOn(authApi, 'getMe').mockRejectedValueOnce({ response: { status: 401 } });
+    vi.spyOn(authApi, 'login').mockResolvedValue({
+      id: 1,
+      username: 'investidor',
+      email: 'inv@example.com',
+    });
+
+    window.history.pushState({}, '', '/migracao-ir');
+
+    render(<App />);
+
+    // 1. Redireciona para /login retendo a rota de origem
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: /Acesse sua Conta/i })).toBeInTheDocument();
+    });
+
+    // 2. Preenche e loga
+    fireEvent.change(screen.getByLabelText(/Usuário/i), {
+      target: { value: 'investidor' },
+    });
+    fireEvent.change(screen.getByLabelText(/Senha/i), {
+      target: { value: 'segredo123' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Entrar/i }));
+
+    // 3. Deve voltar para a rota de origem (/migracao-ir)
+    await waitFor(() => {
+      expect(
+        screen.getByRole('heading', { name: /Planejador de Migração com Isenção de IR/i })
+      ).toBeInTheDocument();
+    });
+    expect(window.location.pathname).toBe('/migracao-ir');
+  });
+
+  it('filtros voltam ao padrão após logout e novo login', async () => {
+    let currentUser = { id: 1, username: 'investidor', email: 'inv@example.com' };
+    vi.spyOn(authApi, 'getMe').mockImplementation(async () => {
+      if (!currentUser) throw { response: { status: 401 } };
+      return currentUser;
+    });
+    vi.spyOn(authApi, 'login').mockImplementation(async ({ username }) => {
+      currentUser = { id: 2, username, email: `${username}@example.com` };
+      return currentUser;
+    });
+    vi.spyOn(authApi, 'logout').mockImplementation(async () => {
+      currentUser = null;
+      return {};
+    });
+
+    render(<App />);
+
+    // 1. Dashboard carregado
+    await waitFor(() => {
+      expect(
+        screen.getByRole('heading', { name: /Dashboard Analítico da Carteira/i })
+      ).toBeInTheDocument();
+    });
+
+    // 2. Troca período para 1A
+    const btn1A = screen.getByRole('button', { name: '1A' });
+    fireEvent.click(btn1A);
+    expect(btn1A).toHaveClass('bg-emerald-600');
+
+    // 3. Logout
+    fireEvent.click(screen.getByRole('button', { name: /Sair/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: /Acesse sua Conta/i })).toBeInTheDocument();
+    });
+
+    // 4. Novo login
+    fireEvent.change(screen.getByLabelText(/Usuário/i), {
+      target: { value: 'outro_usuario' },
+    });
+    fireEvent.change(screen.getByLabelText(/Senha/i), {
+      target: { value: 'senha123' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Entrar/i }));
+
+    // 5. Dashboard recarregado com filtros no padrão ("Tudo")
+    await waitFor(() => {
+      expect(
+        screen.getByRole('heading', { name: /Dashboard Analítico da Carteira/i })
+      ).toBeInTheDocument();
+    });
+
+    const btnTudo = screen.getByRole('button', { name: 'Tudo' });
+    expect(btnTudo).toHaveClass('bg-emerald-600');
+  });
 });
 

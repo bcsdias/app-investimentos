@@ -4,6 +4,7 @@ import { X, RotateCcw } from 'lucide-react';
 import {
   usePortfolioFilters,
   formatSyntheticLabel,
+  ALL_TIME_START,
 } from '../../context/PortfolioFilterContext';
 import { portfolioApi } from '../../api/portfolio';
 import { useDlpTokenConfigured } from '../../hooks/useDlpTokenStatus';
@@ -69,7 +70,7 @@ export function FiltersBar() {
               <input
                 type="date"
                 aria-label="Data inicial"
-                value={start || ''}
+                value={start === ALL_TIME_START ? '' : start || ''}
                 onChange={(e) => setCustomDates(e.target.value, end)}
                 className="bg-zinc-950 border border-zinc-700 rounded-lg px-2.5 py-1 text-xs text-zinc-100"
               />
@@ -78,7 +79,9 @@ export function FiltersBar() {
                 type="date"
                 aria-label="Data final"
                 value={end || ''}
-                onChange={(e) => setCustomDates(start, e.target.value)}
+                onChange={(e) =>
+                  setCustomDates(start === ALL_TIME_START ? null : start, e.target.value)
+                }
                 className="bg-zinc-950 border border-zinc-700 rounded-lg px-2.5 py-1 text-xs text-zinc-100"
               />
             </div>

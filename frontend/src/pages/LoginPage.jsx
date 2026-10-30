@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { TrendingUp, User, Lock, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/common/Button';
@@ -7,13 +7,22 @@ import { Button } from '../components/common/Button';
 export function LoginPage() {
   const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
+  const from = location.state?.from;
+  const redirectTarget =
+    from && from.pathname && from.pathname !== '/login'
+      ? from.pathname === '/'
+        ? '/'
+        : `${from.pathname}${from.search || ''}`
+      : '/';
+
   if (isAuthenticated) {
-    return <Navigate to="/" replace />;
+    return <Navigate to={redirectTarget} replace />;
   }
 
   const handleSubmit = async (e) => {
@@ -26,7 +35,7 @@ export function LoginPage() {
     setIsSubmitting(true);
     try {
       await login({ username: username.trim(), password });
-      navigate('/', { replace: true });
+      navigate(redirectTarget, { replace: true });
     } catch (err) {
       setError(
         err?.response?.data?.message || 'Credenciais inválidas. Verifique seu usuário e senha.'

@@ -1,4 +1,13 @@
-import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useMemo,
+  useEffect,
+  useRef,
+} from 'react';
+import { useSearchParams, useInRouterContext } from 'react-router-dom';
 
 const PortfolioFilterContext = createContext(null);
 
@@ -16,6 +25,25 @@ export function toLocalISODate(date) {
   const m = String(date.getMonth() + 1).padStart(2, '0');
   const d = String(date.getDate()).padStart(2, '0');
   return `${y}-${m}-${d}`;
+}
+
+export function isValidISODate(str) {
+  if (typeof str !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+    return false;
+  }
+  const [yStr, mStr, dStr] = str.split('-');
+  const y = Number(yStr);
+  const m = Number(mStr);
+  const d = Number(dStr);
+  if (m < 1 || m > 12 || d < 1 || d > 31) {
+    return false;
+  }
+  const date = new Date(y, m - 1, d);
+  return (
+    date.getFullYear() === y &&
+    date.getMonth() === m - 1 &&
+    date.getDate() === d
+  );
 }
 
 export function computePresetDates(periodPreset, baseDate = new Date()) {
@@ -44,13 +72,101 @@ export function formatSyntheticLabel(synth) {
   return `${synth.valor}% do ${synth.base}`;
 }
 
-export function PortfolioFilterProvider({
-  children,
+export function parsePeriodParams(search) {
+  const defaultFallback = {
+    period: 'Tudo',
+    ...computePresetDates('Tudo'),
+  };
+
+  if (!search) {
+    return defaultFallback;
+  }
+
+  let params;
+  if (search instanceof URLSearchParams) {
+    params = search;
+  } else if (typeof search === 'string') {
+    const clean = search.startsWith('?') ? search.slice(1) : search;
+    params = new URLSearchParams(clean);
+  } else {
+    return defaultFallback;
+  }
+
+  const rawPeriod = params.get('period');
+  if (!rawPeriod) {
+    return defaultFallback;
+  }
+
+  const normalized = rawPeriod.toLowerCase();
+  if (normalized === '1a') {
+    return { period: '1A', ...computePresetDates('1A') };
+  }
+  if (normalized === '2a') {
+    return { period: '2A', ...computePresetDates('2A') };
+  }
+  if (normalized === '5a') {
+    return { period: '5A', ...computePresetDates('5A') };
+  }
+  if (normalized === 'tudo') {
+    return { period: 'Tudo', ...computePresetDates('Tudo') };
+  }
+  if (normalized === 'custom') {
+    const start = params.get('start');
+    const end = params.get('end');
+    if (isValidISODate(start) && isValidISODate(end) && start <= end) {
+      return { period: 'Personalizado', start, end };
+    }
+    return defaultFallback;
+  }
+
+  return defaultFallback;
+}
+
+export function periodToParams(periodState) {
+  const params = new URLSearchParams();
+  if (!periodState) {
+    params.set('period', 'tudo');
+    return params;
+  }
+
+  const { period, start, end } = periodState;
+  const PERIOD_MAP = {
+    '1A': '1a',
+    '2A': '2a',
+    '5A': '5a',
+    'Tudo': 'tudo',
+    'Personalizado': 'custom',
+  };
+
+  const code = PERIOD_MAP[period] || 'tudo';
+  params.set('period', code);
+
+  if (
+    code === 'custom' &&
+    isValidISODate(start) &&
+    isValidISODate(end) &&
+    start !== ALL_TIME_START &&
+    start <= end
+  ) {
+    params.set('start', start);
+    params.set('end', end);
+  }
+
+  return params;
+}
+
+function usePortfolioFilterState({
   initialPeriod = 'Tudo',
   initialBenchmarks = ['CDI', 'BOVA11'],
+  initialPeriodState,
+  onPeriodChange,
 }) {
-  const initialDates = computePresetDates(initialPeriod);
-  const [period, setPeriodState] = useState(initialPeriod);
+  const initialDates = useMemo(
+    () => initialPeriodState || { period: initialPeriod, ...computePresetDates(initialPeriod) },
+    [initialPeriodState, initialPeriod]
+  );
+
+  const [period, setPeriodState] = useState(initialDates.period);
   const [start, setStart] = useState(initialDates.start);
   const [end, setEnd] = useState(initialDates.end);
   const [benchmarks, setBenchmarks] = useState(initialBenchmarks);
@@ -58,20 +174,34 @@ export function PortfolioFilterProvider({
   const [ativo, setAtivo] = useState(null);
   const [classe, setClasse] = useState(null);
 
-  const setPeriod = useCallback((nextPeriod) => {
-    setPeriodState(nextPeriod);
-    if (nextPeriod !== 'Personalizado') {
-      const dates = computePresetDates(nextPeriod);
-      setStart(dates.start);
-      setEnd(dates.end);
-    }
-  }, []);
+  const setPeriod = useCallback(
+    (nextPeriod) => {
+      setPeriodState(nextPeriod);
+      let nextStart = start;
+      let nextEnd = end;
+      if (nextPeriod !== 'Personalizado') {
+        const dates = computePresetDates(nextPeriod);
+        nextStart = dates.start;
+        nextEnd = dates.end;
+        setStart(nextStart);
+        setEnd(nextEnd);
+      }
+      onPeriodChange?.({ period: nextPeriod, start: nextStart, end: nextEnd });
+    },
+    [start, end, onPeriodChange]
+  );
 
-  const setCustomDates = useCallback((customStart, customEnd) => {
-    setPeriodState('Personalizado');
-    setStart(customStart || null);
-    setEnd(customEnd || null);
-  }, []);
+  const setCustomDates = useCallback(
+    (customStart, customEnd) => {
+      setPeriodState('Personalizado');
+      const nextStart = customStart || null;
+      const nextEnd = customEnd || null;
+      setStart(nextStart);
+      setEnd(nextEnd);
+      onPeriodChange?.({ period: 'Personalizado', start: nextStart, end: nextEnd });
+    },
+    [onPeriodChange]
+  );
 
   const addBenchmark = useCallback((bm) => {
     const trimmed = (bm || '').trim();
@@ -131,7 +261,14 @@ export function PortfolioFilterProvider({
     setSynthetics([]);
     setAtivo(null);
     setClasse(null);
-  }, [initialBenchmarks]);
+    onPeriodChange?.({ period: 'Tudo', start: allDates.start, end: allDates.end });
+  }, [initialBenchmarks, onPeriodChange]);
+
+  const setExternalPeriod = useCallback((newPeriod, newStart, newEnd) => {
+    setPeriodState(newPeriod);
+    setStart(newStart);
+    setEnd(newEnd);
+  }, []);
 
   const value = useMemo(
     () => ({
@@ -152,6 +289,7 @@ export function PortfolioFilterProvider({
       classe,
       setClasse,
       resetFilters,
+      _setExternalPeriod: setExternalPeriod,
     }),
     [
       period,
@@ -169,12 +307,100 @@ export function PortfolioFilterProvider({
       ativo,
       classe,
       resetFilters,
+      setExternalPeriod,
     ]
   );
 
-  return (
-    <PortfolioFilterContext.Provider value={value}>{children}</PortfolioFilterContext.Provider>
+  return value;
+}
+
+function PortfolioFilterProviderRouted({
+  children,
+  initialPeriod = 'Tudo',
+  initialBenchmarks = ['CDI', 'BOVA11'],
+}) {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const lastSyncedParamsRef = React.useRef(searchParams.toString());
+
+  const initialPeriodState = useMemo(() => {
+    if (searchParams.has('period')) {
+      return parsePeriodParams(searchParams);
+    }
+    return null;
+  }, []);
+
+  const onPeriodChange = useCallback(
+    ({ period, start, end }) => {
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          const params = periodToParams({ period, start, end });
+          next.delete('period');
+          next.delete('start');
+          next.delete('end');
+          for (const [k, v] of params.entries()) {
+            next.set(k, v);
+          }
+          lastSyncedParamsRef.current = next.toString();
+          return next;
+        },
+        { replace: true }
+      );
+    },
+    [setSearchParams]
   );
+
+  const filterState = usePortfolioFilterState({
+    initialPeriod,
+    initialBenchmarks,
+    initialPeriodState,
+    onPeriodChange,
+  });
+
+  const { _setExternalPeriod } = filterState;
+
+  useEffect(() => {
+    const currentStr = searchParams.toString();
+    if (currentStr === lastSyncedParamsRef.current) {
+      return;
+    }
+    lastSyncedParamsRef.current = currentStr;
+    if (searchParams.has('period')) {
+      const parsed = parsePeriodParams(searchParams);
+      _setExternalPeriod(parsed.period, parsed.start, parsed.end);
+    }
+  }, [searchParams, _setExternalPeriod]);
+
+  return (
+    <PortfolioFilterContext.Provider value={filterState}>
+      {children}
+    </PortfolioFilterContext.Provider>
+  );
+}
+
+function PortfolioFilterProviderBase({
+  children,
+  initialPeriod = 'Tudo',
+  initialBenchmarks = ['CDI', 'BOVA11'],
+}) {
+  const filterState = usePortfolioFilterState({
+    initialPeriod,
+    initialBenchmarks,
+  });
+
+  return (
+    <PortfolioFilterContext.Provider value={filterState}>
+      {children}
+    </PortfolioFilterContext.Provider>
+  );
+}
+
+export function PortfolioFilterProvider(props) {
+  const inRouter = useInRouterContext?.() ?? false;
+  if (inRouter) {
+    return <PortfolioFilterProviderRouted {...props} />;
+  }
+  return <PortfolioFilterProviderBase {...props} />;
 }
 
 export function usePortfolioFilters() {
@@ -186,4 +412,3 @@ export function usePortfolioFilters() {
 }
 
 export default PortfolioFilterContext;
-
