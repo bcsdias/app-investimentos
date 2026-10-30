@@ -211,8 +211,6 @@ def render_plan_pdf(
     )
     pdf.section(title)
     for m in data["months"]:
-        if pdf.will_page_break(_month_height(m)) and pdf.get_y() > 27:
-            pdf.add_page()
         _month(pdf, m, data)
 
     totals = data["totals"]

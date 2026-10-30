@@ -35,10 +35,18 @@ def test_client_ip_direct_and_proxies(settings):
     req4 = rf.get("/", REMOTE_ADDR="::1", HTTP_X_REAL_IP="203.0.113.5")
     assert ratelimit.client_ip(req4) == "203.0.113.5"
 
+    # Private network / Docker bridge proxy (172.16.0.0/12) forwards X-Real-IP by default
+    req_docker = rf.get("/", REMOTE_ADDR="172.18.0.3", HTTP_X_REAL_IP="203.0.113.7")
+    assert ratelimit.client_ip(req_docker) == "203.0.113.7"
+
     # Custom trusted proxy in settings
     settings.TRUSTED_PROXIES = {"10.0.0.1"}
     req5 = rf.get("/", REMOTE_ADDR="10.0.0.1", HTTP_X_REAL_IP="203.0.113.99")
     assert ratelimit.client_ip(req5) == "203.0.113.99"
+
+    # When TRUSTED_PROXIES is explicitly set, other IPs are not trusted
+    req_untrusted_docker = rf.get("/", REMOTE_ADDR="172.18.0.3", HTTP_X_REAL_IP="203.0.113.7")
+    assert ratelimit.client_ip(req_untrusted_docker) == "172.18.0.3"
 
 
 def test_ratelimit_unit_methods(locmem_cache):

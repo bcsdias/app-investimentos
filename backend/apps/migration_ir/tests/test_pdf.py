@@ -27,10 +27,23 @@ def test_month_blocks_never_split(monkeypatch):
     real_month = pdf_mod._month
 
     def wrap(pdf, m, data):
-        p1 = pdf.page_no()
-        real_month(pdf, m, data)
-        p2 = pdf.page_no()
-        recorded.append((p1, p2))
+        pages_added = []
+        real_add_page = pdf.add_page
+
+        def track_add_page(*args, **kwargs):
+            res = real_add_page(*args, **kwargs)
+            pages_added.append(pdf.page_no())
+            return res
+
+        pdf.add_page = track_add_page
+        try:
+            real_month(pdf, m, data)
+        finally:
+            pdf.add_page = real_add_page
+
+        start_page = pages_added[0] if pages_added else pdf.page_no()
+        end_page = pdf.page_no()
+        recorded.append((start_page, end_page))
 
     monkeypatch.setattr(pdf_mod, "_month", wrap)
 

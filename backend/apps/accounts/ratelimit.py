@@ -59,17 +59,25 @@ def reset(key: str) -> None:
         logger.exception("Erro ao resetar rate limit no cache para a chave '%s'", key)
 
 
+def _is_trusted_proxy(remote_addr: str) -> bool:
+    if not remote_addr:
+        return False
+    custom = getattr(settings, "TRUSTED_PROXIES", None)
+    if custom is not None:
+        return remote_addr in custom
+    return remote_addr.startswith(("127.", "10.", "172.", "192.168.", "::1"))
+
+
 def client_ip(request: HttpRequest) -> str:
     """Obtém o IP real do cliente.
 
-    Lê REMOTE_ADDR; se REMOTE_ADDR estiver na lista de proxies confiáveis
-    (TRUSTED_PROXIES, por padrão 127.0.0.1 e ::1) e HTTP_X_REAL_IP estiver presente,
-    utiliza HTTP_X_REAL_IP.
+    Lê REMOTE_ADDR; se REMOTE_ADDR for de um proxy confiável (definido em
+    settings.TRUSTED_PROXIES ou, por padrão, loopback e redes privadas como Docker bridge)
+    e HTTP_X_REAL_IP estiver presente, utiliza HTTP_X_REAL_IP.
     """
     meta = getattr(request, "META", {}) or {}
     remote_addr = meta.get("REMOTE_ADDR", "")
-    trusted = getattr(settings, "TRUSTED_PROXIES", {"127.0.0.1", "::1"})
-    if remote_addr in trusted and "HTTP_X_REAL_IP" in meta:
+    if _is_trusted_proxy(remote_addr) and "HTTP_X_REAL_IP" in meta:
         real_ip = meta.get("HTTP_X_REAL_IP")
         if real_ip:
             return str(real_ip).strip()

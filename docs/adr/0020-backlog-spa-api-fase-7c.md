@@ -19,7 +19,7 @@ A auditoria e os testes com dados reais do LAB realizados no encerramento das Fa
 
 Implementar correções focadas em robustez e previsibilidade, preservando a retrocompatibilidade do contrato da API v1:
 
-### 1. Limitação de Taxa no Login (`apps/accounts/rate_limit.py`)
+### 1. Limitação de Taxa no Login (`apps/accounts/ratelimit.py`)
 - Adotado controle de tentativas de login baseado em Redis: máximo de **5 tentativas a cada 15 minutos** por tupla `(username, client_ip)`.
 - Excesso de tentativas retorna status HTTP **`429 Too Many Requests`** com envelope de erro padrão `ApiError(code="too_many_attempts", message="Muitas tentativas de login...")`.
 
@@ -38,16 +38,16 @@ Implementar correções focadas em robustez e previsibilidade, preservando a ret
 - A resposta `422 dlp_token_rejected` ou `409 dlp_token_missing` é tratada na SPA como um estado único de página (`TokenState`), suspendendo as demais consultas analíticas.
 - Eliminado o disparo via interceptor global de rede para abertura automática de modal ao receber 422/409, garantindo que o modal de token só abra sob comando explícito do usuário.
 
-### 5. `single_flight` com Lock Identificado por Dono (`apps/market/services/sources/dlp.py`)
-- O lock distribuído para chamadas à DLP passa a gerar um identificador único de dono (`uuid.uuid4().hex`).
-- A liberação do lock é executada atomicamente via script Lua que valida a posse do token antes de deletar a chave, impedindo que uma execução demorada apague o lock adquirido por outro worker.
+### 5. `single_flight` com Lock Identificado por Dono (`apps/market/cache.py`)
+- O lock distribuído para serialização de cálculos e chamadas externas (`single_flight`) passa a gerar um identificador único de dono (`uuid.uuid4().hex`).
+- A liberação do lock utiliza a abstração de cache do Django conferindo a titularidade (`cache.get(lock_key) == my_token`) antes do `cache.delete(lock_key)`, preservando a compatibilidade total com o cache de teste (`locmem`) e com o Redis, impedindo que uma execução demorada apague o lock adquirido por outro worker.
 
-### 6. Geração de Cache DLP Baseada em Timestamp (`apps/market/cache.py`)
-- A chave de geração de cache da DLP (`dlp:hist:gen`) inicializa com `time.time_ns()` quando ausente no Redis.
+### 6. Geração de Cache DLP Baseada em Timestamp (`apps/market/services/sources/dlp.py`)
+- A chave de geração de cache da DLP (`dlp:gen:<token_hash>`) inicializa com `time.time_ns()` quando ausente no Redis.
 - Evita reaproveitamento acidental de chaves residuais em caso de reinício do Redis ou evicção de memória.
 
 ### 7. Memorização de Rejeição de Autenticação em Cache
-- Falhas `DLPAuthError` são armazenadas temporariamente em cache (`<key>:auth_err`) pelo tempo da geração ativa (com TTL curto de 30s), evitando que 8 requisições analíticas concorrentes no carregamento da tela façam 8 chamadas síncronas que a DLP rejeitaria.
+- Falhas `DLPAuthError` são armazenadas temporariamente em cache (`<key>:auth`) pelo tempo da geração ativa (com TTL curto de 30s), evitando que 8 requisições analíticas concorrentes no carregamento da tela façam 8 chamadas síncronas que a DLP rejeitaria.
 
 ### 8. Filtro Estrito sobre Colunas Ausentes
 - Filtros requisitados sobre colunas não presentes no DataFrame da DLP resultam em retorno vazio acompanhado de warning em log, impedindo que linhas não filtradas sejam processadas indevidamente.
