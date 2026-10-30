@@ -443,3 +443,9 @@ Mensagem ao usuário:
 - pedir para conferir um período que cubra 2024 com IMA-S.
 
 **Não iniciar a 7c sem o retorno do usuário.**
+
+---
+
+> [!NOTE]
+> **Pós-teste do usuário (2026-10-29):** O teste do usuário realizado no LAB a partir deste ponto de espera identificou comportamentos de borda em lacunas e na tabela anual, além de refinamentos de UX. Esses achados geraram a **Parte A** do plano subsequente ([`docs/superpowers/plans/2026-10-29-fase-7c-spa-api.md`](2026-10-29-fase-7c-spa-api.md)), implementado na Fase 7c ([ADR 0020](../../adr/0020-backlog-spa-api-fase-7c.md)).
+

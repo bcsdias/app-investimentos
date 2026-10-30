@@ -1,7 +1,7 @@
 # ADR 0018 — Metodologia de cálculo de retorno alinhada à planilha DLP
 
 - **Status:** Aceita (supera a cópia literal temporária do [ADR 0012](0012-engine-copia-literal-fase-2-5.md))
-- **Data:** 2026-10-28 (revisada no mesmo dia após o 1º teste do usuário — ver §5 da Decisão e "Revisão pós-teste")
+- **Data:** 2026-10-28 (revisada em 2026-10-28 após o 1º teste e em 2026-10-30 na Fase 7c — ver §5 e §7 da Decisão e "TIR exibida")
 - **Fase:** 7a
 - **Spec:** [`../superpowers/specs/2026-10-28-fase-7-confiabilidade-design.md`](../superpowers/specs/2026-10-28-fase-7-confiabilidade-design.md)
 - **Plano:** [`../superpowers/plans/2026-10-28-fase-7a-engine.md`](../superpowers/plans/2026-10-28-fase-7a-engine.md)
@@ -57,6 +57,17 @@ No cálculo do retorno mensal da carteira em `engine.twr.calculate_twr`:
 ### 6. Métricas de Retorno Total e Carteira Shadow (`engine.compute`)
 - Eliminação da dupla contagem do saldo inicial no `/summary` e na simulação da carteira `/shadow`: o saldo em `start_date` é tratado estritamente como posição inicial, e apenas os fluxos externos subsequentes são aportados/descontados na evolução das cotas dos benchmarks.
 
+### 7. TIR Exibida e Convenção ANBIMA para Períodos Menores que 12 Meses (`engine.irr`, Fase 7c)
+Conforme a convenção ANBIMA e práticas prudenciais de mercado, não se divulga rentabilidade anualizada para períodos inferiores a 12 meses (ou 252 dias úteis / 365 dias corridos), pois a exponenciação matemática de horizontes curtos distorce artificialmente as taxas (ex.: primeiro mês negativo amplificado para nominais de −32% a.a. nos primeiros passos da evolução).
+- **Cálculo da TIR acumulada do período:** para horizontes com menos de 12 meses desde a abertura, o engine calcula a TIR efetiva do período (sem anualização: $(1 + r_{\text{anual}})^{\Delta t / 365} - 1$).
+- **Contrato aditivo na API (`apps.api.schemas`):**
+  - `xirr_period` (float | null): rentabilidade percentual efetiva do período analisado.
+  - `xirr_is_annual` (bool): indica se a taxa retornada em `xirr` é anualizada (`true` para $\ge 12$ meses, `false` para $< 12$ meses).
+  - `annual_from` (string ISO ou null): data exata em que a evolução temporal atinge 12 meses e passa a ser anualizada.
+- **Visualização na SPA:**
+  - Card de KPIs (`SummaryCards`): exibe "TIR no período" quando `xirr_is_annual === false`.
+  - Gráfico de evolução da TIR (`IrrEvolutionChart`): traça marcação visual pontilhada ("a.a. a partir daqui") na data indicada por `annual_from`.
+
 ---
 
 ## Evidências
@@ -86,11 +97,17 @@ No 1º teste do usuário no LAB (filtro 01/01/2026–28/10/2026 contra jan–set
 - Matriz de paridade ganhou `w5-inicio-mes` (`start` no dia seguinte a um fechamento). Regressão contra `20261028-163150-fase7`: os 5 casos existentes `=` em todas as métricas (todos começam num fechamento); `w5-inicio-mes` novo.
 - Linha de base vigente: `reports/parity/20261028-180012-fase7-abertura/baseline` (6 casos, re-verificada com tudo `=`).
 
+### 4. TIR exibida (Fase 7c, Task 3b)
+No teste do usuário na Fase 7b, notou-se que o gráfico de "Evolução Histórica da TIR" apresentava uma queda inicial drástica para −32% a.a. no primeiro mês de retenção.
+- A aplicação da convenção ANBIMA (§7 da Decisão) elimina a taxa anualizada espúria para períodos inferiores a 12 meses, apresentando a TIR acumulada do período.
+- A série histórica mantém integridade temporal, sinalizando a transição para taxa anualizada (`a.a.`) a partir do 12º mês via `annual_from`, com campos aditivos `xirr_period` e `xirr_is_annual`.
+
 ---
 
 ## Consequências
 
 - **Mudança nos números reportados:** Os valores de rentabilidade acumulada, TIR, Sharpe e carteira shadow exibidos pela SPA e pela API para a carteira do usuário são alterados, tornando-se matematicamente corretos e alinhados à planilha DLP.
+- **Convenção de TIR:** Janelas inferiores a 12 meses passam a exibir a TIR do período acumulada em vez de anualizada, evitando distorções em períodos curtos sem quebrar o contrato da API v1.
 - **Linha de base atualizada:** A linha de base de paridade passa a ser `reports/parity/20261028-180012-fase7-abertura/baseline` (local, não versionada), que substitui `20261028-163150-fase7`.
 - **Períodos recortados:** todo período com `start_date` fora de um fechamento (inclusive os atalhos 1A/2A/5A da SPA) passa a incluir o 1º mês; o "1A" cobre 12 meses, não 11.
 - **Encerramento da Fase 7a:** Conclui as correções matemáticas e de confiabilidade do engine de cálculo financeiro.

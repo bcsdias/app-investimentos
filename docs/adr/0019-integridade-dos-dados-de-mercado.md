@@ -94,6 +94,12 @@ Comparação executada contra a linha de base congelada `reports/parity/20261028
 - Gravada em: `reports/parity/20261029-122417-fase7b/baseline`
 - Re-verificação contra a nova linha de base resultou em 100% `=` em todas as métricas e janelas.
 
+### 4. Revisão pós-teste (Fase 7c, Parte A)
+No teste do usuário no LAB com o período personalizado 01/01/2024–31/12/2024 e os benchmarks IMA-S e LFTS11.SA, identificaram-se limitações na cobertura de avisos de lacunas:
+- **Lacunas nas bordas:** A lacuna de `bcb:12469` (22/05/2023 a 21/02/2024) atravessava o início da janela (31/12/2023), e a de `yf:LFTS11.SA` (26/09/2024 a 24/02/2025) atravessava o fim da janela. O `find_gaps` original só comparava pontos internos à busca. Passou a receber `window_start`, `window_end` e `series_end`, alertando lacunas que interceptam qualquer ponto da janela analisada.
+- **Cauda parada:** Séries cujo último dado disponível é defasado em relação à data corrente ou ao fim da janela não geravam aviso por falta de ponto posterior para comparação. O algoritmo passou a detectar caudas paradas cuja defasagem exceda a tolerância da cadência (10 dias diária / 45 dias mensal). Para caudas paradas, `SeriesGap.end` é delimitado por `min(crop_end, _today())`.
+- **Diagnóstico de `bcb:12469`:** Confirmou-se que a série 12469 do SGS/BCB parou na data 22/05/2023 na própria fonte oficial do Banco Central. Trata-se de descontinuidade da fonte, corretamente mantida com `ffill` e transparente ao usuário via alerta em `meta.gaps` e no `PeriodNotice`.
+
 ## Consequências
 
 - **Cache:** Qualquer escrita no repositório de séries invalida atomicamente todas as séries em cache via incremento da geração global. O aquecimento diário pós-ingestão mantém o desempenho otimizado para o usuário final.
