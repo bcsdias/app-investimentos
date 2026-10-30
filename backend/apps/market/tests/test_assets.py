@@ -1,0 +1,71 @@
+from apps.market import assets
+from apps.market.catalog import SeriesDef, ToBRL
+
+
+def test_yahoo_ticker_mapping(assets_csv):
+    u = assets.load_universe()
+    assert u["PETR4.SA"].mercado == "BR"
+    assert u["AAPL"].mercado == "INTL"
+    assert "GDX.L" in u and "GDX" in u          # mesma sigla, duas bolsas
+    assert "USML.L" in u                         # LSE: -> .L
+
+
+def test_excluded_classes(assets_csv):
+    u = assets.load_universe()
+    assert not any(a.classe in {"CRIPTO", "INDICE", "OURO"} for a in u.values())
+
+
+def test_bom_does_not_break_header(assets_csv):
+    assert assets.load_universe()["PETR4.SA"].sigla == "PETR4"
+
+
+def test_resolve_raw_and_brl(assets_csv):
+    assert assets.resolve("PETR4.SA") == SeriesDef("PETR4.SA", "YF", "yf:PETR4.SA", "level")
+    assert assets.resolve("AAPL BRL").derivation == ToBRL("AAPL")
+    assert assets.resolve("PETR4.SA BRL") is None   # BR não tem variante BRL
+    assert assets.resolve("PETR4") is None          # sigla pura não é identificador
+    assert assets.resolve("XYZ") is None
+
+
+def test_search_ranking_and_limit(assets_csv):
+    assert [a.yf_ticker for a in assets.search("gdx")][:2] in (["GDX.L", "GDX"], ["GDX", "GDX.L"])
+    assert assets.search("logistica")[0].yf_ticker == "HGLG11.SA"
+    assert len(assets.search("a", limit=2)) <= 2
+
+
+def test_real_file_loads():
+    assets.load_universe.cache_clear()
+    assert len(assets.load_universe()) > 5000
+
+
+def test_collision_prefers_higher_ranked_exchange(assets_csv):
+    meta = assets.load_universe()["META"]
+    assert meta.nome == "META PLATFORMS INC"
+    assert meta.classe == "STOCK"
+
+
+def test_collision_tie_keeps_first_row(assets_csv):
+    assert assets.load_universe()["TIE"].nome == "TIE FIRST"
+
+
+def test_real_file_meta_is_meta_platforms():
+    assets.load_universe.cache_clear()
+    try:
+        assert assets.load_universe()["META"].nome == "META PLATFORMS INC."
+    finally:
+        assets.load_universe.cache_clear()
+
+
+def test_lookup_prefers_br_then_exchange_rank(assets_csv):
+    assert assets.lookup("GDX").yf_ticker == "GDX"  # NYSEARCA (rank 1) vence LON (rank 2)
+    assert assets.lookup("GDX", "LON:GDX").yf_ticker == "GDX.L"
+    assert assets.lookup("PETR4").yf_ticker == "PETR4.SA"
+    assert assets.lookup("NADA") is None
+
+
+def test_real_file_names_have_no_mojibake():
+    # UTF-8 lido como cp1252 e regravado vira "â€“" no lugar de "–" e "Ã€" no lugar de "À".
+    # Aparecia na busca de ticker da SPA ("INVESTO TEVA TESOURO SELIC ETF â€¦").
+    assets.load_universe.cache_clear()
+    bad = [a.sigla for a in assets.load_universe().values() if "â€" in a.nome or "Ã" in a.nome]
+    assert bad == []

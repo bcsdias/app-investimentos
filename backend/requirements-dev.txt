@@ -1,0 +1,11 @@
+-r requirements.txt
+
+# --- Fase 2.5: export CLI de relatório (NÃO usado pela API) ---
+matplotlib~=3.9
+
+# --- dev / test ---
+pytest~=8.3
+pytest-django~=4.9
+pytest-cov~=5.0
+model-bakery~=1.19
+

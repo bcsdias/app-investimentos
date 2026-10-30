@@ -1,19 +1,76 @@
-# Arquivo de variáveis de ambiente (contém segredos)
-.env
-
-# Pasta do ambiente virtual Python
-.venv/
-
-# Cache e arquivos compilados do Python
+# Byte-compiled / optimized / DLL files
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
 
-# Arquivos
-graficos/
+# External packages
+.venv/
+venv/
+ENV/
+env/
+
+# Data files
+data/raw/
+data/downloads/
+*.csv
+!data/static/*.csv
+
+# Streamlit specific
+.streamlit/secrets.toml
+
+# Environment variables
+.env
+.env.local
 
 # Logs
+*.log
 log/
-log/main.log
 
-# Relatorios
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Reports
 reports/
+reports.zip
+
+# IDEs
+.vscode/
+.idea/
+
+# Custom old/backup files
+*.old
+apoio/
+
+# Dados pessoais — NUNCA versionar (repo público; ver docs/seguranca-dados-pessoais.md)
+privado/
+*.xlsx
+*.zip
+**/planilha_dlombello/
+**/graficos/
+historico*.txt
+hist.txt
+carteira*.json
+*movimentac*
+*Minha Carteira*
+*Bruno*
+erros.txt
+log.txt
+
+# Backend Django
+.pytest_cache/
+backend/staticfiles/
+.coverage
+
+# Export local da planilha DLP (dados da carteira) — nunca versionar
+dlp_sheet/
+
+# Screenshots soltos em docs/ (podem mostrar valores da carteira) — nunca versionar
+/docs/*.png
+/docs/*.jpg
+/docs/*.jpeg

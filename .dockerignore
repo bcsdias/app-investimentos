@@ -1,0 +1,16 @@
+.git
+**/.env
+**/.env.*
+!**/.env.example
+**/.venv
+**/__pycache__
+**/.pytest_cache
+backend/staticfiles
+frontend
+.streamlit
+.gemini
+.agent
+.superpowers
+.impeccable
+.vscode
+

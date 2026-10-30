@@ -1,0 +1,57 @@
+import axios from 'axios';
+import { parseBlobErrorData } from './errors';
+
+export function getCsrfTokenFromCookie() {
+  if (typeof document === 'undefined' || !document.cookie) return null;
+  const row = document.cookie
+    .split('; ')
+    .find((item) => item.startsWith('csrftoken='));
+  return row ? decodeURIComponent(row.split('=')[1]) : null;
+}
+
+export const api = axios.create({
+  baseURL: '/api/v1',
+  withCredentials: true,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+api.interceptors.request.use((config) => {
+  const csrfToken = getCsrfTokenFromCookie();
+  const method = (config.method || 'get').toLowerCase();
+  if (csrfToken && ['post', 'put', 'patch', 'delete'].includes(method)) {
+    config.headers = config.headers || {};
+    config.headers['X-CSRFToken'] = csrfToken;
+  }
+  return config;
+});
+
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    if (error.response) {
+      error.response.data = await parseBlobErrorData(error.response.data);
+    }
+    const status = error.response?.status;
+
+    if (typeof window !== 'undefined') {
+      const requestUrl = error.config?.url || '';
+      const isAuthCheckOrLogin =
+        requestUrl.includes('/auth/me') || requestUrl.includes('/auth/login');
+
+      if (status === 401 && !isAuthCheckOrLogin && window.location.pathname !== '/login') {
+        window.dispatchEvent(new CustomEvent('auth-unauthorized'));
+        try {
+          window.location.assign('/login');
+        } catch {
+          // jsdom pode não implementar navigation completa
+        }
+      }
+    }
+
+    return Promise.reject(error);
+  }
+);
+
+export default api;

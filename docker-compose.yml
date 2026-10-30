@@ -1,0 +1,84 @@
+name: appinvest
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: backend
+    container_name: lab-appinvest-backend
+    restart: unless-stopped
+    env_file:
+      - backend/.env
+    environment:
+      DJANGO_DEBUG: "0"
+      DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1"
+      POSTGRES_HOST: "lab-postgres"
+      REDIS_URL: "redis://lab-redis:6379/1"
+    volumes:
+      - staticfiles:/app/backend/staticfiles
+    networks:
+      - lab-net
+    mem_limit: 1g
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/api/v1/auth/csrf').status==204 else 1)",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  ingestion:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: ingestion
+    container_name: lab-appinvest-ingestion
+    restart: unless-stopped
+    env_file:
+      - backend/.env
+    environment:
+      DJANGO_DEBUG: "0"
+      DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1"
+      POSTGRES_HOST: "lab-postgres"
+      REDIS_URL: "redis://lab-redis:6379/1"
+    networks:
+      - lab-net
+    shm_size: 1gb
+    mem_limit: 1536m
+
+  web:
+    build:
+      context: frontend
+      dockerfile: Dockerfile
+    container_name: lab-appinvest-web
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8080:80"
+    volumes:
+      - staticfiles:/usr/share/nginx/static:ro
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - lab-net
+    mem_limit: 128m
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost/ >/dev/null"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  staticfiles:
+
+networks:
+  lab-net:
+    external: true
+
