@@ -16,6 +16,21 @@ def test_key_for_normalization():
     assert "127.0.0.1" in k1
 
 
+@pytest.mark.parametrize("remote", ["172.217.1.1", "172.32.0.1", "10.attacker", "1.2.3.4"])
+def test_public_addresses_are_not_trusted_proxies(remote, settings):
+    # "172." como prefixo pegava faixas públicas (172.217.x é do Google); só 172.16.0.0/12 é privada.
+    settings.TRUSTED_PROXIES = None
+    req = RequestFactory().get("/", REMOTE_ADDR=remote, HTTP_X_REAL_IP="203.0.113.5")
+    assert ratelimit.client_ip(req) == remote
+
+
+@pytest.mark.parametrize("remote", ["172.16.0.1", "172.31.255.254", "10.1.2.3", "192.168.0.9", "127.0.0.1", "::1"])
+def test_private_addresses_are_trusted_proxies(remote, settings):
+    settings.TRUSTED_PROXIES = None
+    req = RequestFactory().get("/", REMOTE_ADDR=remote, HTTP_X_REAL_IP="203.0.113.5")
+    assert ratelimit.client_ip(req) == "203.0.113.5"
+
+
 def test_client_ip_direct_and_proxies(settings):
     rf = RequestFactory()
 

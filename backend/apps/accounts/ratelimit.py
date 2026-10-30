@@ -1,3 +1,4 @@
+import ipaddress
 import logging
 from django.conf import settings
 from django.core.cache import cache
@@ -59,13 +60,25 @@ def reset(key: str) -> None:
         logger.exception("Erro ao resetar rate limit no cache para a chave '%s'", key)
 
 
+# Redes privadas e loopback (RFC 1918 + ::1). Prefixo de string não serve: "172." pegaria
+# faixas públicas como 172.217.0.0/16; só 172.16.0.0/12 é privada.
+_DEFAULT_PROXY_NETS = tuple(
+    ipaddress.ip_network(n)
+    for n in ("127.0.0.0/8", "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "::1/128")
+)
+
+
 def _is_trusted_proxy(remote_addr: str) -> bool:
     if not remote_addr:
         return False
     custom = getattr(settings, "TRUSTED_PROXIES", None)
     if custom is not None:
         return remote_addr in custom
-    return remote_addr.startswith(("127.", "10.", "172.", "192.168.", "::1"))
+    try:
+        addr = ipaddress.ip_address(remote_addr)
+    except ValueError:
+        return False
+    return any(addr in net for net in _DEFAULT_PROXY_NETS)
 
 
 def client_ip(request: HttpRequest) -> str:
