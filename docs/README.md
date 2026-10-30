@@ -47,7 +47,7 @@ aplica com "n/a" no commit de docs.
 ## Fluxo de trabalho
 
 Cada fase do roteiro do documento mestre passa por: **design** (`superpowers/specs/`) →
-**plano** (`superpowers/plans/`) → **implementação** (TDD, commits por task na branch `migracao-django`).
+**plano** (`superpowers/plans/`) → **implementação** (TDD, commits por task na branch de trabalho definida no início de cada implementação).
 
 Fases **0 + 1** (infra LAB + esqueleto do backend Django) concluídas em 2026-08-28.
 Fases **2 + 2.5** (serviços de mercado `apps/market/` + engine puro `backend/engine/`)
@@ -64,5 +64,5 @@ concluídas em 2026-08-31, com correções de revisão aplicadas na sequência.
 **Fase 7c.1** (índices IMA pela ANBIMA: histórico completo no S3 + fallback por data, eliminação definitiva de projeções por ETF e ProxySplice, remoção das séries `bcb:1246x` e catálogo limpo com um nome por índice, [ADR 0021](adr/0021-indices-ima-pela-anbima.md)) concluída em 2026-10-30.
 **Fase 7d** (otimizações do engine e frontend sem alterar números: `calculate_twr` sem reagrupar carteira já agrupada, `date` tipado na DLP, busca vetorizada de gaps com `np.diff`, memo de `AnalysisContext` com TTL 300 s e chave digest/gen reduzindo latência em ~78%, e code splitting na SPA via `React.lazy` + ECharts modular reduzindo o bundle inicial de 1,4 MB para 290 kB, [ADR 0022](adr/0022-otimizacoes-fase-7d.md)) concluída em 2026-10-30.
 
-Todas as fases do roteiro de migração (0 a 7d) estão concluídas com paridade matemática estrita comprovada e LAB funcional. Próximo passo: transição e merge da branch `migracao-django`.
+Todas as fases do roteiro de migração (0 a 7d) estão concluídas com paridade matemática estrita comprovada e LAB funcional. A branch `migracao-django` foi integrada à `main` em 2026-10-30.
 

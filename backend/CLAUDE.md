@@ -11,7 +11,8 @@ Instruções para agentes trabalhando neste diretório. Complementa
   a nova linha de base congelada é `reports/parity/20261029-211840-fase7c/baseline/` (local, nunca versionado).
   Regressões são executadas com `python -m parity.regress --baseline reports/parity/20261029-211840-fase7c/baseline`.
 - Cada fase segue o ciclo **design (`specs/`) → plano (`plans/`) → implementação TDD**.
-- Branch de trabalho: `migracao-django`. Não commitar em `main` / `dev`.
+- A migração (Fases 0 a 7d) foi integrada à `main` em 2026-10-30. A branch de trabalho de cada nova
+  implementação é definida no início dela; não commitar direto em `main` / `dev`.
 
 ## Ambiente
 
