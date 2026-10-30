@@ -47,6 +47,11 @@ def _generation(token: str) -> int:
         return 0
 
 
+def user_cache_version(token: str) -> str:
+    """Versão do cache do usuário; muda com novo token ou invalidação (refresh)."""
+    return f"{_token_hash(token)}:{_generation(token)}"
+
+
 def invalidate_user_cache(token: str) -> None:
     """Invalida hist/resumo do usuário incrementando a geração (vale em redis e locmem)."""
     key = _gen_key(token)

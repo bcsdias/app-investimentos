@@ -3,22 +3,35 @@ from __future__ import annotations
 
 import contextlib
 import datetime as dt
+import hashlib
+import json
+import logging
 from dataclasses import dataclass, field
 
 import pandas as pd
 from cryptography.fernet import InvalidToken
+from django.core.cache import cache
 
 from apps.api.errors import ApiError
 from apps.api.schemas import AnalysisRequest
 from apps.core.models import UserToken
 from apps.market import assets, catalog, synthetics
+from apps.market import cache as mc
 from apps.market.gaps import SeriesGap
+from apps.market.services.sources import dlp
 from apps.market.services.sources.base import DLPAuthError, DLPError, DLPUnavailableError
 from apps.market.synthetics import SyntheticSpec
 from engine.dataset import build_dataset, fetch_user_portfolio
 
+logger = logging.getLogger(__name__)
+
 MAX_ITEMS = 15
 _SYNTHETIC_BASES = {"IPCA", "CDI"}
+ANALYSIS_TTL = 300  # s (menor que TTL_DLP = 600s)
+
+
+def _today() -> dt.date:
+    return dt.date.today()
 
 
 @dataclass(frozen=True)
@@ -79,7 +92,7 @@ def _validate_synthetic(s) -> SyntheticSpec:
 
 
 def validate_request(req: AnalysisRequest, today: dt.date | None = None) -> ValidRequest:
-    ref_today = today or dt.date.today()
+    ref_today = today or _today()
     end = req.end or ref_today
     start = req.start or _one_year_ago(end)
     if start > end:
@@ -144,10 +157,31 @@ def dlp_errors():
         ) from exc
 
 
-def run_analysis(user, req: AnalysisRequest) -> AnalysisContext:
-    valid = validate_request(req)
-    token = get_token(user)
+def _request_digest(valid: ValidRequest, req: AnalysisRequest) -> str:
+    """Digest SHA-256 (16 hex) das partes do pedido que determinam o contexto."""
+    payload = {
+        "start": valid.start.isoformat(),
+        "end": valid.end.isoformat(),
+        "ativo": req.ativo,
+        "classe": req.classe,
+        "benchmarks": valid.benchmarks,
+        "synthetics": [[s.base, s.operador, s.valor] for s in valid.specs],
+    }
+    return hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()[:16]
 
+
+def _analysis_key(user, token: str, valid: ValidRequest, req: AnalysisRequest) -> str:
+    return mc.make_key(
+        "analysis",
+        user.pk,
+        dlp.user_cache_version(token),
+        mc.series_generation(),
+        _today().isoformat(),
+        _request_digest(valid, req),
+    )
+
+
+def _compute_analysis(valid: ValidRequest, req: AnalysisRequest, token: str) -> AnalysisContext:
     with dlp_errors():
         user_series, portfolio_df = fetch_user_portfolio(
             token,
@@ -196,3 +230,34 @@ def run_analysis(user, req: AnalysisRequest) -> AnalysisContext:
         missing=missing,
         gaps=res.gaps,
     )
+
+
+def run_analysis(user, req: AnalysisRequest) -> AnalysisContext:
+    valid = validate_request(req)
+    token = get_token(user)
+    key = _analysis_key(user, token, valid, req)
+
+    try:
+        cached = cache.get(key)
+        if isinstance(cached, AnalysisContext):
+            return cached
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("analysis cache get falhou: %s", exc)
+
+    with mc.single_flight(key):
+        try:
+            cached = cache.get(key)
+            if isinstance(cached, AnalysisContext):
+                return cached
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("analysis cache get single-flight falhou: %s", exc)
+
+        ctx = _compute_analysis(valid, req, token)
+
+        try:
+            cache.set(key, ctx, timeout=ANALYSIS_TTL)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("analysis cache set falhou: %s", exc)
+
+        return ctx
+

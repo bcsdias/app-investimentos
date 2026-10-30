@@ -351,3 +351,14 @@ def test_buscar_historico_date_is_datetime_cold_and_warm(monkeypatch):
     assert df_warm is not None
     assert pd.api.types.is_datetime64_any_dtype(df_warm["date"])
 
+
+def test_user_cache_version_changes_on_invalidate_and_token():
+    v1 = dlp.user_cache_version("token-A")
+    v2 = dlp.user_cache_version("token-B")
+    assert v1 != v2
+
+    dlp.invalidate_user_cache("token-A")
+    v1_after = dlp.user_cache_version("token-A")
+    assert v1_after != v1
+
+
