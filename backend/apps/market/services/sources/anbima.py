@@ -30,6 +30,7 @@ INDEX_LABELS: dict[str, tuple[str, ...]] = {
 }
 
 FALLBACK_MAX_DAYS = 30
+NO_DATA_PREFIX = "Não há dados disponíveis"
 
 
 def _parse_brazilian_float(val: object) -> float:
@@ -117,6 +118,10 @@ def fetch_daily(code: str, day: dt.date) -> RawPoint | None:
     except UnicodeDecodeError:
         text = resp.content.decode("utf-8", errors="replace")
 
+    # Feriado, fim de semana ou dia ainda não publicado: a ANBIMA devolve só esta frase.
+    if text.strip().startswith(NO_DATA_PREFIX):
+        return None
+
     reader = csv.reader(io.StringIO(text), delimiter=";")
     rows = list(reader)
     if not rows:
@@ -136,11 +141,15 @@ def fetch_daily(code: str, day: dt.date) -> RawPoint | None:
 
     idx_col = header.index("Índice")
     val_col = header.index("Número Índice")
+    date_col = header.index("Data de Referência") if "Data de Referência" in header else None
+    day_str = day.strftime("%d/%m/%Y")
 
     for row in rows[header_idx + 1 :]:
         if not row or len(row) <= max(idx_col, val_col):
             continue
         if row[idx_col].strip() in labels:
+            if date_col is not None and row[date_col].strip() != day_str:
+                return None
             val_str = row[val_col].strip()
             if not val_str or val_str == "--":
                 return None

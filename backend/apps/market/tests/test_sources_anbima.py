@@ -114,6 +114,55 @@ def test_fetch_daily_without_row_returns_none(monkeypatch):
     assert pt is None
 
 
+def test_fetch_daily_no_data_message_returns_none(monkeypatch):
+    # Resposta real da ANBIMA em feriado, fim de semana ou dia ainda não publicado.
+    content = "Não há dados disponíveis para [25/12/2024] !\r\n".encode("cp1252")
+    monkeypatch.setattr(anbima.requests, "post", lambda *a, **k: _DummyResponse(content))
+
+    assert anbima.fetch_daily("IMAS", dt.date(2024, 12, 25)) is None
+
+
+def test_fetch_daily_unexpected_body_raises(monkeypatch):
+    content = "<html><body>Erro interno</body></html>".encode("cp1252")
+    monkeypatch.setattr(anbima.requests, "post", lambda *a, **k: _DummyResponse(content))
+
+    with pytest.raises(FetchError):
+        anbima.fetch_daily("IMAS", dt.date(2024, 12, 24))
+
+
+def test_fetch_daily_row_with_other_date_returns_none(monkeypatch):
+    csv_text = (
+        "Índice;Data de Referência;Número Índice\r\n"
+        "IMA-S;28/10/2026;9.082,000000\r\n"
+    )
+    monkeypatch.setattr(anbima.requests, "post", lambda *a, **k: _DummyResponse(csv_text.encode("cp1252")))
+
+    assert anbima.fetch_daily("IMAS", dt.date(2026, 10, 29)) is None
+
+
+def test_fetch_anbima_fallback_skips_holiday(monkeypatch):
+    # S3 fora do ar; janela 23..27/12/2024 com o Natal no meio.
+    def _fail_history(*a, **k):
+        raise FetchError("s3 down")
+
+    def _post(url, data=None, **kwargs):
+        if data["Dt_Ref"] == "25/12/2024":
+            body = f"Não há dados disponíveis para [{data['Dt_Ref']}] !\r\n"
+        else:
+            body = (
+                "TOTAIS - QUADRO RESUMO\r\n"
+                "Índice;Data de Referência;Número Índice\r\n"
+                f"IMA-S;{data['Dt_Ref']};7.000,000000\r\n"
+            )
+        return _DummyResponse(body.encode("cp1252"))
+
+    monkeypatch.setattr(anbima, "fetch_history", _fail_history)
+    monkeypatch.setattr(anbima.requests, "post", _post)
+
+    pts = anbima.fetch_anbima("IMAS", dt.date(2024, 12, 23), dt.date(2024, 12, 27))
+    assert [p.date.day for p in pts] == [23, 24, 26, 27]
+
+
 def test_fetch_daily_posts_expected_form(monkeypatch):
     captured_data = {}
 
