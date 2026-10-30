@@ -88,22 +88,53 @@ def _parameters(pdf: _PlanPDF, params: PlanRequest, meta: dict):
 
 def _initial_balances(pdf: _PlanPDF, data: dict):
     pdf.section("2. Saldos Iniciais Considerados")
-    pdf.set_font("helvetica", "B", 8)
-    pdf.set_fill_color(230, 237, 245)
-    pdf.set_draw_color(180, 180, 180)
-    pdf.cell(40, 6, "Ativo alvo", border=1, fill=True)
-    pdf.cell(110, 6, _t("Composição do saldo inicial"), border=1, fill=True)
-    pdf.cell(40, 6, "Saldo inicial total", border=1, fill=True, align="R", **_LINE)
+
+    def _draw_header():
+        pdf.set_font("helvetica", "B", 8)
+        pdf.set_fill_color(230, 237, 245)
+        pdf.set_draw_color(180, 180, 180)
+        pdf.cell(40, 6, "Ativo alvo", border=1, fill=True)
+        pdf.cell(110, 6, _t("Composição do saldo inicial"), border=1, fill=True)
+        pdf.cell(40, 6, "Saldo inicial total", border=1, fill=True, align="R", **_LINE)
+
+    if pdf.will_page_break(11) and pdf.get_y() > 27:
+        pdf.add_page()
+    _draw_header()
+
     pdf.set_font("helvetica", "", 8)
-    for b in data["initial_balances"]:
-        parts = [f"Carteira ({_brl(b['direct'])})"] + [f"{c['ativo']} ({_brl(c['saldo'])})" for c in b["counted"]]
+    for b in data.get("initial_balances", []):
+        if pdf.will_page_break(5):
+            pdf.add_page()
+            _draw_header()
+            pdf.set_font("helvetica", "", 8)
+        parts = [f"Carteira ({_brl(b['direct'])})"] + [f"{c['ativo']} ({_brl(c['saldo'])})" for c in b.get("counted", [])]
         pdf.cell(40, 5, _t(b["ticker"]), border=1)
         pdf.cell(110, 5, _t(" + ".join(parts))[:95], border=1)
         pdf.cell(40, 5, _t(_brl(b["total"])), border=1, align="R", **_LINE)
     pdf.ln(5)
 
 
+def _month_height(m: dict) -> float:
+    """Altura em mm do bloco do mês: título + cabeçalhos + linhas + IR estimado + espaçamento."""
+    sales = m.get("sales") or m.get("vendas") or []
+    purchases = m.get("purchases") or m.get("compras") or []
+    n_rows = max(len(sales), len(purchases), 1)
+    # Título do mês: 6mm
+    # Cabeçalho das tabelas (VENDER/COMPRAR): 5mm título + 4mm colunas = 9mm
+    # Linhas de dados: n_rows * 4mm
+    # Pós-tabela gap: 1mm
+    # IR estimado: 4mm
+    # Espaçamento final: 3mm (pdf.ln(3))
+    h = 6.0 + 9.0 + n_rows * 4.0 + 1.0 + 4.0 + 3.0
+    warnings = m.get("warnings") or []
+    if warnings:
+        h += len(warnings) * 4.0
+    return float(h)
+
+
 def _month(pdf: _PlanPDF, m: dict, data: dict):
+    if pdf.will_page_break(_month_height(m)) and pdf.get_y() > 27:
+        pdf.add_page()
     sold = m["exempt_sales_total"] + m["taxed_sales_total"]
     pdf.set_font("helvetica", "B", 9)
     pdf.set_text_color(44, 82, 130)
@@ -160,8 +191,6 @@ def _month(pdf: _PlanPDF, m: dict, data: dict):
         pdf.multi_cell(0, 4, _t("Avisos: " + ", ".join(m["warnings"])), **_LINE)
         pdf.set_text_color(0, 0, 0)
     pdf.ln(3)
-    if pdf.get_y() > 245:
-        pdf.add_page()
 
 
 def render_plan_pdf(
@@ -182,9 +211,13 @@ def render_plan_pdf(
     )
     pdf.section(title)
     for m in data["months"]:
+        if pdf.will_page_break(_month_height(m)) and pdf.get_y() > 27:
+            pdf.add_page()
         _month(pdf, m, data)
 
     totals = data["totals"]
+    if pdf.will_page_break(15) and pdf.get_y() > 27:
+        pdf.add_page()
     pdf.set_font("helvetica", "B", 9)
     pdf.cell(0, 6, _t(f"IR estimado total: {_brl(totals['ir_estimado'])}"), **_LINE)
     if totals["ir_not_estimated"]:
