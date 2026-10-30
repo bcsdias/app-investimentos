@@ -14,22 +14,6 @@ def accumulate(rate: pd.Series, periodicity: str = "daily") -> pd.Series:
     return factor.cumprod().fillna(1.0)
 
 
-def splice_proxy(bcb_level: pd.Series, etf_price: pd.Series) -> pd.Series:
-    bcb_level = bcb_level.dropna().sort_index()
-    etf_price = etf_price.dropna().sort_index()
-    if bcb_level.empty:
-        return etf_price
-    if etf_price.empty:
-        return bcb_level
-    last_date = bcb_level.index[-1]
-    tail = etf_price[etf_price.index >= last_date]
-    if tail.empty:
-        return bcb_level
-    base = tail.iloc[0]
-    projected = bcb_level.iloc[-1] * (tail.iloc[1:] / base)
-    return pd.concat([bcb_level, projected]).sort_index()
-
-
 def to_brl(usd_series: pd.Series, ptax: pd.Series) -> pd.Series:
     aligned = ptax.reindex(usd_series.index, method="ffill")
     return usd_series * aligned

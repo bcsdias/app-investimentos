@@ -16,11 +16,29 @@ def test_ipca_is_monthly_rate():
     assert ipca.kind == "rate" and ipca.periodicity == "monthly"
 
 
-def test_ima_b_has_proxy_splice_derivation():
-    ima = cat.resolve("IMA-B")
-    assert isinstance(ima.derivation, cat.ProxySplice)
-    assert ima.derivation.bcb_key == "bcb:12466"
-    assert ima.derivation.etf_key.startswith("yf:")
+@pytest.mark.parametrize(
+    "name,key",
+    [
+        ("IMA-S", "anbima:IMAS"),
+        ("IMA-B", "anbima:IMAB"),
+        ("IMA-B 5", "anbima:IMAB5"),
+        ("IMA-B 5+", "anbima:IMAB5MAIS"),
+        ("IRF-M", "anbima:IRFM"),
+        ("IMA-Geral", "anbima:IMAGERAL"),
+    ],
+)
+def test_ima_family_comes_from_anbima(name, key):
+    s = cat.resolve(name)
+    assert (s.source, s.series_key, s.kind, s.derivation) == ("ANBIMA", key, "level", None)
+
+
+def test_no_bcb_or_proxy_names_left():
+    assert not [n for n in cat.all_names() if "(BCB)" in n or "(proxy)" in n]
+    assert not [d for d in cat.ingestible() if d.series_key.startswith("bcb:1246")]
+
+
+def test_ima_family_is_ingestible():
+    assert {"anbima:IMAS", "anbima:IMAGERAL"} <= {d.series_key for d in cat.ingestible()}
 
 
 def test_ingestible_excludes_pure_derivations_and_includes_selic():

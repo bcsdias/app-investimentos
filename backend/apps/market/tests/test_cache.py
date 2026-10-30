@@ -75,7 +75,7 @@ def test_series_roundtrip_returns_series_not_frame():
 
 
 def test_unnamed_series_roundtrip_keeps_values():
-    # to_brl / splice_proxy devolvem name=None; no orient="table" a coluna 0 (int)
+    # to_brl devolve name=None; no orient="table" a coluna 0 (int)
     # voltava como "0" (str) e os valores viravam NaN (achado da paridade da Fase 6).
     idx = pd.to_datetime(["2024-01-02", "2024-01-03"])
     s = pd.Series([1.5, 2.5], index=idx)

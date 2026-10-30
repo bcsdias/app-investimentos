@@ -12,7 +12,7 @@ router = Router(tags=["benchmarks"])
 
 
 def _group_label(sdef: catalog.SeriesDef) -> str:
-    if isinstance(sdef.derivation, catalog.ProxySplice):
+    if sdef.source == "ANBIMA":
         return "ANBIMA / Tesouro"
     if isinstance(sdef.derivation, catalog.ToBRL):
         return "Internacional / Cripto (BRL)"

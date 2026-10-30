@@ -1,4 +1,4 @@
-"""Fonte BCB (SGS). Valor CRU: taxa % para 11/12/433; número-índice para 12466...
+"""Fonte BCB (SGS). Valor CRU: taxa % para 11/12/433.
 
 Porta de src/data/sources/market_data.py::buscar_dados_bcb — SEM cumprod, SEM
 proxy splice, SEM cache. Só busca a janela pedida (com chunking de 5 anos porque

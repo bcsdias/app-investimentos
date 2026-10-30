@@ -20,9 +20,8 @@ def test_backfill_loads_fixture_csvs(tmp_path):
         "--static-dir", str(FIX),
         stdout=out,
     )
-    # BCB_12 (rate), BCB_433 (rate), BCB_12466 (level), YF_GSPC, IFIX_all, TD_...
+    # BCB_12 (rate), BCB_433 (rate), YF_GSPC, IFIX_all, TD_...
     assert MarketSeries.objects.filter(series_key="bcb:12", kind="rate").exists()
-    assert MarketSeries.objects.filter(series_key="bcb:12466", kind="level").exists()
     assert MarketSeries.objects.filter(series_key="yf:^GSPC").exists()
     assert MarketSeries.objects.filter(series_key="b3:IFIX").exists()
     assert "pontos" in out.getvalue().lower()
@@ -114,6 +113,26 @@ def test_ingest_one_source_fails_others_continue(monkeypatch, db):
         call_command("ingest_market_data", "--only", "bcb:12,bcb:11")
     assert ei.value.code == 1
     assert MarketSeries.objects.filter(series_key="bcb:11").exists()  # a outra passou
+
+
+def test_ingest_dispatches_anbima(monkeypatch, db):
+    from apps.core.models import MarketSeries
+    from apps.market import repository
+    from apps.market.services.sources import anbima
+
+    calls = []
+
+    def fake_fetch_anbima(code, start, end):
+        calls.append((code, start, end))
+        return [RawPoint(dt.date(2024, 1, 2), 6000.0)]
+
+    monkeypatch.setattr(anbima, "fetch_anbima", fake_fetch_anbima)
+    call_command("ingest_market_data", "--only", "anbima:IMAS")
+
+    assert calls and calls[0][0] == "IMAS"
+    assert repository.last_date("anbima:IMAS") == dt.date(2024, 1, 2)
+    s = MarketSeries.objects.filter(series_key="anbima:IMAS").first()
+    assert s is not None and s.source == "ANBIMA"
 
 
 def test_warm_cache_does_not_crash_on_leap_day(monkeypatch):

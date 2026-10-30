@@ -49,7 +49,7 @@ def bump_series_generation() -> None:
 _SERIES = "pd.Series"
 _FRAME = "pd.DataFrame"
 # Rótulo para série sem nome: no orient="table" a coluna 0 (int) volta como "0" (str)
-# e o read_json devolve tudo NaN — caso de to_brl/splice_proxy (achado da Fase 6).
+# e o read_json devolve tudo NaN — caso de to_brl (achado da Fase 6).
 _UNNAMED = "__unnamed__"
 
 

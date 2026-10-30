@@ -15,12 +15,6 @@ EPOCH = dt.date(1995, 1, 1)
 
 
 @dataclass(frozen=True)
-class ProxySplice:
-    bcb_key: str
-    etf_key: str
-
-
-@dataclass(frozen=True)
 class ToBRL:
     base_name: str
 
@@ -50,21 +44,17 @@ _RAW: list[SeriesDef] = [
     SeriesDef("CDI", "BCB", "bcb:12", "rate"),
     SeriesDef("SELIC", "BCB", "bcb:11", "rate"),
     SeriesDef("IPCA", "BCB", "bcb:433", "rate", periodicity="monthly"),
-    SeriesDef("IMA-B (BCB)", "BCB", "bcb:12466", "level"),
-    SeriesDef("IMA-B 5 (BCB)", "BCB", "bcb:12467", "level"),
-    SeriesDef("IMA-B 5+ (BCB)", "BCB", "bcb:12468", "level"),
-    SeriesDef("IRF-M (BCB)", "BCB", "bcb:12461", "level"),
-    SeriesDef("IMA-S (BCB)", "BCB", "bcb:12469", "level"),
+    SeriesDef("IMA-B", "ANBIMA", "anbima:IMAB", "level"),
+    SeriesDef("IMA-B 5", "ANBIMA", "anbima:IMAB5", "level"),
+    SeriesDef("IMA-B 5+", "ANBIMA", "anbima:IMAB5MAIS", "level"),
+    SeriesDef("IRF-M", "ANBIMA", "anbima:IRFM", "level"),
+    SeriesDef("IMA-S", "ANBIMA", "anbima:IMAS", "level"),
+    SeriesDef("IMA-Geral", "ANBIMA", "anbima:IMAGERAL", "level"),
     SeriesDef("S&P 500", "YF", "yf:^GSPC", "level"),
     SeriesDef("IVVB11", "YF", "yf:IVVB11.SA", "level"),
     SeriesDef("BOVA11", "YF", "yf:BOVA11.SA", "level"),
     SeriesDef("IMID", "YF", "yf:IMID.L", "level"),
     SeriesDef("Bitcoin", "YF", "yf:BTC-USD", "level"),
-    SeriesDef("IMAB11 (proxy)", "YF", "yf:IMAB11.SA", "level"),
-    SeriesDef("IRFM11 (proxy)", "YF", "yf:IRFM11.SA", "level"),
-    SeriesDef("B5P211 (proxy)", "YF", "yf:B5P211.SA", "level"),
-    SeriesDef("IB5M11 (proxy)", "YF", "yf:IB5M11.SA", "level"),
-    SeriesDef("LFTS11 (proxy)", "YF", "yf:LFTS11.SA", "level"),
     SeriesDef("IFIX", "B3", "b3:IFIX", "level"),
     SeriesDef("SMLL", "B3", "b3:SMLL", "level"),
     SeriesDef("IDIV", "B3", "b3:IDIV", "level"),
@@ -73,16 +63,6 @@ _RAW: list[SeriesDef] = [
 
 # --- Séries DERIVADAS (calculadas na leitura; a ingestão NÃO grava estas) ---
 _DERIVED: list[SeriesDef] = [
-    SeriesDef("IMA-B", None, None, "level",
-              derivation=ProxySplice("bcb:12466", "yf:IMAB11.SA")),
-    SeriesDef("IMA-B 5", None, None, "level",
-              derivation=ProxySplice("bcb:12467", "yf:B5P211.SA")),
-    SeriesDef("IMA-B 5+", None, None, "level",
-              derivation=ProxySplice("bcb:12468", "yf:IB5M11.SA")),
-    SeriesDef("IRF-M", None, None, "level",
-              derivation=ProxySplice("bcb:12461", "yf:IRFM11.SA")),
-    SeriesDef("IMA-S", None, None, "level",
-              derivation=ProxySplice("bcb:12469", "yf:LFTS11.SA")),
     SeriesDef("S&P 500 BRL", None, None, "level", derivation=ToBRL("S&P 500")),
     SeriesDef("IMID BRL", None, None, "level", derivation=ToBRL("IMID")),
     SeriesDef("Bitcoin BRL", None, None, "level", derivation=ToBRL("Bitcoin")),

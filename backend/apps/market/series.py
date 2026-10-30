@@ -99,13 +99,6 @@ def _materialize(sdef: catalog.SeriesDef, start: dt.date, end: dt.date) -> pd.Se
             return transforms.accumulate(raw, sdef.periodicity)
         return raw
 
-    if isinstance(d, catalog.ProxySplice):
-        bcb = repository.load_series(d.bcb_key, start, end)
-        etf = repository.load_series(d.etf_key, start, end)
-        if bcb.empty and etf.empty:
-            return None
-        return transforms.splice_proxy(bcb, etf)
-
     if isinstance(d, catalog.ToBRL):
         base = get_series(d.base_name, start, end)
         ptax = get_series("USD/BRL", start, end)

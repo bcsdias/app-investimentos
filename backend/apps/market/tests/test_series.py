@@ -106,36 +106,18 @@ def test_write_to_base_invalidates_derived_series(monkeypatch):
     assert round(s2.iloc[0], 2) == 550.0
 
 
-def test_get_series_proxy_splice(monkeypatch):
-    def fake_load(key, s, e):
-        if key == "bcb:12466":
-            return pd.Series([100.0, 110.0], index=_bdays(2, "2024-01-02"), name=key)
-        if key == "yf:IMAB11.SA":
-            return pd.Series([50.0, 55.0, 60.5], index=_bdays(3, "2024-01-03"), name=key)
-        return pd.Series(dtype=float, name=key)
-
-    monkeypatch.setattr(sr.repository, "load_series", fake_load)
-    out = sr.get_series("IMA-B", S, E)
-    assert out.loc["2024-01-03"] == 110.0
-    assert round(out.loc["2024-01-04"], 4) == round(110.0 * 55.0 / 50.0, 4)
-
-
 def test_derived_series_survive_cache_hit(monkeypatch):
-    # ToBRL e ProxySplice produzem séries sem nome; a 2ª leitura (do cache) não
+    # ToBRL produz séries sem nome; a 2ª leitura (do cache) não
     # pode virar NaN (achado da paridade da Fase 6).
     def fake_load(key, s, e):
         if key == "yf:^GSPC":
             return pd.Series([100.0, 110.0], index=_bdays(2), name=key)
         if key == "ptax:USDBRL":
             return pd.Series([5.0, 5.5], index=_bdays(2), name=key)
-        if key == "bcb:12466":
-            return pd.Series([100.0, 110.0], index=_bdays(2), name=key)
-        if key == "yf:IMAB11.SA":
-            return pd.Series([50.0, 55.0, 60.5], index=_bdays(3, "2024-01-03"), name=key)
         return pd.Series(dtype=float, name=key)
 
     monkeypatch.setattr(sr.repository, "load_series", fake_load)
-    for name in ("S&P 500 BRL", "IMA-B"):
+    for name in ("S&P 500 BRL",):
         fresh = sr.get_series(name, S, E)
         cached = sr.get_series(name, S, E)
         assert not cached.isna().any(), name

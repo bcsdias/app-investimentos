@@ -16,7 +16,7 @@ from django.core.management.base import BaseCommand
 from django.db import DatabaseError
 
 from apps.market import catalog, gaps, repository, series
-from apps.market.services.sources import b3, bcb, ptax, tesouro, yahoo
+from apps.market.services.sources import anbima, b3, bcb, ptax, tesouro, yahoo
 from apps.market.services.sources.base import FetchError, RawPoint
 
 logger = logging.getLogger(__name__)
@@ -34,6 +34,8 @@ def _fetch(sdef: catalog.SeriesDef, start: dt.date, end: dt.date) -> list[RawPoi
     prefix, _, ident = sdef.series_key.partition(":")
     if prefix == "bcb":
         return bcb.fetch_sgs(int(ident), start, end)
+    if prefix == "anbima":
+        return anbima.fetch_anbima(ident, start, end)
     if prefix == "yf":
         return yahoo.fetch_yahoo(ident, start, end)
     if prefix == "ptax":

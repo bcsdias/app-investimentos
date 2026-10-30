@@ -14,6 +14,22 @@ def test_catalog_groups_only_known_names(auth_client):
     assert d["synthetic"] == {"bases": ["IPCA", "CDI"], "operadores": ["+", "%"]}
 
 
+def test_catalog_groups_ima_under_anbima(auth_client):
+    r = auth_client.get("/api/v1/benchmarks/catalog")
+    assert r.status_code == 200
+    groups = {g["name"]: g["items"] for g in r.json()["groups"]}
+    assert groups["ANBIMA / Tesouro"] == [
+        "IMA-B",
+        "IMA-B 5",
+        "IMA-B 5+",
+        "IRF-M",
+        "IMA-S",
+        "IMA-Geral",
+    ]
+    all_items = [item for items in groups.values() for item in items]
+    assert not [n for n in all_items if "(BCB)" in n or "(proxy)" in n]
+
+
 def test_search_returns_assets(auth_client, assets_csv):
     r = auth_client.get("/api/v1/assets/search", {"q": "aapl"})
     assert r.status_code == 200

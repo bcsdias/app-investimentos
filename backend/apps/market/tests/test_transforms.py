@@ -23,17 +23,6 @@ def test_accumulate_first_nan_becomes_one():
     assert out.iloc[0] == 1.0
 
 
-def test_splice_proxy_continuous_at_seam():
-    bcb = _s([100.0, 110.0], start="2024-01-02")            # termina em 110 em 2024-01-03
-    etf = _s([50.0, 55.0, 60.5], start="2024-01-03")         # base 50 no dia da emenda
-    out = tf.splice_proxy(bcb, etf)
-    # até 2024-01-03: valores do BCB. Depois: 110 * (etf / 50)
-    assert out.loc["2024-01-03"] == 110.0
-    np.testing.assert_allclose(out.loc["2024-01-04"], 110.0 * 55.0 / 50.0)
-    np.testing.assert_allclose(out.loc["2024-01-05"], 110.0 * 60.5 / 50.0)
-    assert not out.isna().any()
-
-
 def test_to_brl_multiplies_by_ffilled_ptax():
     usd = _s([100.0, 100.0, 100.0])
     ptax = pd.Series([5.0], index=[usd.index[0]])
