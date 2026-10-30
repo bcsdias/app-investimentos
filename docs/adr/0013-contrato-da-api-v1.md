@@ -50,3 +50,4 @@ A Fase 3 expõe o núcleo de cálculo (`engine/`) e os serviços de mercado (`ap
 
 ### Negativas / Mitigações
 - Como as rotas analíticas usam `POST`, o cliente HTTP da SPA deve enviar o header `X-CSRFToken` (obtido do cookie `csrftoken` semeado em `GET /api/v1/auth/csrf`).
+- *Nota da Fase 7c.1 (2026-10-30, [ADR 0021](0021-indices-ima-pela-anbima.md)):* Exceção registrada ao princípio de contrato exclusivamente aditivo: remoção dos benchmarks legados com sufixo `(BCB)` e `(proxy)` do endpoint `/api/v1/benchmarks/catalog` sem aliases retroativos, justificada pela unificação dos índices oficiais na ANBIMA e pela ausência de consumidores externos além da SPA própria.

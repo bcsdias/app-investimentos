@@ -20,13 +20,13 @@ logger = logging.getLogger(__name__)
 HIST_URL = "https://s3-data-prd-use1-precos.s3.us-east-1.amazonaws.com/arquivos/indices-historico/{code}-HISTORICO.xls"
 DAILY_URL = "https://www.anbima.com.br/informacoes/ima/ima-sh-down.asp"
 
-INDEX_LABELS: dict[str, str] = {
-    "IMAS": "IMA-S",
-    "IMAB": "IMA-B",
-    "IMAB5": "IMA-B 5",
-    "IMAB5MAIS": "IMA-B 5+",
-    "IRFM": "IRF-M",
-    "IMAGERAL": "IMA-GERAL",
+INDEX_LABELS: dict[str, tuple[str, ...]] = {
+    "IMAS": ("IMA-S", "IMA - S"),
+    "IMAB": ("IMA-B", "IMA - B"),
+    "IMAB5": ("IMA-B 5", "IMA - B 5"),
+    "IMAB5MAIS": ("IMA-B 5+", "IMA - B 5+"),
+    "IRFM": ("IRF-M", "IRF - M"),
+    "IMAGERAL": ("IMA-GERAL", "IMA - Geral", "IMA - GERAL"),
 }
 
 FALLBACK_MAX_DAYS = 30
@@ -44,7 +44,7 @@ def fetch_history(code: str, start: dt.date, end: dt.date) -> list[RawPoint]:
     if code not in INDEX_LABELS:
         raise FetchError(f"Código ANBIMA desconhecido: {code}")
 
-    label = INDEX_LABELS[code]
+    labels = INDEX_LABELS[code]
     url = HIST_URL.format(code=code)
 
     try:
@@ -62,9 +62,9 @@ def fetch_history(code: str, start: dt.date, end: dt.date) -> list[RawPoint]:
     if not required_cols.issubset(df.columns):
         raise FetchError(f"Colunas obrigatórias {required_cols} ausentes no histórico ANBIMA: {df.columns.tolist()}")
 
-    df_filtered = df[df["Índice"] == label]
+    df_filtered = df[df["Índice"].astype(str).str.strip().isin(labels)]
     if df_filtered.empty:
-        raise FetchError(f"Arquivo da ANBIMA sem linhas para o índice '{label}'")
+        raise FetchError(f"Arquivo da ANBIMA sem linhas para o índice {labels}")
 
     points: list[RawPoint] = []
     for _, row in df_filtered.iterrows():
@@ -96,7 +96,7 @@ def fetch_daily(code: str, day: dt.date) -> RawPoint | None:
     if code not in INDEX_LABELS:
         raise FetchError(f"Código ANBIMA desconhecido: {code}")
 
-    label = INDEX_LABELS[code]
+    labels = INDEX_LABELS[code]
     data = {
         "Pai": "ima",
         "escolha": "2",
@@ -140,7 +140,7 @@ def fetch_daily(code: str, day: dt.date) -> RawPoint | None:
     for row in rows[header_idx + 1 :]:
         if not row or len(row) <= max(idx_col, val_col):
             continue
-        if row[idx_col].strip() == label:
+        if row[idx_col].strip() in labels:
             val_str = row[val_col].strip()
             if not val_str or val_str == "--":
                 return None

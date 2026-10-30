@@ -31,6 +31,7 @@ def test_fetch_history_filters_index_and_window(monkeypatch):
         {"Índice": "IMA-S", "Data de Referência": pd.Timestamp(2024, 1, 2), "Número Índice": 6393.10},
         {"Índice": "IMA-S", "Data de Referência": pd.Timestamp(2024, 1, 3), "Número Índice": 6396.27},
         {"Índice": "IMA-S", "Data de Referência": pd.Timestamp(2024, 1, 4), "Número Índice": 6399.20},
+        {"Índice": "IMA - S", "Data de Referência": pd.Timestamp(2026, 1, 5), "Número Índice": 8130.00},
         {"Índice": "IMA-B", "Data de Referência": pd.Timestamp(2024, 1, 3), "Número Índice": 8000.00},
     ]
     content = _build_excel_content(rows)
@@ -41,6 +42,9 @@ def test_fetch_history_filters_index_and_window(monkeypatch):
         RawPoint(dt.date(2024, 1, 3), 6396.27),
         RawPoint(dt.date(2024, 1, 4), 6399.20),
     ]
+
+    pts2026 = anbima.fetch_history("IMAS", dt.date(2026, 1, 5), dt.date(2026, 1, 5))
+    assert pts2026 == [RawPoint(dt.date(2026, 1, 5), 8130.00)]
 
 
 def test_fetch_history_empty_window_returns_empty(monkeypatch):

@@ -38,6 +38,7 @@ Complementam (não substituem) as tabelas "decisões travadas" dos specs em
 | [0018](0018-metodologia-de-retorno-dlp.md) | Metodologia de cálculo de retorno alinhada à planilha DLP (fluxo com lucro, HPR aporte-início/resgate-fim, XIRR com fallback, rf = CDI) | 7a |
 | [0019](0019-integridade-dos-dados-de-mercado.md) | Integridade dos dados de mercado, invalidação de cache por geração global e tratamento de lacunas com ffill e meta.gaps | 7b |
 | [0020](0020-backlog-spa-api-fase-7c.md) | Resoluções do backlog SPA/API, robustez operacional (rate limit, 422, URL sync, locks e single-flight) | 7c |
+| [0021](0021-indices-ima-pela-anbima.md) | Índices IMA pela ANBIMA (histórico completo no S3, fallback por data, remoção de bcb:1246x e de projeções por ETF) | 7c.1 |
 
 
 
