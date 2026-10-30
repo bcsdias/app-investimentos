@@ -11,6 +11,7 @@ import {
   periodToParams,
 } from '../context/PortfolioFilterContext';
 import { FiltersBar } from '../components/portfolio/FiltersBar';
+import { DateInput } from '../components/common/DateInput';
 import { benchmarksApi } from '../api/benchmarks';
 import { assetsApi } from '../api/assets';
 import { portfolioApi } from '../api/portfolio';
@@ -308,6 +309,22 @@ describe('PortfolioFilterContext, FiltersBar e BenchmarkSelector', () => {
 
       expect(() => fireEvent.click(calendarButtons[0])).not.toThrow();
       expect(() => fireEvent.click(startInput)).not.toThrow();
+    });
+
+    it('onClick externo não substitui a abertura do calendário', () => {
+      const showPickerMock = vi.fn();
+      const onClick = vi.fn();
+      HTMLInputElement.prototype.showPicker = showPickerMock;
+      try {
+        render(
+          <DateInput aria-label="Data externa" value="2024-01-01" onChange={() => {}} onClick={onClick} />
+        );
+        fireEvent.click(screen.getByLabelText('Data externa'));
+        expect(onClick).toHaveBeenCalledTimes(1);
+        expect(showPickerMock).toHaveBeenCalledTimes(1);
+      } finally {
+        delete HTMLInputElement.prototype.showPicker;
+      }
     });
 
     it('mudar a data mantém ISO no filtro', () => {

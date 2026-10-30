@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   TrendingUp,
@@ -20,11 +20,20 @@ import { DlpTokenModal } from '../dlp/DlpTokenModal';
 export function Header() {
   const { user, logout } = useAuth();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [alertInfo, setAlertInfo] = useState({ reason: null, message: null });
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const { data: tokenStatus, refetch: refetchTokenStatus } = useDlpTokenStatus();
+
+  // Sair é explícito: vai para /login sem `state.from`, para o próximo login começar
+  // nos filtros padrão. Sessão expirada ou link sem sessão passam pelo RequireAuth,
+  // que guarda a rota de origem (com ?period=) para o LoginPage restaurar.
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login', { replace: true });
+  };
 
   useEffect(() => {
     const handleOpenDlpModal = (event) => {
@@ -152,7 +161,7 @@ export function Header() {
               type="button"
               variant="ghost"
               size="sm"
-              onClick={logout}
+              onClick={handleLogout}
               aria-label="Sair"
               title="Sair"
             >

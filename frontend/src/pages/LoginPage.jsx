@@ -15,11 +15,7 @@ export function LoginPage() {
 
   const from = location.state?.from;
   const redirectTarget =
-    from && from.pathname && from.pathname !== '/login'
-      ? from.pathname === '/'
-        ? '/'
-        : `${from.pathname}${from.search || ''}`
-      : '/';
+    from?.pathname && from.pathname !== '/login' ? `${from.pathname}${from.search || ''}` : '/';
 
   if (isAuthenticated) {
     return <Navigate to={redirectTarget} replace />;

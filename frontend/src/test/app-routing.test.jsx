@@ -172,6 +172,37 @@ describe('Roteamento Principal, LoginPage e Fluxos de Tela', () => {
     expect(window.location.pathname).toBe('/migracao-ir');
   });
 
+  it('link com ?period= aberto sem sessão é restaurado após o login', async () => {
+    vi.spyOn(authApi, 'getMe').mockRejectedValueOnce({ response: { status: 401 } });
+    vi.spyOn(authApi, 'login').mockResolvedValue({
+      id: 1,
+      username: 'investidor',
+      email: 'inv@example.com',
+    });
+
+    window.history.pushState({}, '', '/?period=custom&start=2024-01-01&end=2024-12-31');
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: /Acesse sua Conta/i })).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByLabelText(/Usuário/i), { target: { value: 'investidor' } });
+    fireEvent.change(screen.getByLabelText(/Senha/i), { target: { value: 'segredo123' } });
+    fireEvent.click(screen.getByRole('button', { name: /Entrar/i }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('heading', { name: /Dashboard Analítico da Carteira/i })
+      ).toBeInTheDocument();
+    });
+    expect(screen.getByRole('button', { name: 'Personalizado' })).toHaveClass('bg-emerald-600');
+    expect(screen.getByLabelText('Data inicial')).toHaveValue('2024-01-01');
+    expect(screen.getByLabelText('Data final')).toHaveValue('2024-12-31');
+    expect(window.location.search).toContain('period=custom');
+  });
+
   it('filtros voltam ao padrão após logout e novo login', async () => {
     let currentUser = { id: 1, username: 'investidor', email: 'inv@example.com' };
     vi.spyOn(authApi, 'getMe').mockImplementation(async () => {

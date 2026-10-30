@@ -11,6 +11,8 @@ export function DateInput({
   id,
   name,
   disabled = false,
+  onClick,
+  'aria-label': ariaLabelProp,
   ...rest
 }) {
   const inputRef = useRef(null);
@@ -27,7 +29,7 @@ export function DateInput({
   };
 
   const handleInputClick = (e) => {
-    rest.onClick?.(e);
+    onClick?.(e);
     openPicker();
   };
 
@@ -38,11 +40,12 @@ export function DateInput({
     openPicker();
   };
 
-  const label = ariaLabel || rest['aria-label'];
+  const label = ariaLabel || ariaLabelProp;
 
   return (
     <div className="relative inline-flex items-center">
       <input
+        {...rest}
         ref={inputRef}
         type="date"
         id={id}
@@ -55,7 +58,6 @@ export function DateInput({
         aria-label={label}
         onClick={handleInputClick}
         className={`bg-zinc-950 border border-zinc-700 rounded-lg pl-2.5 pr-8 py-1 text-xs text-zinc-100 [color-scheme:dark] [&::-webkit-calendar-picker-indicator]:opacity-0 cursor-pointer ${className}`.trim()}
-        {...rest}
       />
       <button
         type="button"
