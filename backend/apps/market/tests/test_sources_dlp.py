@@ -334,3 +334,20 @@ def test_non_object_json_raises_unavailable(monkeypatch, payload):
     monkeypatch.setattr(dlp.requests, "get", lambda *a, **k: _Resp(payload))
     with pytest.raises(DLPUnavailableError):
         dlp.buscar_historico("t")
+
+
+def test_buscar_historico_date_is_datetime_cold_and_warm(monkeypatch):
+    def fake_get(*args, **kwargs):
+        return _Resp({"historico": [{"date": "2024-01-31", "vlr_mercado": 100.0, "vlr_investido": 100.0, "lucro": 0.0, "proventos": 0.0}]})
+
+    monkeypatch.setattr(dlp.requests, "get", fake_get)
+    # 1ª chamada (fria)
+    df_cold = dlp.buscar_historico("DLP-cold-warm")
+    assert df_cold is not None
+    assert pd.api.types.is_datetime64_any_dtype(df_cold["date"])
+
+    # 2ª chamada (quente, cache)
+    df_warm = dlp.buscar_historico("DLP-cold-warm")
+    assert df_warm is not None
+    assert pd.api.types.is_datetime64_any_dtype(df_warm["date"])
+

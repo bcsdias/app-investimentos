@@ -1,5 +1,5 @@
 import pandas as pd
-from engine.flows import external_flows, group_portfolio, hpr
+from engine.flows import external_flows, group_portfolio, hpr, is_grouped
 
 
 def calculate_twr(df: pd.DataFrame, start_date: str = None, end_date: str = None) -> pd.Series:
@@ -47,7 +47,10 @@ def calculate_twr(df: pd.DataFrame, start_date: str = None, end_date: str = None
             return pd.Series(dtype=float)
 
     has_fluxo = "fluxo" in df.columns
-    df_grp = group_portfolio(df)
+    if is_grouped(df):
+        df_grp = df.reset_index(drop=True)
+    else:
+        df_grp = group_portfolio(df)
     if df_grp.empty:
         return pd.Series(dtype=float)
 

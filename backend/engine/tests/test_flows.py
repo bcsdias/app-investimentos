@@ -93,3 +93,61 @@ def test_empty_dataframe():
     assert flows_series.empty
     h = flows.hpr(g["vlr_mercado"] if "vlr_mercado" in g else pd.Series(dtype=float), flows_series)
     assert h.empty
+
+
+def test_is_grouped_true_for_group_portfolio_output():
+    df_cru = pd.DataFrame({
+        "date": ["2024-01-31", "2024-02-29", "2024-02-29", "2024-03-31"],
+        "vlr_mercado": [1000.0, 400.0, 300.0, 720.0],
+        "vlr_investido": [1000.0, 350.0, 250.0, 600.0],
+        "lucro": [0.0, 120.0, 80.0, 0.0],
+        "proventos": [0.0, 0.0, 0.0, 10.0],
+    })
+    grp = flows.group_portfolio(df_cru)
+    assert flows.is_grouped(grp) is True
+
+
+def test_is_grouped_false_cases():
+    # DataFrame vazio
+    assert flows.is_grouped(pd.DataFrame()) is False
+    assert flows.is_grouped(None) is False
+
+    # date como string
+    df_str_date = pd.DataFrame({
+        "date": ["2024-01-31", "2024-02-29"],
+        "vlr_mercado": [1000.0, 1100.0],
+        "vlr_investido": [1000.0, 1000.0],
+        "lucro": [0.0, 0.0],
+        "proventos": [0.0, 0.0],
+    })
+    assert flows.is_grouped(df_str_date) is False
+
+    # Datas repetidas
+    df_dup = pd.DataFrame({
+        "date": pd.to_datetime(["2024-01-31", "2024-01-31"]),
+        "vlr_mercado": [500.0, 500.0],
+        "vlr_investido": [500.0, 500.0],
+        "lucro": [0.0, 0.0],
+        "proventos": [0.0, 0.0],
+    })
+    assert flows.is_grouped(df_dup) is False
+
+    # Datas fora de ordem
+    df_unsorted = pd.DataFrame({
+        "date": pd.to_datetime(["2024-02-29", "2024-01-31"]),
+        "vlr_mercado": [1100.0, 1000.0],
+        "vlr_investido": [1000.0, 1000.0],
+        "lucro": [0.0, 0.0],
+        "proventos": [0.0, 0.0],
+    })
+    assert flows.is_grouped(df_unsorted) is False
+
+    # Falta coluna 'lucro'
+    df_missing_col = pd.DataFrame({
+        "date": pd.to_datetime(["2024-01-31", "2024-02-29"]),
+        "vlr_mercado": [1000.0, 1100.0],
+        "vlr_investido": [1000.0, 1000.0],
+        "proventos": [0.0, 0.0],
+    })
+    assert flows.is_grouped(df_missing_col) is False
+

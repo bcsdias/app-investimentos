@@ -4,6 +4,30 @@ import pandas as pd
 FLOW_COLUMNS: tuple[str, ...] = ("vlr_mercado", "vlr_investido", "proventos", "lucro")
 
 
+def is_grouped(df: pd.DataFrame | None) -> bool:
+    """Verifica se o DataFrame já está agrupado por data com FLOW_COLUMNS.
+
+    True sse df tem a coluna 'date' com dtype datetime64, única e crescente,
+    e todas as FLOW_COLUMNS estão presentes e são numéricas. None/vazio -> False.
+    """
+    if df is None or not isinstance(df, pd.DataFrame) or df.empty:
+        return False
+    if "date" not in df.columns:
+        return False
+    if not pd.api.types.is_datetime64_any_dtype(df["date"]):
+        return False
+    date_col = df["date"]
+    if not date_col.is_unique or not date_col.is_monotonic_increasing:
+        return False
+    for col in FLOW_COLUMNS:
+        if col not in df.columns:
+            return False
+        if not pd.api.types.is_numeric_dtype(df[col]):
+            return False
+    return True
+
+
+
 def group_portfolio(df: pd.DataFrame) -> pd.DataFrame:
     """
     Agrupa a carteira por data somando as colunas de fluxo e mercado.

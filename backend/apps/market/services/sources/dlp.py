@@ -170,6 +170,8 @@ def buscar_historico(token, ativo=None, classe=None, corretora=None):
         if df.empty:
             return None
         df = _norm_date_col(df)
+        if "date" in df.columns:
+            df["date"] = pd.to_datetime(df["date"])
         mc.set_df(key, df, ttl=mc.TTL_DLP)
         return _filter_historico(df, **filters)
 
