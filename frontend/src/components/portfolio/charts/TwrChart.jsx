@@ -3,7 +3,7 @@ import { Card } from '../../common/Card';
 import { BaseChart } from './BaseChart';
 
 export function TwrChart({ data, isLoading = false, error = null, onRetry }) {
-  const seriesList = data?.data?.series || data?.series || [];
+  const seriesList = data?.data?.series || [];
 
   const option = useMemo(() => {
     return {

@@ -9,7 +9,7 @@ export function toVolPercent(val) {
 }
 
 export function RollingSharpeChart({ data, isLoading = false, error = null, onRetry }) {
-  const payload = data?.data || data || {};
+  const payload = data?.data || {};
   const sharpeSeries = payload.sharpe || [];
   const volSeries = payload.volatility || [];
 

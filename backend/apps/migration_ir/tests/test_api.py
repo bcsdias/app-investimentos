@@ -107,6 +107,7 @@ def test_plan_pdf_endpoint(client_resumo):
     r = post(client_resumo, "plan.pdf", PLAN_BODY)
     assert r.status_code == 200 and r["Content-Type"] == "application/pdf"
     assert re.fullmatch(r'attachment; filename="plano_migracao_ir_\d{8}\.pdf"', r["Content-Disposition"])
+    assert r["Access-Control-Expose-Headers"] == "Content-Disposition"
     assert r.content.startswith(b"%PDF")
 
 

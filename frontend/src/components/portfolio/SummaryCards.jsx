@@ -26,9 +26,7 @@ export function formatSignedPercent(pctValue) {
 
 export function SummaryCards({ data, isLoading = false, isError = false, error = null, onRetry }) {
   if (isLoading) {
-    const hasData = Boolean(
-      data && (data.data || data.patrimonio !== undefined || data.pat_fim !== undefined)
-    );
+    const hasData = Boolean(data?.data);
     return (
       <div className="space-y-3">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
@@ -55,18 +53,15 @@ export function SummaryCards({ data, isLoading = false, isError = false, error =
     return <ErrorState error={error} onRetry={onRetry} />;
   }
 
-  const raw = data?.data || data || {};
-  const isShorthand = raw.pat_fim !== undefined || raw.twr !== undefined;
+  const raw = data?.data || {};
 
-  const patrimonio = raw.patrimonio ?? raw.pat_fim ?? null;
-  const aportes = raw.aportes_periodo ?? raw.aportes ?? null;
-  const ganho = raw.ganho_periodo ?? raw.ganho ?? null;
+  const patrimonio = raw.patrimonio ?? null;
+  const aportes = raw.aportes_periodo ?? null;
+  const ganho = raw.ganho_periodo ?? null;
 
   const twrPercent =
     raw.twr_total !== undefined && raw.twr_total !== null
       ? Number(raw.twr_total)
-      : raw.twr !== undefined && raw.twr !== null
-      ? Number(raw.twr) * 100
       : null;
 
   const isAnnual = raw.xirr_is_annual !== false;
@@ -78,9 +73,7 @@ export function SummaryCards({ data, isLoading = false, isError = false, error =
 
   const xirrPercent =
     targetTir !== undefined && targetTir !== null
-      ? isShorthand
-        ? Number(targetTir) * 100
-        : Number(targetTir)
+      ? Number(targetTir)
       : null;
 
   const cards = [

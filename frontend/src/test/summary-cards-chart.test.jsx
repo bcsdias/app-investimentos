@@ -37,11 +37,13 @@ describe('SummaryCards e BaseChart', () => {
 
   it('formata valores monetários em BRL e percentuais com sinal (+ verde, - vermelho)', () => {
     const sampleData = {
-      pat_fim: 150000,
-      aportes: 120000,
-      ganho: 30000,
-      twr: 0.154,
-      xirr: -0.021,
+      data: {
+        patrimonio: 150000,
+        aportes_periodo: 120000,
+        ganho_periodo: 30000,
+        twr_total: 15.4,
+        xirr: -2.1,
+      },
     };
 
     render(<SummaryCards data={sampleData} isLoading={false} isError={false} />);

@@ -9,7 +9,7 @@ export function toPct(val) {
 }
 
 export function RiskReturnChart({ data, isLoading = false, error = null, onRetry }) {
-  const rows = data?.data?.rows || data?.rows || [];
+  const rows = data?.data?.rows || [];
 
   const option = useMemo(() => {
     const validRows = rows.filter(

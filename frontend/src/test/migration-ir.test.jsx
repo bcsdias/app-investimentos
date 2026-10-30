@@ -209,34 +209,92 @@ describe('Módulo de Migração de IR e Exportação PDF', () => {
     expect(screen.getByText(/o lucro do mês é tributado/)).toBeInTheDocument();
   });
 
-  it('ExportPdfButton recebe blob de migrationApi.downloadPdf e dispara download no DOM', async () => {
-    const fakeBlob = new Blob(['%PDF-1.4 mock'], { type: 'application/pdf' });
-    const pdfSpy = vi.spyOn(migrationApi, 'downloadPdf').mockResolvedValue(fakeBlob);
-    const createUrlSpy = vi
-      .spyOn(window.URL, 'createObjectURL')
-      .mockReturnValue('blob:mock-pdf-url');
-    const revokeUrlSpy = vi.spyOn(window.URL, 'revokeObjectURL').mockImplementation(() => {});
-    const clickSpy = vi
-      .spyOn(HTMLAnchorElement.prototype, 'click')
-      .mockImplementation(() => {});
+  it('ExportPdfButton recebe { blob, filename } de migrationApi.downloadPdf, usa filename no link e adia revokeObjectURL', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    try {
+      const fakeBlob = new Blob(['%PDF-1.4 mock'], { type: 'application/pdf' });
+      const pdfSpy = vi.spyOn(migrationApi, 'downloadPdf').mockResolvedValue({
+        blob: fakeBlob,
+        filename: 'plano_migracao_ir_20261030_custom.pdf',
+      });
+      const createUrlSpy = vi
+        .spyOn(window.URL, 'createObjectURL')
+        .mockReturnValue('blob:mock-pdf-url');
+      const revokeUrlSpy = vi.spyOn(window.URL, 'revokeObjectURL').mockImplementation(() => {});
+      let downloadedFilename = null;
+      const clickSpy = vi
+        .spyOn(HTMLAnchorElement.prototype, 'click')
+        .mockImplementation(function () {
+          downloadedFilename = this.getAttribute('download');
+        });
 
-    const payload = {
-      targets: [{ ticker: 'IVVB11', weight: 100 }],
-      holdings: [],
-      monthly_cap: 20000,
-    };
+      const payload = {
+        targets: [{ ticker: 'IVVB11', weight: 100 }],
+        holdings: [],
+        monthly_cap: 20000,
+      };
 
-    render(<ExportPdfButton payload={payload} disabled={false} />);
+      render(<ExportPdfButton payload={payload} disabled={false} />);
 
-    const btn = screen.getByRole('button', { name: /Baixar Relatório em PDF/i });
-    fireEvent.click(btn);
+      const btn = screen.getByRole('button', { name: /Baixar Relatório em PDF/i });
+      fireEvent.click(btn);
 
-    await waitFor(() => {
+      // Aguarda microtasks da promise da API resolverem sem avançar timers macrotask
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+
       expect(pdfSpy).toHaveBeenCalledWith(payload);
       expect(createUrlSpy).toHaveBeenCalledWith(fakeBlob);
       expect(clickSpy).toHaveBeenCalledTimes(1);
+      expect(downloadedFilename).toBe('plano_migracao_ir_20261030_custom.pdf');
+
+      // revokeObjectURL não deve ter sido chamado sincronicamente no mesmo tick do click
+      expect(revokeUrlSpy).not.toHaveBeenCalled();
+
+      // Ao avançar o timer do setTimeout(..., 0), revokeObjectURL deve ser executado
+      await vi.advanceTimersByTimeAsync(1);
       expect(revokeUrlSpy).toHaveBeenCalledWith('blob:mock-pdf-url');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('download usa o nome do Content-Disposition com fallback por data', async () => {
+    const fakeBlob = new Blob(['%PDF-1.4 mock'], { type: 'application/pdf' });
+    const { api } = await import('../api/client');
+    const apiSpy = vi.spyOn(api, 'post').mockResolvedValue({
+      data: fakeBlob,
+      headers: {
+        'content-disposition': 'attachment; filename="plano_servidor_2026.pdf"',
+      },
     });
+
+    const payload = { targets: [{ ticker: 'IVVB11', weight: 100 }], holdings: [] };
+    const res = await migrationApi.downloadPdf(payload);
+    expect(res).toEqual({
+      blob: fakeBlob,
+      filename: 'plano_servidor_2026.pdf',
+    });
+
+    // Teste com filename*=
+    apiSpy.mockResolvedValueOnce({
+      data: fakeBlob,
+      headers: {
+        'content-disposition': "attachment; filename*=UTF-8''plano%20especial.pdf",
+      },
+    });
+    const resUtf8 = await migrationApi.downloadPdf(payload);
+    expect(resUtf8.filename).toBe('plano especial.pdf');
+
+    // Teste com fallback quando header ausente
+    apiSpy.mockResolvedValueOnce({
+      data: fakeBlob,
+      headers: {},
+    });
+    const resFallback = await migrationApi.downloadPdf(payload);
+    const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    expect(resFallback.filename).toBe(`plano_migracao_ir_${today}.pdf`);
   });
 
   it('alinha planPayload com validate_plan_input (alvo na carteira vira ignore, sem cotação vira ignore e saldo manual só vai em count_as)', async () => {

@@ -9,7 +9,7 @@ export function toPercentPoint(val) {
 }
 
 export function DrawdownChart({ data, isLoading = false, error = null, onRetry }) {
-  const seriesList = data?.data?.series || data?.series || [];
+  const seriesList = data?.data?.series || [];
 
   const option = useMemo(() => {
     return {

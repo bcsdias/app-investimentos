@@ -97,4 +97,5 @@ def plan_pdf(request: HttpRequest, payload: PlanRequest):
     now = timezone.localtime()
     resp = HttpResponse(render_plan_pdf(envelope, payload, generated_at=now), content_type="application/pdf")
     resp["Content-Disposition"] = f'attachment; filename="plano_migracao_ir_{now:%Y%m%d}.pdf"'
+    resp["Access-Control-Expose-Headers"] = "Content-Disposition"
     return resp

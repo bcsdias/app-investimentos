@@ -36,7 +36,7 @@ export function YearlyTable({ data, isLoading = false, error = null, onRetry }) 
     );
   }
 
-  const payload = data?.data || data || {};
+  const payload = data?.data || {};
   const years = payload.years || [];
   const rows = payload.rows || [];
 

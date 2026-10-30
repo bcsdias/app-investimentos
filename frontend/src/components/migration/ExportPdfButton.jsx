@@ -12,16 +12,21 @@ export function ExportPdfButton({ payload, disabled = false }) {
     setErrorMsg('');
     setIsDownloading(true);
     try {
-      const blob = await migrationApi.downloadPdf(payload);
+      const result = await migrationApi.downloadPdf(payload);
+      const blob = result?.blob || result;
+      const filename =
+        result?.filename ||
+        `plano_migracao_ir_${new Date().toISOString().slice(0, 10).replace(/-/g, '')}.pdf`;
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-      link.setAttribute('download', `plano_migracao_ir_${dateStr}.pdf`);
+      link.setAttribute('download', filename);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+      setTimeout(() => {
+        window.URL.revokeObjectURL(url);
+      }, 0);
     } catch (err) {
       setErrorMsg(err?.response?.data?.message || 'Erro ao gerar PDF do plano.');
     } finally {
@@ -51,4 +56,3 @@ export function ExportPdfButton({ payload, disabled = false }) {
 }
 
 export default ExportPdfButton;
-

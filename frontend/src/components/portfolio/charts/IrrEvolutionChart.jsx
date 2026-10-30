@@ -3,7 +3,7 @@ import { Card } from '../../common/Card';
 import { BaseChart } from './BaseChart';
 
 export function IrrEvolutionChart({ data, isLoading = false, error = null, onRetry }) {
-  const payload = data?.data || data || {};
+  const payload = data?.data || {};
   const seriesList = payload.series || [];
   const periodList = payload.period || [];
   const annualFrom = payload.annual_from || null;

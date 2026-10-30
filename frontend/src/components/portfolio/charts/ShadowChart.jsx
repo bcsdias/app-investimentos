@@ -4,7 +4,7 @@ import { BaseChart } from './BaseChart';
 import { formatCurrencyBRL } from '../SummaryCards';
 
 export function ShadowChart({ data, isLoading = false, error = null, onRetry }) {
-  const seriesList = data?.data?.series || data?.series || [];
+  const seriesList = data?.data?.series || [];
 
   const option = useMemo(() => {
     return {
