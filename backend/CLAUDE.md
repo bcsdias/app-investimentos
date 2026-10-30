@@ -47,7 +47,7 @@ Instruções para agentes trabalhando neste diretório. Complementa
 - **Convenções de `apps/api/` (Fase 3, [ADR 0013](../docs/adr/0013-contrato-da-api-v1.md); Fase 7d, [ADR 0022](../docs/adr/0022-otimizacoes-fase-7d.md)):**
   - Única instância `NinjaAPI` em `config/api.py` (`/api/v1/`, Swagger em `/api/v1/docs`), autenticada por `ApiSessionAuth` (`apps/api/csrf.py`).
   - **Routers finos** em `apps/api/routers/*` e `apps/accounts/api.py`: nenhuma lógica de cálculo nos routers; toda orquestração (validação → token DLP → carteira → `build_dataset`) passa por `apps/api/analysis.py` e toda conversão `pandas -> JSON` por `apps/api/serializers.py`.
-  - Memo de `AnalysisContext` entre endpoints da carteira (`apps/api/analysis.py`): serialização direta no cache do Django (`cache.set`/pickle) para preservar tipos Pandas e precisão numérica total de ponto flutuante (nunca `set_df`). TTL de 300 s com chave hash derivada dos parâmetros da requisição + versão do cache da DLP (`market_data:dlp:hist:<hash>:gen`).
+  - Memo de `AnalysisContext` entre endpoints da carteira (`apps/api/analysis.py`): gravado com `cache.set` direto (pickle), nunca `set_df`, para preservar tipos pandas e a precisão total dos floats. TTL de 300 s; chave `market:analysis:<user.pk>:<versão do cache DLP>:<geração das séries>:<dia>:<digest do pedido>`. Tudo que muda o contexto precisa entrar na chave (ou no digest); parâmetros aplicados depois do contexto (ex.: `window`) não entram.
   - Erros de negócio sempre levantam `ApiError(status, code, message, details)` (`apps/api/errors.py`), renderizado como `{"code": str, "message": str, "details": object|null}` em português.
   - **Nunca** retornar `401` quando a API externa DLP rejeitar o token do usuário (`DLPAuthError`) — usar sempre **`422 dlp_token_rejected`** (`401` é reservado para sessão ausente ou login inválido).
   - Isolamento por construção: o usuário é sempre `request.user`; nenhuma rota recebe ID ou e-mail de usuário.
@@ -71,7 +71,7 @@ implementar, rodar e ver passar. Os passos "ver falhar" não são opcionais.
 | Não fazer | Por quê |
 |---|---|
 | Token digitado/editável no Django Admin | grava valor não-cifrado em `encrypted_token`; entra só pela API (Fase 3) |
-| `set_df` para memo de `AnalysisContext` | `set_df` converte via CSV e trunca precisão numérica; o memo usa `cache.set` direto (pickle) |
+| `set_df` para memo de `AnalysisContext` | `set_df` grava JSON `orient="table"` com `double_precision=10` e arredonda os floats; o memo usa `cache.set` direto (pickle) |
 | `django-cors-headers` | SPA + API na mesma origem via nginx na Fase 5 ([ADR 0005](../docs/adr/0005-sem-django-cors-headers.md)) |
 | `RotatingFileHandler` / log em arquivo | logging só `StreamHandler`/stdout ([ADR 0008](../docs/adr/0008-logging-stdout-apenas.md)) |
 | Commitar compose files do LAB | ficam fora do repo, em `/data/projetos/lab-*/` |

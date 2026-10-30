@@ -58,6 +58,7 @@ O objetivo central desta fase foi tornar a aplicação expressivamente mais leve
 - **Rotas sob demanda (`React.lazy` + `Suspense`):** As rotas de `/` (`PortfolioPage`) e `/migracao-ir` (`MigrationPage`) passam a ser carregadas assincronamente apenas quando acessadas, com fallback em `Skeleton`. A rota `/login` permanece eager para inicialização rápida.
 - **Modularização do ECharts (`echarts/core`):** Criado `frontend/src/components/portfolio/charts/echarts.js`, que registra unicamente os componentes utilizados na aplicação (`LineChart`, `ScatterChart`, `GridComponent`, `TooltipComponent`, `LegendComponent`, `DataZoomComponent`, `MarkLineComponent`, `TitleComponent` e `CanvasRenderer`).
 - `BaseChart` migra de `echarts-for-react` para `echarts-for-react/lib/core`, eliminando o empacotamento estático do ECharts completo no chunk de entrada.
+- **Chunks próprios para ECharts e zrender (`manualChunks` em `frontend/vite.config.js`):** sem essa divisão, o chunk `PortfolioPage` ficava com 610 kB, acima do limite de 500 kB do Vite e do critério da fase. Agora a página tem 47 kB e as bibliotecas de gráfico vão em `echarts-*.js` (383 kB) e `zrender-*.js` (182 kB). O navegador as reaproveita do cache entre deploys que não mudam a versão do ECharts.
 
 ---
 
@@ -93,7 +94,8 @@ O objetivo central desta fase foi tornar a aplicação expressivamente mais leve
 | **Bundle SPA: Chunk de entrada (`index-*.js`)** | 1.416.824 bytes (~1,42 MB) | 290.105 bytes (~290 kB) | **−79,5%** |
 | Menções a `echarts` no chunk de entrada | 4 | 0 | **100% removido** |
 | Chunk `MigrationPage` | — | 25.681 bytes (~25 kB) | Sem ECharts |
-| Chunk `PortfolioPage` (com gráficos) | — | 610.369 bytes (~610 kB) | −57% vs original |
+| Chunk `PortfolioPage` | — | 47.400 bytes (~47 kB) | sem ECharts |
+| Chunks `echarts` + `zrender` (sob demanda, com a carteira) | — | 382.920 + 181.700 bytes | nenhum > 500 kB |
 
 ### Paridade e Confiabilidade
 - **Zero diferença numérica:** A suíte de regressão contra a linha de base (`parity.regress`) permaneceu rigorosamente com sinal `=` em todas as 10 métricas ao longo de todas as 6 janelas de caso.
@@ -104,3 +106,4 @@ O objetivo central desta fase foi tornar a aplicação expressivamente mais leve
 ### Atenções para Desenvolvedores
 - Novos gráficos adicionados no futuro devem registrar seus componentes e tipos de série em `frontend/src/components/portfolio/charts/echarts.js`.
 - O memo do `AnalysisContext` deve continuar utilizando o cache nativo (pickle) para evitar perdas de precisão em ponto flutuante.
+- O `single_flight` mantém a regra da Fase 7c: só libera o lock que é dele. Se a leitura do lock falhar, o lock expira pelo timeout. Testes que simulam o Redis fora do ar devem fazer falhar só as chaves do memo, não as `:lock` (ver `test_cache_failure_falls_back_to_compute`).
