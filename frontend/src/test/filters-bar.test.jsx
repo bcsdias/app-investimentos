@@ -119,6 +119,23 @@ describe('PortfolioFilterContext, FiltersBar e BenchmarkSelector', () => {
     expect(benchmarksList).toContain('IFIX');
   });
 
+  it('painel de comparadores fecha com clique fora e com Escape', async () => {
+    renderFiltersBar();
+    const openBtn = screen.getByRole('button', { name: /Comparadores|Benchmarks/i });
+
+    fireEvent.click(openBtn);
+    await screen.findByLabelText('IFIX');
+    fireEvent.mouseDown(document.body);
+    expect(screen.queryByLabelText('IFIX')).not.toBeInTheDocument();
+
+    fireEvent.click(openBtn);
+    await screen.findByLabelText('IFIX');
+    fireEvent.mouseDown(screen.getByLabelText('IFIX'));
+    expect(screen.getByLabelText('IFIX')).toBeInTheDocument();
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(screen.queryByLabelText('IFIX')).not.toBeInTheDocument();
+  });
+
   it('busca ativo e adiciona com sufixo BRL quando Versão em BRL está marcada', async () => {
     renderFiltersBar();
 

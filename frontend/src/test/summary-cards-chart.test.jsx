@@ -167,6 +167,9 @@ describe('SummaryCards e BaseChart', () => {
     expect(option.series[0].markLine).toBeDefined();
     expect(option.series[0].markLine.data).toEqual([{ xAxis: '2025-01-31' }]);
     expect(option.series[0].markLine.label.formatter).toMatch(/a\.a\. a partir daqui/);
+    // Rótulo dentro da área do gráfico, junto à linha: com annual_from no último ponto,
+    // o rótulo horizontal no topo saía cortado pela borda direita.
+    expect(option.series[0].markLine.label.position).toBe('insideEndTop');
 
     // Test tooltip formatter
     const tooltipFn = latestEchartsOption.tooltip.formatter;

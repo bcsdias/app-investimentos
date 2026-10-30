@@ -205,6 +205,28 @@ describe('usePortfolioQueries e Componentes da Aba Performance', () => {
     expect(option.legend.top).toBe(0);
   });
 
+  it('eixo Y com nome reserva espaço abaixo da legenda', () => {
+    // Legenda de rolagem em top: 0 (~24px) e nome do eixo ~15px acima do grid: com grid.top
+    // 36–44 os dois se sobrepunham (Sharpe/Volatilidade e Risco × Retorno).
+    const { rerender } = render(
+      <BaseChart option={{ grid: { top: 44 }, yAxis: [{ type: 'value', name: 'Sharpe' }, { type: 'value', name: 'Vol' }] }} />
+    );
+    let option = JSON.parse(screen.getByTestId('echarts-mock').getAttribute('data-option'));
+    expect(option.grid.top).toBeGreaterThanOrEqual(64);
+
+    rerender(<BaseChart option={{ yAxis: { type: 'value', name: 'Retorno CAGR (%)' } }} />);
+    option = JSON.parse(screen.getByTestId('echarts-mock').getAttribute('data-option'));
+    expect(option.grid.top).toBeGreaterThanOrEqual(64);
+
+    rerender(<BaseChart option={{ yAxis: { type: 'value' } }} />);
+    option = JSON.parse(screen.getByTestId('echarts-mock').getAttribute('data-option'));
+    expect(option.grid.top).toBe(36);
+
+    rerender(<BaseChart option={{ legend: false, yAxis: { type: 'value', name: 'X' } }} />);
+    option = JSON.parse(screen.getByTestId('echarts-mock').getAttribute('data-option'));
+    expect(option.grid.top).toBe(36);
+  });
+
   it('BaseChart permite sobrescrever legend ou ocultar com legend: false', () => {
     const { rerender } = render(
       <BaseChart option={{ legend: { type: 'plain', top: 10 } }} />

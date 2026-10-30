@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Plus, Search, SlidersHorizontal, Check } from 'lucide-react';
 import { usePortfolioFilters } from '../../context/PortfolioFilterContext';
@@ -10,6 +10,25 @@ export function BenchmarkSelector() {
   const { benchmarks, addBenchmark, toggleBenchmark, addSynthetic } = usePortfolioFilters();
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('catalog');
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const handlePointerDown = (event) => {
+      if (containerRef.current && !containerRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') setIsOpen(false);
+    };
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen]);
 
   // Ticker search state
   const [searchQuery, setSearchQuery] = useState('');
@@ -89,7 +108,7 @@ export function BenchmarkSelector() {
   ];
 
   return (
-    <div className="relative">
+    <div className="relative" ref={containerRef}>
       <Button
         type="button"
         variant="secondary"

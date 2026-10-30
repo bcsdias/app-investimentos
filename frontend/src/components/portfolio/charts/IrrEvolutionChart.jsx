@@ -41,6 +41,9 @@ export function IrrEvolutionChart({ data, isLoading = false, error = null, onRet
           lineStyle: { type: 'dashed', color: '#71717a' },
           label: {
             show: true,
+            // Ao longo da linha, dentro do gráfico: no topo e horizontal, o rótulo saía
+            // cortado quando annual_from cai no último ponto (janela de 12 meses exatos).
+            position: 'insideEndTop',
             formatter: 'a.a. a partir daqui',
             color: '#a1a1aa',
             fontSize: 11,

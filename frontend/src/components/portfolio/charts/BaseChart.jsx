@@ -14,6 +14,8 @@ export const CHART_PALETTE = [
   '#eab308', // yellow-500
 ];
 
+const AXIS_NAME_GRID_TOP = 64;
+
 export function BaseChart({
   option,
   height = 360,
@@ -23,6 +25,11 @@ export function BaseChart({
   className = '',
 }) {
   const mergedOption = useMemo(() => {
+    // Nome de eixo Y fica ~15px acima do grid, na mesma faixa da legenda (top: 0, ~24px).
+    // Com legenda e nome de eixo, o grid desce o bastante para os dois caberem.
+    const yAxes = [].concat(option?.yAxis || []);
+    const hasYAxisName = option?.legend !== false && yAxes.some((ax) => ax?.name);
+    const gridTop = option?.grid?.top ?? 36;
     const baseOption = {
       backgroundColor: 'transparent',
       color: CHART_PALETTE,
@@ -37,6 +44,7 @@ export function BaseChart({
         bottom: 48,
         containLabel: true,
         ...(option?.grid || {}),
+        top: hasYAxisName ? Math.max(gridTop, AXIS_NAME_GRID_TOP) : gridTop,
       },
       tooltip: {
         trigger: 'axis',
