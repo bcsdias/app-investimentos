@@ -14,6 +14,14 @@ TOLERANCE_DAYS: dict[str, int] = {
     "monthly": 45,
 }
 
+# Tolerância da cauda (último ponto até `until`). A série mensal é datada no 1º dia do
+# mês de referência e publicada ~10 dias depois do fim dele (IPCA: ~dia 10 do mês
+# seguinte), então o último ponto chega a ter ~70 dias sem nada estar parado.
+TAIL_TOLERANCE_DAYS: dict[str, int] = {
+    "daily": 10,
+    "monthly": 75,
+}
+
 
 @dataclass(frozen=True)
 class Gap:
@@ -53,7 +61,7 @@ def find_gaps(dates: Iterable, periodicity: str) -> list[Gap]:
 
 
 def stale_tail(dates: Iterable, periodicity: str, until: dt.date) -> Gap | None:
-    """Devolve Gap(last, until) se (until - last).days > TOLERANCE_DAYS[periodicity]; senão None.
+    """Devolve Gap(last, until) se (until - last).days > TAIL_TOLERANCE_DAYS[periodicity]; senão None.
     Série vazia -> None.
     """
     clean_dates = sorted({_to_date(d) for d in dates})
@@ -61,11 +69,10 @@ def stale_tail(dates: Iterable, periodicity: str, until: dt.date) -> Gap | None:
         return None
     last = clean_dates[-1]
     until_d = _to_date(until)
-    tolerance = TOLERANCE_DAYS[periodicity]
+    tolerance = TAIL_TOLERANCE_DAYS[periodicity]
     if (until_d - last).days > tolerance:
         return Gap(start=last, end=until_d)
     return None
-
 
 
 def infer_periodicity(index: pd.Index) -> str:

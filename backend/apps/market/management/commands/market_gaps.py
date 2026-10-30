@@ -3,7 +3,8 @@
 Percorre catalog.ingestible() e as chaves yf:* sob demanda (reutilizando
 _on_demand_defs de ingest_market_data). Para cada série, carrega as datas
 gravadas e detecta lacunas conforme a tolerância da cadência (diária >10 dias,
-mensal >45 dias). Sempre exit 0.
+mensal >45 dias) e a cauda parada até hoje (diária >10 dias, mensal >75 dias,
+para não acusar o atraso normal de publicação do IPCA). Sempre exit 0.
 """
 from __future__ import annotations
 
